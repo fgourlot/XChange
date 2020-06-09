@@ -15,8 +15,7 @@ import javax.xml.bind.DatatypeConverter;
 
 class EncryptionUtility {
 
-  public static String calculateHash(String secret, String data, String algorithm)
-      throws InvalidKeyException, NoSuchAlgorithmException {
+  public static String calculateHash(String secret, String data, String algorithm) throws InvalidKeyException, NoSuchAlgorithmException {
     Mac shaHmac = Mac.getInstance(algorithm);
     SecretKeySpec secretKey = new SecretKeySpec(secret.getBytes(), algorithm);
     shaHmac.init(secretKey);
@@ -24,8 +23,7 @@ class EncryptionUtility {
     return DatatypeConverter.printHexBinary(hash);
   }
 
-  public static String generateNonce()
-      throws NoSuchAlgorithmException, UnsupportedEncodingException {
+  public static String generateNonce() throws NoSuchAlgorithmException, UnsupportedEncodingException {
     SecureRandom random = SecureRandom.getInstance("SHA1PRNG");
     random.setSeed(System.currentTimeMillis());
     byte[] nonceBytes = new byte[16];

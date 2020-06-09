@@ -11,12 +11,7 @@ public class BittrexOrderBook {
 
   public BittrexOrderBook() {}
 
-  public BittrexOrderBook(
-      CurrencyPair marketSymbol,
-      int depth,
-      int sequence,
-      BittrexOrderBookEntry[] askDeltas,
-      BittrexOrderBookEntry[] bidDeltas) {
+  public BittrexOrderBook(CurrencyPair marketSymbol, int depth, int sequence, BittrexOrderBookEntry[] askDeltas, BittrexOrderBookEntry[] bidDeltas) {
     this.marketSymbol = marketSymbol;
     this.depth = depth;
     this.sequence = sequence;
