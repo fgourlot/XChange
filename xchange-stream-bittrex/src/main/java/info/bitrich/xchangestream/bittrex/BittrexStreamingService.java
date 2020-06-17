@@ -5,10 +5,17 @@ import com.github.signalr4j.client.hubs.HubProxy;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
+import org.knowm.xchange.Exchange;
+import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
+import org.knowm.xchange.bittrex.BittrexExchange;
+import org.knowm.xchange.bittrex.service.BittrexAccountService;
+import org.knowm.xchange.dto.account.AccountInfo;
+import org.knowm.xchange.service.account.AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
@@ -22,6 +29,8 @@ public class BittrexStreamingService {
 
   private HubConnection _hubConnection;
   private HubProxy _hubProxy;
+
+  private AccountService accountService;
 
   public BittrexStreamingService(String apiUrl, ExchangeSpecification exchangeSpecification) {
     this.exchangeSpecification = exchangeSpecification;

@@ -27,13 +27,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   private final BittrexStreamingService service;
 
+  ObjectMapper objectMapper;
+
   public BittrexStreamingMarketDataService(BittrexStreamingService service) {
     this.service = service;
+    objectMapper = new ObjectMapper();
   }
 
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
-    ObjectMapper objectMapper = new ObjectMapper();
+
     String orderBookChannel = "orderbook_" + currencyPair.base.toString() + "-" + currencyPair.counter.toString() + "_25";
     String[] channels = {orderBookChannel};
     LOG.info("Subscribing to channel : {}", orderBookChannel);
@@ -47,11 +50,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                                 message -> {
                                   LOG.debug("Incoming orderbook message : {}", message);
                                   try {
-                                    String decodedMessage = EncryptionUtility.decompress(message);
-                                    LOG.debug("Decompressed orderbook message : {}", decodedMessage);
+                                    String decompressedMessage = EncryptionUtility.decompress(message);
+                                    LOG.debug("Decompressed orderbook message : {}", decompressedMessage);
                                     // parse JSON to Object
                                     BittrexOrderBook bittrexOrderBook =
-                                            objectMapper.readValue(decodedMessage, BittrexOrderBook.class);
+                                            objectMapper.readValue(decompressedMessage, BittrexOrderBook.class);
                                     // forge OrderBook from BittrexOrderBook
                                     OrderBook orderBook = bittrexOrderBookToOrderBook(bittrexOrderBook);
                                     observer.onNext(orderBook);
