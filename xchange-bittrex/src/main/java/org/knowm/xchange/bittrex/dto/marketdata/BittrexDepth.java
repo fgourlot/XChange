@@ -1,16 +1,10 @@
 package org.knowm.xchange.bittrex.dto.marketdata;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.Arrays;
 
-import si.mazi.rescu.HttpResponseAware;
+public class BittrexDepth {
 
-public class BittrexDepth implements HttpResponseAware {
-
-  private Map<String, List<String>> headers;
   private final BittrexLevel[] asks;
   private final BittrexLevel[] bids;
 
@@ -41,19 +35,5 @@ public class BittrexDepth implements HttpResponseAware {
   public String toString() {
 
     return "BittrexDepth [asks=" + Arrays.toString(asks) + ", bids=" + Arrays.toString(bids) + "]";
-  }
-
-  @Override
-  public void setResponseHeaders(Map<String, List<String>> headers) {
-    this.headers = headers;
-  }
-
-  @Override
-  public Map<String, List<String>> getResponseHeaders() {
-    return headers;
-  }
-
-  public String getHeader(String key) {
-    return getResponseHeaders().get(key).get(0);
   }
 }
