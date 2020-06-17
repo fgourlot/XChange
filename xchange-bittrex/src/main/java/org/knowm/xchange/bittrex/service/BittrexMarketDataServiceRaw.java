@@ -7,6 +7,7 @@ import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexChartData;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexCurrency;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepth;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
@@ -57,6 +58,11 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
   public BittrexDepth getBittrexOrderBook(String pair, int depth) throws IOException {
 
     return bittrexAuthenticated.getBook(pair, "both", depth).getResult();
+  }
+
+  public BittrexDepthV3 getBittrexOrderBookV3(String pair, int depth) throws IOException {
+
+    return bittrexAuthenticatedV3.getBookV3(pair, depth);
   }
 
   public List<BittrexTrade> getBittrexTrades(String pair) throws IOException {

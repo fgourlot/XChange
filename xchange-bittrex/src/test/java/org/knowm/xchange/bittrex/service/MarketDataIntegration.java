@@ -3,6 +3,8 @@ package org.knowm.xchange.bittrex.service;
 import static org.assertj.core.api.Assertions.*;
 
 import java.util.List;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.knowm.xchange.Exchange;
@@ -55,6 +57,18 @@ public class MarketDataIntegration {
     OrderBook orderBook = marketDataService.getOrderBook(CurrencyPair.ETH_BTC);
     List<LimitOrder> asks = orderBook.getAsks();
     assertThat(asks).isNotEmpty();
+    LimitOrder firstAsk = asks.get(0);
+    assertThat(firstAsk.getLimitPrice()).isNotNull().isPositive();
+    assertThat(firstAsk.getRemainingAmount()).isNotNull().isPositive();
+  }
+
+  @Test
+  public void orderBooksV3Test() throws Exception {
+    Pair<OrderBook, String> orderBookV3AndSequence = marketDataService.getOrderBookV3(CurrencyPair.ETH_BTC);
+    OrderBook orderBook = orderBookV3AndSequence.getLeft();
+    List<LimitOrder> asks = orderBook.getAsks();
+    assertThat(asks).isNotEmpty();
+    assertThat(orderBookV3AndSequence.getRight().length()).isGreaterThan(1);
     LimitOrder firstAsk = asks.get(0);
     assertThat(firstAsk.getLimitPrice()).isNotNull().isPositive();
     assertThat(firstAsk.getRemainingAmount()).isNotNull().isPositive();
