@@ -5,12 +5,15 @@ import java.rmi.server.ExportException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexAdapters;
 import org.knowm.xchange.bittrex.BittrexErrorAdapter;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.dto.BittrexException;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepth;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -99,6 +102,36 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
           BittrexAdapters.adaptOrders(bittrexDepth.getBids(), currencyPair, "bid", "", depth);
 
       return new OrderBook(null, asks, bids);
+    } catch (BittrexException e) {
+      throw BittrexErrorAdapter.adapt(e);
+    }
+  }
+
+  /**
+   * @param currencyPair
+   * @param args
+   * @return A pair of orderbook and its sequence.
+   * @throws IOException
+   */
+  public Pair<OrderBook, String> getOrderBookV3(CurrencyPair currencyPair, Object... args) throws IOException {
+    try {
+      int depth = 500;
+
+      if (args != null && args.length > 0) {
+        if (args[0] instanceof Integer && (Integer) args[0] > 0 && (Integer) args[0] <= 50) {
+          depth = (Integer) args[0];
+        }
+      }
+
+      BittrexDepthV3 bittrexDepthV3 =
+          getBittrexOrderBookV3(BittrexUtils.toPairString(currencyPair, true), depth);
+
+      List<LimitOrder> asks =
+          BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getAsks(), currencyPair, "ask", "", depth);
+      List<LimitOrder> bids =
+          BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getBids(), currencyPair, "bid", "", depth);
+
+      return Pair.of(new OrderBook(null, asks, bids), bittrexDepthV3.getSequence());
     } catch (BittrexException e) {
       throw BittrexErrorAdapter.adapt(e);
     }

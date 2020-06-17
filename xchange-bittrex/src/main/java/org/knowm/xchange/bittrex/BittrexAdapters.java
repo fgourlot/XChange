@@ -11,6 +11,7 @@ import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.account.BittrexDepositHistory;
 import org.knowm.xchange.bittrex.dto.account.BittrexWithdrawalHistory;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevel;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevelV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
@@ -103,6 +104,23 @@ public final class BittrexAdapters {
 
     for (int i = 0; i < Math.min(orders.length, depth); i++) {
       BittrexLevel order = orders[i];
+      limitOrders.add(adaptOrder(order.getAmount(), order.getPrice(), currencyPair, orderType, id));
+    }
+
+    return limitOrders;
+  }
+
+  public static List<LimitOrder> adaptOrdersV3(
+      BittrexLevelV3[] orders, CurrencyPair currencyPair, String orderType, String id, int depth) {
+
+    if (orders == null) {
+      return new ArrayList<>();
+    }
+
+    List<LimitOrder> limitOrders = new ArrayList<>(orders.length);
+
+    for (int i = 0; i < Math.min(orders.length, depth); i++) {
+      BittrexLevelV3 order = orders[i];
       limitOrders.add(adaptOrder(order.getAmount(), order.getPrice(), currencyPair, orderType, id));
     }
 
