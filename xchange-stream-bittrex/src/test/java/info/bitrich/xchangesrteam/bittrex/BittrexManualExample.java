@@ -17,14 +17,11 @@ public class BittrexManualExample {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexManualExample.class);
 
-  private static final String API_KEY = "";
-  private static final String API_SECRET = "";
-
   public static void main(String[] args) throws IOException {
     ExchangeSpecification exchangeSpecification =
         new ExchangeSpecification(BittrexStreamingExchange.class.getName());
-    exchangeSpecification.setApiKey(API_KEY);
-    exchangeSpecification.setSecretKey(API_SECRET);
+    exchangeSpecification.setApiKey(args[0]);
+    exchangeSpecification.setSecretKey(args[1]);
     StreamingExchange exchange =
         StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
     exchange.connect().blockingAwait();
