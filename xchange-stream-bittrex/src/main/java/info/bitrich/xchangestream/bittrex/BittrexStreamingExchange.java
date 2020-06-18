@@ -6,7 +6,7 @@ import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
-import org.knowm.xchange.bittrex.service.BittrexAccountService;
+import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,6 +19,7 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
   private BittrexStreamingService streamingService;
   private BittrexStreamingAccountService streamingAccountService;
   private BittrexStreamingMarketDataService streamingMarketDataService;
+  private BittrexMarketDataService bittrexMarketDataService;
 
   public BittrexStreamingExchange() {}
 
@@ -27,7 +28,8 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
     ExchangeSpecification exchangeSpecification = this.getExchangeSpecification();
     streamingService = new BittrexStreamingService(API_BASE_URI, exchangeSpecification);
     streamingAccountService = new BittrexStreamingAccountService(streamingService);
-    streamingMarketDataService = new BittrexStreamingMarketDataService(streamingService);
+    bittrexMarketDataService = new BittrexMarketDataService(this);
+    streamingMarketDataService = new BittrexStreamingMarketDataService(streamingService, bittrexMarketDataService);
   }
 
   public io.reactivex.Completable connect(ProductSubscription... args) {

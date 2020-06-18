@@ -3,7 +3,7 @@ package info.bitrich.xchangestream.bittrex.dto;
 import org.knowm.xchange.currency.CurrencyPair;
 
 public class BittrexOrderBook {
-  private CurrencyPair marketSymbol;
+  private String marketSymbol;
   private int depth;
   private int sequence;
   private BittrexOrderBookEntry askDeltas[];
@@ -11,7 +11,7 @@ public class BittrexOrderBook {
 
   public BittrexOrderBook() {}
 
-  public BittrexOrderBook(CurrencyPair marketSymbol, int depth, int sequence, BittrexOrderBookEntry[] askDeltas, BittrexOrderBookEntry[] bidDeltas) {
+  public BittrexOrderBook(String marketSymbol, int depth, int sequence, BittrexOrderBookEntry[] askDeltas, BittrexOrderBookEntry[] bidDeltas) {
     this.marketSymbol = marketSymbol;
     this.depth = depth;
     this.sequence = sequence;
@@ -19,7 +19,7 @@ public class BittrexOrderBook {
     this.bidDeltas = bidDeltas;
   }
 
-  public CurrencyPair getMarketSymbol() {
+  public String getMarketSymbol() {
     return marketSymbol;
   }
 

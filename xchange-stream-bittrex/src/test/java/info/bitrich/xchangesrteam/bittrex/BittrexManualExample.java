@@ -17,8 +17,8 @@ public class BittrexManualExample {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexManualExample.class);
 
-  private static final String API_KEY = "b289fed40e704058af246c7764870754";
-  private static final String API_SECRET = "3e38f9583e98468792890979857995b3";
+  private static final String API_KEY = "";
+  private static final String API_SECRET = "";
 
   public static void main(String[] args) throws IOException {
     ExchangeSpecification exchangeSpecification =
@@ -35,11 +35,5 @@ public class BittrexManualExample {
             orderBook -> {
               LOG.info("Received order book {}", orderBook);
             });
-
-//      exchange.getStreamingAccountService()
-//            .getBalanceChanges(Currency.BTC)
-//            .subscribe((balance) -> {
-//              LOG.info("Received balance : {}", balance);
-//            });
   }
 }

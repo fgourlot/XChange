@@ -7,14 +7,8 @@ import info.bitrich.xchangestream.bittrex.dto.BittrexBalanceDelta;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
-import org.knowm.xchange.Exchange;
-import org.knowm.xchange.ExchangeFactory;
-import org.knowm.xchange.ExchangeSpecification;
-import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.currency.Currency;
-import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.account.Balance;
-import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
