@@ -8,6 +8,7 @@ import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import org.apache.commons.lang3.tuple.Pair;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
@@ -20,10 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
+import java.util.*;
 
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
@@ -186,6 +184,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
               askEntry);
       asks.add(askOrder);
     }
+
     // bids
     for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getAskDeltas()) {
       LimitOrder askOrder = this.bittrexOrderToLimitOrder(
@@ -195,7 +194,14 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
               bidEntry);
       asks.add(askOrder);
     }
+
     OrderBook orderBook = new OrderBook(new Date(), asks, bids);
+
+    // set metadata
+    HashMap<String, Object> metadata = new HashMap<>();
+    metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
+    orderBook.setMetadata(metadata);
+
     return orderBook;
   }
 
