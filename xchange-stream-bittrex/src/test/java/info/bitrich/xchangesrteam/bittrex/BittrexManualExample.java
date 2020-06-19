@@ -143,17 +143,17 @@ public class BittrexManualExample {
     bookMapRest.entrySet().stream()
                // We discard the REST books outside of the WS running period, in case the REST filling started or ended outside of the WS 
                // connection window
-               .filter(restBookEntry -> bookMapWS.keySet().stream()
+               .filter(restBookMapEntry -> bookMapWS.keySet().stream()
                                                  .anyMatch(wsSeq -> {
-                                                   long restSeqLong = Long.parseLong(restBookEntry.getKey());
+                                                   long restSeqLong = Long.parseLong(restBookMapEntry.getKey());
                                                    long wsSeqLong = Long.parseLong(wsSeq);
                                                    return restSeqLong <= wsSeqLong && wsSeqLong <= restSeqLong;
                                                  }))
-               .forEach(restBookEntry -> {
-                 OrderBook orderBookWS = bookMapWS.get(restBookEntry.getKey());
+               .forEach(restBookMapEntry -> {
+                 OrderBook orderBookWS = bookMapWS.get(restBookMapEntry.getKey());
                  Assert.assertNotNull(orderBookWS);
                  // using OrderBook.ordersEqual to prevent from comparing the timestamps
-                 Assert.assertTrue(orderBookWS.ordersEqual(restBookEntry.getValue()));
+                 Assert.assertTrue(orderBookWS.ordersEqual(restBookMapEntry.getValue()));
                });
   }
 
