@@ -36,7 +36,7 @@ public class BittrexManualExample {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexManualExample.class);
 
-  public static void main(String[] args) throws IOException {
+  public static void main(String[] args) {
     ExchangeSpecification exchangeSpecification =
         new ExchangeSpecification(BittrexStreamingExchange.class.getName());
     exchangeSpecification.setApiKey(args[0]);
@@ -62,10 +62,12 @@ public class BittrexManualExample {
 
   @BeforeClass
   public static void setup() {
+    String apiKey = System.getProperty("apiKey");
+    String apiSecret = System.getProperty("apiSecret");
     market = CurrencyPair.ETH_BTC;
     exchangeSpecification = new ExchangeSpecification(BittrexStreamingExchange.class.getName());
-    exchangeSpecification.setApiKey("78cf1e6997c4443b88729a5de3b60174");
-    exchangeSpecification.setSecretKey("8930cfe72ae7429c8d8fa5bb69b2958c");
+    exchangeSpecification.setApiKey(apiKey);
+    exchangeSpecification.setSecretKey(apiSecret);
     exchange = StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
     exchange.connect().blockingAwait();
   }
