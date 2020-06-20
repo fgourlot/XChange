@@ -64,8 +64,8 @@ public class BittrexManualExample {
   public static void setup() {
     market = CurrencyPair.ETH_BTC;
     exchangeSpecification = new ExchangeSpecification(BittrexStreamingExchange.class.getName());
-    exchangeSpecification.setApiKey("78cf1e6997c4443b88729a5de3b60174");
-    exchangeSpecification.setSecretKey("8930cfe72ae7429c8d8fa5bb69b2958c");
+    exchangeSpecification.setApiKey(System.getProperty("apiKey"));
+    exchangeSpecification.setSecretKey(System.getProperty("apiSecret"));
     exchange = StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
     exchange.connect().blockingAwait();
   }
