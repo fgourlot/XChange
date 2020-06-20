@@ -158,8 +158,6 @@ public class BittrexManualExample {
                  OrderBook orderBookWS = bookMapWS.get(restBookMapEntry.getKey());
                  Assert.assertNotNull(orderBookWS);
                  // using OrderBook.ordersEqual to prevent from comparing the timestamps
-                   LOG.debug("fgo orderbook WS {}", orderBookWS.getOrders(Order.OrderType.BID));
-                   LOG.debug("fgo orderbook rest {}", restBookMapEntry.getValue());
                  Assert.assertTrue(orderBookWS.ordersEqual(restBookMapEntry.getValue()));
                });
   }
