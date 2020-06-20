@@ -138,16 +138,17 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private static void applyUpdates(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook, Order.OrderType orderType) {
     // save orders to remove in a list
-    ArrayList<LimitOrder> ordersToRemove = new ArrayList<LimitOrder>();
+    ArrayList<LimitOrder> ordersToRemove = new ArrayList<>();
 
     // iterate on Bittrex deltas
     for (BittrexOrderBookEntry entry : orderType.equals(Order.OrderType.ASK) ? bittrexOrderBook.getAskDeltas() : bittrexOrderBook.getBidDeltas()) {
       // remove orders of quantity 0
       if (entry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
-        // iterate on all OrderBook orders
+        // iterate on all OrderBook orders to find orders to delete
         List<LimitOrder> ordersList = orderType.equals(Order.OrderType.ASK) ? orderBookReference.getAsks() : orderBookReference.getBids();
         ordersList.forEach(limitOrder -> {
           if (limitOrder.getLimitPrice().compareTo(entry.getRate()) == 0) {
+            // add order to remove list
             ordersToRemove.add(limitOrder);
           }
         });
@@ -165,7 +166,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       }
     }
 
-    // perform orders deletion
+    // perform orders deletion on remove list
     ordersToRemove.forEach(order -> {
       if (orderType.equals(Order.OrderType.ASK)) {
         orderBookReference.getAsks().remove(order);
