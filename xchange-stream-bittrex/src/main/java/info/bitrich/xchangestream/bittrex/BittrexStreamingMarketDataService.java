@@ -125,15 +125,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
           bidIndex++;
         }
       } else {
-        OrderBookUpdate bidUpdate = new OrderBookUpdate(
+        LimitOrder bidLimitOrderUpdate = new LimitOrder(
                 Order.OrderType.BID,
                 bidEntry.getQuantity(),
                 new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
-                bidEntry.getRate(),
                 null,
-                bidEntry.getQuantity()
+                null,
+                bidEntry.getRate()
         );
-        orderBookReference.update(bidUpdate);
+        orderBookReference.update(bidLimitOrderUpdate);
       }
     }
 
@@ -149,15 +149,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
           askIndex++;
         }
       } else {
-        OrderBookUpdate askUpdate = new OrderBookUpdate(
+        LimitOrder askLimitOrderUpdate = new LimitOrder(
                 Order.OrderType.ASK,
                 askEntry.getQuantity(),
                 new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
-                askEntry.getRate(),
                 null,
-                askEntry.getQuantity()
+                null,
+                askEntry.getRate()
         );
-        orderBookReference.update(askUpdate);
+        orderBookReference.update(askLimitOrderUpdate);
       }
     }
 
