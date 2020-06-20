@@ -24,6 +24,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
@@ -144,11 +145,12 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       // remove orders of quantity 0
       if (entry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
         // iterate on all OrderBook orders
-        for(LimitOrder order : orderType.equals(Order.OrderType.ASK) ? orderBookReference.getAsks() : orderBookReference.getBids()) {
-          if (order.getLimitPrice().compareTo(entry.getRate()) == 0) {
-            ordersToRemove.add(order);
+        List<LimitOrder> ordersList = orderType.equals(Order.OrderType.ASK) ? orderBookReference.getAsks() : orderBookReference.getBids();
+        ordersList.forEach(limitOrder -> {
+          if (limitOrder.getLimitPrice().compareTo(entry.getRate()) == 0) {
+            ordersToRemove.add(limitOrder);
           }
-        }
+        });
       } else {
         // create and apply LimitOrder update
         LimitOrder limitOrderUpdate = new LimitOrder(
