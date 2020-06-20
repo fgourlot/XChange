@@ -17,7 +17,6 @@ import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.service.account.AccountService;
 import org.slf4j.Logger;

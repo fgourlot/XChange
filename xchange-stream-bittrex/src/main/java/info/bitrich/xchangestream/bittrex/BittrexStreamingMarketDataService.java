@@ -92,7 +92,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                             } else if (bittrexOrderBook.getSequence() == (currentSequenceNumber + 1)) {
                               LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
                               currentSequenceNumber = bittrexOrderBook.getSequence();
-                              observer.onNext(updateOrderBook(orderBookReference, bittrexOrderBook));
+                              orderBookReference = updateOrderBook(orderBookReference, bittrexOrderBook);
+                              observer.onNext(orderBookReference);
                             }
                           } catch (IOException e) {
                             e.printStackTrace();
@@ -112,64 +113,60 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   }
 
   protected static OrderBook updateOrderBook(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook) {
-    if (orderBookReference != null) {
-
-      // update bids
-      for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getBidDeltas()) {
-        // remove bids of quantity 0
-        if (bidEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
-          int bidIndex = 0;
-          for(LimitOrder bidOrder : orderBookReference.getBids()) {
-            if (bidOrder.getLimitPrice().compareTo(bidEntry.getRate()) == 0) {
-              orderBookReference.getBids().remove(bidIndex);
-            }
-            bidIndex++;
+    // update bids
+    for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getBidDeltas()) {
+      // remove bids of quantity 0
+      if (bidEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
+        int bidIndex = 0;
+        for(LimitOrder bidOrder : orderBookReference.getBids()) {
+          if (bidOrder.getLimitPrice().compareTo(bidEntry.getRate()) == 0) {
+            orderBookReference.getBids().remove(bidIndex);
           }
-        } else {
-          OrderBookUpdate bidUpdate = new OrderBookUpdate(
-                  Order.OrderType.BID,
-                  bidEntry.getQuantity(),
-                  new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
-                  bidEntry.getRate(),
-                  null,
-                  bidEntry.getQuantity()
-          );
-          orderBookReference.update(bidUpdate);
+          bidIndex++;
         }
+      } else {
+        OrderBookUpdate bidUpdate = new OrderBookUpdate(
+                Order.OrderType.BID,
+                bidEntry.getQuantity(),
+                new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
+                bidEntry.getRate(),
+                null,
+                bidEntry.getQuantity()
+        );
+        orderBookReference.update(bidUpdate);
       }
-
-      // update asks
-      for (BittrexOrderBookEntry askEntry : bittrexOrderBook.getAskDeltas()) {
-        // remove asks of quantity 0
-        if (askEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
-          int askIndex = 0;
-          for(LimitOrder askOrder : orderBookReference.getAsks()) {
-            if (askOrder.getLimitPrice().compareTo(askEntry.getRate()) == 0) {
-              orderBookReference.getAsks().remove(askIndex);
-            }
-            askIndex++;
-          }
-        } else {
-          OrderBookUpdate askUpdate = new OrderBookUpdate(
-                  Order.OrderType.ASK,
-                  askEntry.getQuantity(),
-                  new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
-                  askEntry.getRate(),
-                  null,
-                  askEntry.getQuantity()
-          );
-          orderBookReference.update(askUpdate);
-        }
-      }
-
-      // set metadata
-      HashMap<String, Object> metadata = new HashMap<>();
-      metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
-      orderBookReference.setMetadata(metadata);
-
-      return orderBookReference;
     }
-    return null;
+
+    // update asks
+    for (BittrexOrderBookEntry askEntry : bittrexOrderBook.getAskDeltas()) {
+      // remove asks of quantity 0
+      if (askEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
+        int askIndex = 0;
+        for(LimitOrder askOrder : orderBookReference.getAsks()) {
+          if (askOrder.getLimitPrice().compareTo(askEntry.getRate()) == 0) {
+            orderBookReference.getAsks().remove(askIndex);
+          }
+          askIndex++;
+        }
+      } else {
+        OrderBookUpdate askUpdate = new OrderBookUpdate(
+                Order.OrderType.ASK,
+                askEntry.getQuantity(),
+                new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
+                askEntry.getRate(),
+                null,
+                askEntry.getQuantity()
+        );
+        orderBookReference.update(askUpdate);
+      }
+    }
+
+    // set metadata
+    HashMap<String, Object> metadata = new HashMap<>();
+    metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
+    orderBookReference.setMetadata(metadata);
+
+    return orderBookReference;
   }
 
   /**
