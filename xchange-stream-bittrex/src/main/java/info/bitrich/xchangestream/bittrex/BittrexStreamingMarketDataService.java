@@ -92,7 +92,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                             } else if (bittrexOrderBook.getSequence() == (currentSequenceNumber + 1)) {
                               LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
                               currentSequenceNumber = bittrexOrderBook.getSequence();
-                              observer.onNext(updateOrderBook(bittrexOrderBook));
+                              observer.onNext(updateOrderBook(orderBookReference, bittrexOrderBook));
                             }
                           } catch (IOException e) {
                             e.printStackTrace();
@@ -111,7 +111,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     return obs;
   }
 
-  protected OrderBook updateOrderBook(BittrexOrderBook bittrexOrderBook) {
+  protected static OrderBook updateOrderBook(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook) {
     if (orderBookReference != null) {
 
       // update bids
