@@ -13,7 +13,6 @@ import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
-import org.knowm.xchange.dto.marketdata.OrderBookUpdate;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.trade.LimitOrder;
@@ -22,6 +21,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 
@@ -112,61 +112,65 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     return obs;
   }
 
+  /**
+   * Update a given OrderBook with Bittrex deltas in a BittrexOrderBook message
+   * @param orderBookReference
+   * @param bittrexOrderBook
+   * @return
+   */
   protected static OrderBook updateOrderBook(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook) {
-    // update bids
-    for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getBidDeltas()) {
-      // remove bids of quantity 0
-      if (bidEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
-        int bidIndex = 0;
-        for(LimitOrder bidOrder : orderBookReference.getBids()) {
-          if (bidOrder.getLimitPrice().compareTo(bidEntry.getRate()) == 0) {
-            orderBookReference.getBids().remove(bidIndex);
-          }
-          bidIndex++;
-        }
-      } else {
-        LimitOrder bidLimitOrderUpdate = new LimitOrder(
-                Order.OrderType.BID,
-                bidEntry.getQuantity(),
-                new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
-                null,
-                null,
-                bidEntry.getRate()
-        );
-        orderBookReference.update(bidLimitOrderUpdate);
-      }
-    }
-
-    // update asks
-    for (BittrexOrderBookEntry askEntry : bittrexOrderBook.getAskDeltas()) {
-      // remove asks of quantity 0
-      if (askEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
-        int askIndex = 0;
-        for(LimitOrder askOrder : orderBookReference.getAsks()) {
-          if (askOrder.getLimitPrice().compareTo(askEntry.getRate()) == 0) {
-            orderBookReference.getAsks().remove(askIndex);
-          }
-          askIndex++;
-        }
-      } else {
-        LimitOrder askLimitOrderUpdate = new LimitOrder(
-                Order.OrderType.ASK,
-                askEntry.getQuantity(),
-                new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
-                null,
-                null,
-                askEntry.getRate()
-        );
-        orderBookReference.update(askLimitOrderUpdate);
-      }
-    }
-
+    // apply updates
+    applyUpdates(orderBookReference, bittrexOrderBook, Order.OrderType.ASK);
+    applyUpdates(orderBookReference, bittrexOrderBook, Order.OrderType.BID);
     // set metadata
     HashMap<String, Object> metadata = new HashMap<>();
     metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
     orderBookReference.setMetadata(metadata);
-
     return orderBookReference;
+  }
+
+  /**
+   * Effective orders updates method (add and delete)
+   * @param orderBookReference
+   * @param bittrexOrderBook
+   * @param orderType
+   */
+  private static void applyUpdates(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook, Order.OrderType orderType) {
+    // save orders to remove in a list
+    ArrayList<LimitOrder> ordersToRemove = new ArrayList<LimitOrder>();
+
+    // iterate on Bittrex deltas
+    for (BittrexOrderBookEntry entry : orderType.equals(Order.OrderType.ASK) ? bittrexOrderBook.getAskDeltas() : bittrexOrderBook.getBidDeltas()) {
+      // remove orders of quantity 0
+      if (entry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
+        // iterate on all OrderBook orders
+        for(LimitOrder order : orderType.equals(Order.OrderType.ASK) ? orderBookReference.getAsks() : orderBookReference.getBids()) {
+          if (order.getLimitPrice().compareTo(entry.getRate()) == 0) {
+            ordersToRemove.add(order);
+          }
+        }
+      } else {
+        // create and apply LimitOrder update
+        LimitOrder limitOrderUpdate = new LimitOrder(
+                orderType,
+                entry.getQuantity(),
+                new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
+                null,
+                null,
+                entry.getRate()
+        );
+        orderBookReference.update(limitOrderUpdate);
+      }
+    }
+
+    // perform orders deletion
+    ordersToRemove.forEach(order -> {
+      if (orderType.equals(Order.OrderType.ASK)) {
+        orderBookReference.getAsks().remove(order);
+      } else {
+        orderBookReference.getBids().remove(order);
+      }
+    });
   }
 
   /**
