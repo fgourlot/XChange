@@ -155,6 +155,12 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
           // TODO
         }
       }
+
+      // set metadata
+      HashMap<String, Object> metadata = new HashMap<>();
+      metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
+      orderBookReference.setMetadata(metadata);
+
       observer.onNext(orderBookReference);
     }
   }
