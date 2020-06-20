@@ -46,10 +46,13 @@ public class BittrexStreamingMarketDataServiceTest extends TestCase {
 
     // delta entries to apply to the orderbook to update
     BittrexOrderBookEntry deleteEntry = new BittrexOrderBookEntry(BigDecimal.ZERO, new BigDecimal("4"));
-    BittrexOrderBookEntry addEntry = new BittrexOrderBookEntry(new BigDecimal("1.1"), new BigDecimal("9"));
+    BittrexOrderBookEntry deleteEntry2 = new BittrexOrderBookEntry(BigDecimal.ZERO, new BigDecimal("7"));
+    BittrexOrderBookEntry deleteEntry3 = new BittrexOrderBookEntry(BigDecimal.ZERO, new BigDecimal("6"));
+    BittrexOrderBookEntry addEntry = new BittrexOrderBookEntry(new BigDecimal("1.1"), new BigDecimal("7.5"));
+    BittrexOrderBookEntry addEntry2 = new BittrexOrderBookEntry(new BigDecimal("1.2"), new BigDecimal("7.4"));
 
     BittrexOrderBookEntry[] deltaBidsEntries = {deleteEntry};
-    BittrexOrderBookEntry[] deltaAsksEntries = {addEntry};
+    BittrexOrderBookEntry[] deltaAsksEntries = {deleteEntry3, addEntry, addEntry2, deleteEntry2};
 
     BittrexOrderBook bittrexOrderBook = new BittrexOrderBook("ETH-BTC", 500, Integer.parseInt(sequence), deltaAsksEntries, deltaBidsEntries);
 
@@ -65,11 +68,11 @@ public class BittrexStreamingMarketDataServiceTest extends TestCase {
     updatedBookBids.add(expectedbid1);
     updatedBookBids.add(expectedbid2);
 
-    LimitOrder expectedask1 = new LimitOrder(Order.OrderType.ASK, new BigDecimal("1"), market, null, null, new BigDecimal("6"));
-    LimitOrder expectedask2 = new LimitOrder(Order.OrderType.ASK, new BigDecimal("2"), market, null, null, new BigDecimal("7"));
-    LimitOrder expectedask3 = new LimitOrder(Order.OrderType.ASK, new BigDecimal("3"), market, null, null, new BigDecimal("8"));
-    LimitOrder expectedask4 = new LimitOrder(Order.OrderType.ASK, new BigDecimal("1.1"), market, null, null, new BigDecimal("9"));
-    updatedBookAsks.add(expectedask1);
+    //LimitOrder expectedask1 = new LimitOrder(Order.OrderType.ASK, new BigDecimal("1"), market, null, null, new BigDecimal("6"));
+    LimitOrder expectedask4 = new LimitOrder(Order.OrderType.ASK, new BigDecimal("1.2"), market, null, null, new BigDecimal("7.4"));
+    LimitOrder expectedask3 = new LimitOrder(Order.OrderType.ASK, new BigDecimal("1.1"), market, null, null, new BigDecimal("7.5"));
+    LimitOrder expectedask2 = new LimitOrder(Order.OrderType.ASK, new BigDecimal("3"), market, null, null, new BigDecimal("8"));
+    //updatedBookAsks.add(expectedask1);
     updatedBookAsks.add(expectedask2);
     updatedBookAsks.add(expectedask3);
     updatedBookAsks.add(expectedask4);
