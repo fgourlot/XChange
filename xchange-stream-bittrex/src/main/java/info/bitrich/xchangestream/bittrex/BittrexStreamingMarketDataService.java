@@ -2,13 +2,11 @@ package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBook;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
-
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
@@ -28,7 +26,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
@@ -75,39 +72,38 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
     // create result Observable
     Observable<OrderBook> obs =
-        new Observable<>() {
-          @Override
-          protected void subscribeActual(Observer<? super OrderBook> observer) {
-            // create handler for `orderbook` messages
-            SubscriptionHandler1 orderBookHandler = (SubscriptionHandler1<String>)
-                message -> {
-                  LOG.debug("Incoming orderbook message : {}", message);
-                  try {
-                    String decompressedMessage = EncryptionUtility.decompress(message);
-                    LOG.debug("Decompressed orderbook message : {}", decompressedMessage);
-                    // parse JSON to Object
-                    BittrexOrderBook bittrexOrderBook =
-                        objectMapper.readValue(decompressedMessage, BittrexOrderBook.class);
-                    // check sequence before dispatch
-                    if (!firstSequenceNumberVerified) {
-                      // add to queue for further verifications
-                      bittrexOrderBookQueue.add(bittrexOrderBook);
-                      // check first orderbook sequence number
-                      orderBookReference = getOrderBookReference(currencyPair);
-                    } else if (bittrexOrderBook.getSequence() == (currentSequenceNumber + 1)) {
-                      LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
-                      currentSequenceNumber = bittrexOrderBook.getSequence();
-                      orderBookReference = updateOrderBook(orderBookReference, bittrexOrderBook);
-                      observer.onNext(orderBookReference);
-                    }
-                  } catch (IOException e) {
-                    e.printStackTrace();
-                    throw new RuntimeException(e);
-                  }
-                };
-            service.setHandler("orderbook", orderBookHandler);
-          }
-        };
+            new Observable<>() {
+              @Override
+              protected void subscribeActual(Observer<? super OrderBook> observer) {
+                // create handler for `orderbook` messages
+                SubscriptionHandler1 orderBookHandler = (SubscriptionHandler1<String>)
+                        message -> {
+                          LOG.debug("Incoming orderbook message : {}", message);
+                          try {
+                            String decompressedMessage = EncryptionUtility.decompress(message);
+                            LOG.debug("Decompressed orderbook message : {}", decompressedMessage);
+                            // parse JSON to Object
+                            BittrexOrderBook bittrexOrderBook = objectMapper.readValue(decompressedMessage, BittrexOrderBook.class);
+                            // check sequence before dispatch
+                            if (!firstSequenceNumberVerified) {
+                              // add to queue for further verifications
+                              bittrexOrderBookQueue.add(bittrexOrderBook);
+                              // check first orderbook sequence number
+                              orderBookReference = getOrderBookReference(currencyPair);
+                            } else if (bittrexOrderBook.getSequence() == (currentSequenceNumber + 1)) {
+                              LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
+                              currentSequenceNumber = bittrexOrderBook.getSequence();
+                              orderBookReference = updateOrderBook(orderBookReference, bittrexOrderBook);
+                              observer.onNext(orderBookReference);
+                            }
+                          } catch (IOException e) {
+                            e.printStackTrace();
+                            throw new RuntimeException(e);
+                          }
+                        };
+                service.setHandler("orderbook", orderBookHandler);
+              }
+            };
 
     String orderBookChannel = "orderbook_" + currencyPair.base.toString() + "-" + currencyPair.counter.toString() + "_500";
     String[] channels = {orderBookChannel};
@@ -162,12 +158,12 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       } else {
         // create and apply LimitOrder update
         LimitOrder limitOrderUpdate = new LimitOrder(
-            orderType,
-            deltaEntry.getQuantity(),
-            bittrexMarketSymbolToCurrencyPair(bittrexOrderBook.getMarketSymbol()),
-            null,
-            null,
-            deltaEntry.getRate()
+                orderType,
+                deltaEntry.getQuantity(),
+                bittrexMarketSymbolToCurrencyPair(bittrexOrderBook.getMarketSymbol()),
+                null,
+                null,
+                deltaEntry.getRate()
         );
         orderBookReference.update(limitOrderUpdate);
       }
