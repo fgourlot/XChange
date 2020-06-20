@@ -21,7 +21,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
 
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
@@ -52,12 +55,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private ObjectMapper objectMapper;
 
+  OrderBook orderBookReference;
+
   public BittrexStreamingMarketDataService(BittrexStreamingService service, BittrexMarketDataService bittrexMarketDataService) {
     this.service = service;
     this.bittrexMarketDataService = bittrexMarketDataService;
     objectMapper = new ObjectMapper();
     orderBookV3Cache = new HashMap<>();
     bittrexOrderBookQueue = new LinkedList<>();
+    orderBookReference = null;
   }
 
   @Override
@@ -78,17 +84,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                             // parse JSON to Object
                             BittrexOrderBook bittrexOrderBook =
                                     objectMapper.readValue(decompressedMessage, BittrexOrderBook.class);
-                            OrderBook orderBook = bittrexOrderBookToOrderBook(bittrexOrderBook);
                             // check sequence before dispatch
                             if (!firstSequenceNumberVerified) {
                               // add to queue for further verifications
                               bittrexOrderBookQueue.add(bittrexOrderBook);
                               // check first orderbook sequence number
-                              verifyFirstSequenceNumber(currencyPair);
+                              orderBookReference = getOrderBookReference(currencyPair);
                             } else if (bittrexOrderBook.getSequence() == (currentSequenceNumber + 1)) {
                               LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
                               currentSequenceNumber = bittrexOrderBook.getSequence();
-                              observer.onNext(orderBook);
+                              performNextUpdate(observer, bittrexOrderBook);
                             }
                           } catch (IOException e) {
                             e.printStackTrace();
@@ -107,13 +112,51 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     return obs;
   }
 
+  private void performNextUpdate(Observer<? super OrderBook> observer, BittrexOrderBook bittrexOrderBook) {
+    if (orderBookReference != null) {
+
+      // update bids
+      for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getBidDeltas()) {
+        // remove bids of quantity 0
+        if (bidEntry.getQuantity() == 0) {
+          int bidIndex = 0;
+          for(LimitOrder bidOrder : orderBookReference.getBids()) {
+            if (bidOrder.getLimitPrice() == BigDecimal.valueOf(bidEntry.getRate())) {
+              orderBookReference.getBids().remove(bidIndex);
+            }
+            bidIndex++;
+          }
+        } else {
+          // TODO
+        }
+      }
+
+      // update asks
+      for (BittrexOrderBookEntry askEntry : bittrexOrderBook.getAskDeltas()) {
+        // remove asks of quantity 0
+        if (askEntry.getQuantity() == 0) {
+          int askIndex = 0;
+          for(LimitOrder askOrder : orderBookReference.getAsks()) {
+            if (askOrder.getLimitPrice() == BigDecimal.valueOf(askEntry.getRate())) {
+              orderBookReference.getAsks().remove(askIndex);
+            }
+            askIndex++;
+          }
+        } else {
+          // TODO
+        }
+      }
+      observer.onNext(orderBookReference);
+    }
+  }
+
   /**
    * Verify first BittrexOrderBook sequence number
    * with OrderBook V3 sequence number (requested via Bittrex REST API)
    * @param currencyPair
    * @throws IOException
    */
-  private void verifyFirstSequenceNumber(CurrencyPair currencyPair) throws IOException {
+  private OrderBook getOrderBookReference(CurrencyPair currencyPair) throws IOException {
     if (bittrexOrderBookQueue.size() > 0) {
       // get OrderBookV3 via REST
       LOG.debug("Getting OrderBook V3 via REST for Currency Pair {} ...", currencyPair);
@@ -124,10 +167,13 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       int orderBookV3SequenceNumber = Integer.parseInt(orderBookV3.getRight());
       if (orderBookV3SequenceNumber > bittrexOrderBookQueue.getFirst().getSequence()) {
         LOG.info("Reference verified ! Start sequence number is : {}", orderBookV3SequenceNumber);
+        OrderBook orderBookReference = orderBookV3.getLeft();
         this.firstSequenceNumberVerified = true;
         currentSequenceNumber = orderBookV3SequenceNumber;
+        return orderBookReference;
       }
     }
+    return null;
   }
 
   @Override
@@ -187,12 +233,12 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
     // bids
     for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getAskDeltas()) {
-      LimitOrder askOrder = this.bittrexOrderToLimitOrder(
+      LimitOrder bidOrder = this.bittrexOrderToLimitOrder(
               Order.OrderType.BID,
               bittrexOrderBook.getMarketSymbol(),
               bittrexOrderBook.getSequence(),
               bidEntry);
-      asks.add(askOrder);
+      asks.add(bidOrder);
     }
 
     OrderBook orderBook = new OrderBook(new Date(), asks, bids);
