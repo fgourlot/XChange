@@ -139,16 +139,20 @@ public class BittrexManualExample {
       timer.ifPresent(Timer::cancel);
     }
 
+    // Test we have fetched orderbooks
+    Assert.assertTrue(bookMapWS.size() > 0);
+    Assert.assertTrue(bookMapRest.size() > 0);
+
     // Check the books are equal
     bookMapRest.entrySet().stream()
                // We discard the REST books outside of the WS running period, in case the REST filling started or ended outside of the WS 
                // connection window
                .filter(restBookMapEntry -> bookMapWS.keySet().stream()
-                                                 .anyMatch(wsSeq -> {
-                                                   long restSeqLong = Long.parseLong(restBookMapEntry.getKey());
-                                                   long wsSeqLong = Long.parseLong(wsSeq);
-                                                   return restSeqLong <= wsSeqLong && wsSeqLong <= restSeqLong;
-                                                 }))
+                                                    .anyMatch(wsSeq -> {
+                                                      long restSeqLong = Long.parseLong(restBookMapEntry.getKey());
+                                                      long wsSeqLong = Long.parseLong(wsSeq);
+                                                      return restSeqLong <= wsSeqLong && wsSeqLong <= restSeqLong;
+                                                    }))
                .forEach(restBookMapEntry -> {
                  OrderBook orderBookWS = bookMapWS.get(restBookMapEntry.getKey());
                  Assert.assertNotNull(orderBookWS);
