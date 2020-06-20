@@ -54,8 +54,6 @@ public class BittrexManualExample {
   }
 
   static ExchangeSpecification exchangeSpecification;
-  static String apiKey = "";
-  static String apiSecret = "";
   static CurrencyPair market = CurrencyPair.ETH_BTC;
   static StreamingExchange exchange;
   static Optional<Timer> timer;
