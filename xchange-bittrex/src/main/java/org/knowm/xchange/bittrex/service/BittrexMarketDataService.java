@@ -127,9 +127,9 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
           getBittrexOrderBookV3(BittrexUtils.toPairString(currencyPair, true), depth);
 
       List<LimitOrder> asks =
-          BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getAsks(), currencyPair, "ask", "", depth);
+          BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getAsks(), currencyPair, "ask", null, depth);
       List<LimitOrder> bids =
-          BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getBids(), currencyPair, "bid", "", depth);
+          BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getBids(), currencyPair, "bid", null, depth);
 
       return Pair.of(new OrderBook(null, asks, bids), bittrexDepthV3.getSequence());
     } catch (BittrexException e) {
