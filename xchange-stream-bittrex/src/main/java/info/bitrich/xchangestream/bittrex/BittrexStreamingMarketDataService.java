@@ -13,6 +13,7 @@ import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.marketdata.OrderBookUpdate;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.dto.trade.LimitOrder;
@@ -127,7 +128,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             bidIndex++;
           }
         } else {
-          // TODO
+          OrderBookUpdate bidUpdate = new OrderBookUpdate(
+                  Order.OrderType.BID,
+                  BigDecimal.valueOf(bidEntry.getQuantity()),
+                  new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
+                  BigDecimal.valueOf(bidEntry.getRate()),
+                  new Date(),
+                  BigDecimal.valueOf(bidEntry.getQuantity())
+          );
+          orderBookReference.update(bidUpdate);
         }
       }
 
