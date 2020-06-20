@@ -17,6 +17,7 @@ import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.service.account.AccountService;
 import org.slf4j.Logger;
@@ -157,6 +158,8 @@ public class BittrexManualExample {
                  OrderBook orderBookWS = bookMapWS.get(restBookMapEntry.getKey());
                  Assert.assertNotNull(orderBookWS);
                  // using OrderBook.ordersEqual to prevent from comparing the timestamps
+                   LOG.debug("fgo orderbook WS {}", orderBookWS.getOrders(Order.OrderType.BID));
+                   LOG.debug("fgo orderbook rest {}", restBookMapEntry.getValue());
                  Assert.assertTrue(orderBookWS.ordersEqual(restBookMapEntry.getValue()));
                });
   }

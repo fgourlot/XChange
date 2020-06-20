@@ -1,21 +1,23 @@
 package info.bitrich.xchangestream.bittrex.dto;
 
+import java.math.BigDecimal;
+
 public class BittrexOrderBookEntry {
-  private double quantity;
-  private double rate;
+  private BigDecimal quantity;
+  private BigDecimal rate;
 
   public BittrexOrderBookEntry() {}
 
-  public BittrexOrderBookEntry(double quantity, double rate) {
+  public BittrexOrderBookEntry(BigDecimal quantity, BigDecimal rate) {
     this.quantity = quantity;
     this.rate = rate;
   }
 
-  public double getQuantity() {
+  public BigDecimal getQuantity() {
     return quantity;
   }
 
-  public double getRate() {
+  public BigDecimal getRate() {
     return rate;
   }
 }

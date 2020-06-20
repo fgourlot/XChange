@@ -119,10 +119,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       // update bids
       for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getBidDeltas()) {
         // remove bids of quantity 0
-        if (bidEntry.getQuantity() == 0) {
+        if (bidEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
           int bidIndex = 0;
           for(LimitOrder bidOrder : orderBookReference.getBids()) {
-            if (bidOrder.getLimitPrice().compareTo(BigDecimal.valueOf(bidEntry.getRate())) == 0) {
+            if (bidOrder.getLimitPrice().compareTo(bidEntry.getRate()) == 0) {
               orderBookReference.getBids().remove(bidIndex);
             }
             bidIndex++;
@@ -130,11 +130,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         } else {
           OrderBookUpdate bidUpdate = new OrderBookUpdate(
                   Order.OrderType.BID,
-                  BigDecimal.valueOf(bidEntry.getQuantity()),
+                  bidEntry.getQuantity(),
                   new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
-                  BigDecimal.valueOf(bidEntry.getRate()),
-                  new Date(),
-                  BigDecimal.valueOf(bidEntry.getQuantity())
+                  bidEntry.getRate(),
+                  null,
+                  bidEntry.getQuantity()
           );
           orderBookReference.update(bidUpdate);
         }
@@ -143,10 +143,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       // update asks
       for (BittrexOrderBookEntry askEntry : bittrexOrderBook.getAskDeltas()) {
         // remove asks of quantity 0
-        if (askEntry.getQuantity() == 0) {
+        if (askEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
           int askIndex = 0;
           for(LimitOrder askOrder : orderBookReference.getAsks()) {
-            if (askOrder.getLimitPrice().compareTo(BigDecimal.valueOf(askEntry.getRate())) == 0) {
+            if (askOrder.getLimitPrice().compareTo(askEntry.getRate()) == 0) {
               orderBookReference.getAsks().remove(askIndex);
             }
             askIndex++;
@@ -154,11 +154,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         } else {
           OrderBookUpdate askUpdate = new OrderBookUpdate(
                   Order.OrderType.ASK,
-                  BigDecimal.valueOf(askEntry.getQuantity()),
+                  askEntry.getQuantity(),
                   new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
-                  BigDecimal.valueOf(askEntry.getRate()),
-                  new Date(),
-                  BigDecimal.valueOf(askEntry.getQuantity())
+                  askEntry.getRate(),
+                  null,
+                  askEntry.getQuantity()
           );
           orderBookReference.update(askUpdate);
         }
@@ -217,59 +217,59 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @param bittrexOrderBook
    * @return
    */
-  private OrderBook bittrexOrderBookToOrderBook(BittrexOrderBook bittrexOrderBook) {
-
-    ArrayList<LimitOrder> asks = new ArrayList<LimitOrder>();
-    ArrayList<LimitOrder> bids = new ArrayList<LimitOrder>();
-
-    // asks
-    for (BittrexOrderBookEntry askEntry : bittrexOrderBook.getAskDeltas()) {
-      LimitOrder askOrder = this.bittrexOrderToLimitOrder(
-              Order.OrderType.ASK,
-              bittrexOrderBook.getMarketSymbol(),
-              bittrexOrderBook.getSequence(),
-              askEntry);
-      asks.add(askOrder);
-    }
-
-    // bids
-    for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getAskDeltas()) {
-      LimitOrder bidOrder = this.bittrexOrderToLimitOrder(
-              Order.OrderType.BID,
-              bittrexOrderBook.getMarketSymbol(),
-              bittrexOrderBook.getSequence(),
-              bidEntry);
-      asks.add(bidOrder);
-    }
-
-    OrderBook orderBook = new OrderBook(new Date(), asks, bids);
-
-    // set metadata
-    HashMap<String, Object> metadata = new HashMap<>();
-    metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
-    orderBook.setMetadata(metadata);
-
-    return orderBook;
-  }
-
-  /**
-   * Map a Bittrex order to LimitOrder
-   *
-   * @param orderType
-   * @param currencyPair
-   * @param sequence
-   * @param bittrexOrderBookEntry
-   * @return
-   */
-  private LimitOrder bittrexOrderToLimitOrder(Order.OrderType orderType, String currencyPair, int sequence, BittrexOrderBookEntry bittrexOrderBookEntry) {
-    LimitOrder limitOrder =
-            new LimitOrder(
-                    orderType,
-                    BigDecimal.valueOf(bittrexOrderBookEntry.getQuantity()),
-                    new CurrencyPair(currencyPair.replace("-", "/")),
-                    String.valueOf(sequence),
-                    new Date(),
-                    BigDecimal.valueOf(bittrexOrderBookEntry.getRate()));
-    return limitOrder;
-  }
+//  private OrderBook bittrexOrderBookToOrderBook(BittrexOrderBook bittrexOrderBook) {
+//
+//    ArrayList<LimitOrder> asks = new ArrayList<LimitOrder>();
+//    ArrayList<LimitOrder> bids = new ArrayList<LimitOrder>();
+//
+//    // asks
+//    for (BittrexOrderBookEntry askEntry : bittrexOrderBook.getAskDeltas()) {
+//      LimitOrder askOrder = this.bittrexOrderToLimitOrder(
+//              Order.OrderType.ASK,
+//              bittrexOrderBook.getMarketSymbol(),
+//              bittrexOrderBook.getSequence(),
+//              askEntry);
+//      asks.add(askOrder);
+//    }
+//
+//    // bids
+//    for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getAskDeltas()) {
+//      LimitOrder bidOrder = this.bittrexOrderToLimitOrder(
+//              Order.OrderType.BID,
+//              bittrexOrderBook.getMarketSymbol(),
+//              bittrexOrderBook.getSequence(),
+//              bidEntry);
+//      asks.add(bidOrder);
+//    }
+//
+//    OrderBook orderBook = new OrderBook(new Date(), asks, bids);
+//
+//    // set metadata
+//    HashMap<String, Object> metadata = new HashMap<>();
+//    metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
+//    orderBook.setMetadata(metadata);
+//
+//    return orderBook;
+//  }
+//
+//  /**
+//   * Map a Bittrex order to LimitOrder
+//   *
+//   * @param orderType
+//   * @param currencyPair
+//   * @param sequence
+//   * @param bittrexOrderBookEntry
+//   * @return
+//   */
+//  private LimitOrder bittrexOrderToLimitOrder(Order.OrderType orderType, String currencyPair, int sequence, BittrexOrderBookEntry bittrexOrderBookEntry) {
+//    LimitOrder limitOrder =
+//            new LimitOrder(
+//                    orderType,
+//                    BigDecimal.valueOf(bittrexOrderBookEntry.getQuantity()),
+//                    new CurrencyPair(currencyPair.replace("-", "/")),
+//                    String.valueOf(sequence),
+//                    new Date(),
+//                    BigDecimal.valueOf(bittrexOrderBookEntry.getRate()));
+//    return limitOrder;
+//  }
 }
