@@ -122,7 +122,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         if (bidEntry.getQuantity() == 0) {
           int bidIndex = 0;
           for(LimitOrder bidOrder : orderBookReference.getBids()) {
-            if (bidOrder.getLimitPrice() == BigDecimal.valueOf(bidEntry.getRate())) {
+            if (bidOrder.getLimitPrice().compareTo(BigDecimal.valueOf(bidEntry.getRate())) == 0) {
               orderBookReference.getBids().remove(bidIndex);
             }
             bidIndex++;
@@ -146,13 +146,21 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         if (askEntry.getQuantity() == 0) {
           int askIndex = 0;
           for(LimitOrder askOrder : orderBookReference.getAsks()) {
-            if (askOrder.getLimitPrice() == BigDecimal.valueOf(askEntry.getRate())) {
+            if (askOrder.getLimitPrice().compareTo(BigDecimal.valueOf(askEntry.getRate())) == 0) {
               orderBookReference.getAsks().remove(askIndex);
             }
             askIndex++;
           }
         } else {
-          // TODO
+          OrderBookUpdate askUpdate = new OrderBookUpdate(
+                  Order.OrderType.ASK,
+                  BigDecimal.valueOf(askEntry.getQuantity()),
+                  new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
+                  BigDecimal.valueOf(askEntry.getRate()),
+                  new Date(),
+                  BigDecimal.valueOf(askEntry.getQuantity())
+          );
+          orderBookReference.update(askUpdate);
         }
       }
 
@@ -201,28 +209,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   public Observable<Trade> getTrades(CurrencyPair currencyPair, Object... args) {
     // TODO
     return null;
-  }
-
-  /**
-   * Check if Sequence number is correct
-   * it has to be higher than the sequence number reference (from OrderBoook V3 REST API)
-   * and +1 higher than current sequence number (from previous message)
-   * @param bittrexOrderBook
-   * @return
-   */
-  private boolean isSequenceNumberCorrect(CurrencyPair currencyPair, BittrexOrderBook bittrexOrderBook) {
-//    if (orderBookV3Cache.get(currencyPair) != null) {
-//      String orderBookV3Right = orderBookV3Cache.get(bittrexOrderBook.getMarketSymbol()).getRight();
-//      int orderBookV3Sequence = Integer.parseInt(orderBookV3Right);
-//    LOG.info("Fgo {} ", orderBookV3Sequence);
-
-    return bittrexOrderBook.getSequence() == (currentSequenceNumber + 1);
-//      return (orderBookV3Sequence < bittrexOrderBook.getSequence()
-//              && bittrexOrderBook.getSequence() == (currentSequence + 1));
-//    } else {
-//      LOG.error("order book v3 null {}", orderBookV3Cache.get(bittrexOrderBook.getMarketSymbol()));
-//    }
-//    return false;
   }
 
   /**
