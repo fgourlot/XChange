@@ -141,13 +141,13 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     ArrayList<LimitOrder> ordersToRemove = new ArrayList<>();
 
     // iterate on Bittrex deltas
-    for (BittrexOrderBookEntry entry : orderType.equals(Order.OrderType.ASK) ? bittrexOrderBook.getAskDeltas() : bittrexOrderBook.getBidDeltas()) {
+    for (BittrexOrderBookEntry deltaEntry : orderType.equals(Order.OrderType.ASK) ? bittrexOrderBook.getAskDeltas() : bittrexOrderBook.getBidDeltas()) {
       // remove orders of quantity 0
-      if (entry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
+      if (deltaEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
         // iterate on all OrderBook orders to find orders to delete
         List<LimitOrder> ordersList = orderType.equals(Order.OrderType.ASK) ? orderBookReference.getAsks() : orderBookReference.getBids();
         ordersList.forEach(limitOrder -> {
-          if (limitOrder.getLimitPrice().compareTo(entry.getRate()) == 0) {
+          if (limitOrder.getLimitPrice().compareTo(deltaEntry.getRate()) == 0) {
             // add order to remove list
             ordersToRemove.add(limitOrder);
           }
@@ -156,11 +156,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         // create and apply LimitOrder update
         LimitOrder limitOrderUpdate = new LimitOrder(
                 orderType,
-                entry.getQuantity(),
-                new CurrencyPair(bittrexOrderBook.getMarketSymbol().replace("-", "/")),
+                deltaEntry.getQuantity(),
+                bittrexMarketSymbolToCurrencyPair(bittrexOrderBook.getMarketSymbol()),
                 null,
                 null,
-                entry.getRate()
+                deltaEntry.getRate()
         );
         orderBookReference.update(limitOrderUpdate);
       }
@@ -215,64 +215,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   }
 
   /**
-   * Map a BittrexOrderBook to OrderBook
-   *
-   * @param bittrexOrderBook
+   * Converts a Bittrex marketSymbol (String with `-` separator) to CurrencyPair
+   * @param bittrexMarketSymbol
    * @return
    */
-//  private OrderBook bittrexOrderBookToOrderBook(BittrexOrderBook bittrexOrderBook) {
-//
-//    ArrayList<LimitOrder> asks = new ArrayList<LimitOrder>();
-//    ArrayList<LimitOrder> bids = new ArrayList<LimitOrder>();
-//
-//    // asks
-//    for (BittrexOrderBookEntry askEntry : bittrexOrderBook.getAskDeltas()) {
-//      LimitOrder askOrder = this.bittrexOrderToLimitOrder(
-//              Order.OrderType.ASK,
-//              bittrexOrderBook.getMarketSymbol(),
-//              bittrexOrderBook.getSequence(),
-//              askEntry);
-//      asks.add(askOrder);
-//    }
-//
-//    // bids
-//    for (BittrexOrderBookEntry bidEntry : bittrexOrderBook.getAskDeltas()) {
-//      LimitOrder bidOrder = this.bittrexOrderToLimitOrder(
-//              Order.OrderType.BID,
-//              bittrexOrderBook.getMarketSymbol(),
-//              bittrexOrderBook.getSequence(),
-//              bidEntry);
-//      asks.add(bidOrder);
-//    }
-//
-//    OrderBook orderBook = new OrderBook(new Date(), asks, bids);
-//
-//    // set metadata
-//    HashMap<String, Object> metadata = new HashMap<>();
-//    metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
-//    orderBook.setMetadata(metadata);
-//
-//    return orderBook;
-//  }
-//
-//  /**
-//   * Map a Bittrex order to LimitOrder
-//   *
-//   * @param orderType
-//   * @param currencyPair
-//   * @param sequence
-//   * @param bittrexOrderBookEntry
-//   * @return
-//   */
-//  private LimitOrder bittrexOrderToLimitOrder(Order.OrderType orderType, String currencyPair, int sequence, BittrexOrderBookEntry bittrexOrderBookEntry) {
-//    LimitOrder limitOrder =
-//            new LimitOrder(
-//                    orderType,
-//                    BigDecimal.valueOf(bittrexOrderBookEntry.getQuantity()),
-//                    new CurrencyPair(currencyPair.replace("-", "/")),
-//                    String.valueOf(sequence),
-//                    new Date(),
-//                    BigDecimal.valueOf(bittrexOrderBookEntry.getRate()));
-//    return limitOrder;
-//  }
+  private static CurrencyPair bittrexMarketSymbolToCurrencyPair(String bittrexMarketSymbol) {
+    return new CurrencyPair(bittrexMarketSymbol.replace("-", "/"));
+  }
 }
