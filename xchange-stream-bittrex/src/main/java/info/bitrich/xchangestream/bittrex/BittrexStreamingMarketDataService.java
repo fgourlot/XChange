@@ -22,8 +22,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 
@@ -94,7 +92,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                             } else if (bittrexOrderBook.getSequence() == (currentSequenceNumber + 1)) {
                               LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
                               currentSequenceNumber = bittrexOrderBook.getSequence();
-                              performNextUpdate(observer, bittrexOrderBook);
+                              observer.onNext(updateOrderBook(bittrexOrderBook));
                             }
                           } catch (IOException e) {
                             e.printStackTrace();
@@ -113,7 +111,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     return obs;
   }
 
-  private void performNextUpdate(Observer<? super OrderBook> observer, BittrexOrderBook bittrexOrderBook) {
+  protected OrderBook updateOrderBook(BittrexOrderBook bittrexOrderBook) {
     if (orderBookReference != null) {
 
       // update bids
@@ -169,8 +167,9 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
       orderBookReference.setMetadata(metadata);
 
-      observer.onNext(orderBookReference);
+      return orderBookReference;
     }
+    return null;
   }
 
   /**
