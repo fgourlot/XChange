@@ -2,11 +2,13 @@ package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBook;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
@@ -32,21 +34,31 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final BittrexStreamingService service;
   private final BittrexMarketDataService bittrexMarketDataService;
 
-  /** OrderBookV3 Cache (requested via Bittrex REST API) */
+  /**
+   * OrderBookV3 Cache (requested via Bittrex REST API)
+   */
   private HashMap<CurrencyPair, Pair<OrderBook, String>> orderBookV3Cache;
 
   private LinkedList<BittrexOrderBook> bittrexOrderBookQueue;
 
-  /** Current sequence number (to be increased after each message) */
+  /**
+   * Current sequence number (to be increased after each message)
+   */
   private int currentSequenceNumber = 0;
 
-  /** First Sequence Number verification flag */
+  /**
+   * First Sequence Number verification flag
+   */
   private boolean firstSequenceNumberVerified = false;
 
-  /** Object mapper for JSON parsing */
+  /**
+   * Object mapper for JSON parsing
+   */
   private ObjectMapper objectMapper;
 
-  /** OrderBook snapshot reference to be updated after each WebSocket message */
+  /**
+   * OrderBook snapshot reference to be updated after each WebSocket message
+   */
   OrderBook orderBookReference;
 
   public BittrexStreamingMarketDataService(
@@ -75,8 +87,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                     String decompressedMessage = EncryptionUtility.decompress(message);
                     LOG.debug("Decompressed orderbook message : {}", decompressedMessage);
                     // parse JSON to Object
-                    BittrexOrderBook bittrexOrderBook =
-                        objectMapper.readValue(decompressedMessage, BittrexOrderBook.class);
+                    BittrexOrderBook bittrexOrderBook = objectMapper.readValue(decompressedMessage, BittrexOrderBook.class);
                     // check sequence before dispatch
                     if (!firstSequenceNumberVerified) {
                       // add to queue for further verifications
@@ -89,17 +100,12 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                       currentSequenceNumber = bittrexOrderBook.getSequence();
                       updateOrderBook(orderBookReference, bittrexOrderBook);
                       OrderBook orderBookClone =
-                          new OrderBook(
-                              Optional.ofNullable(orderBookReference.getTimeStamp())
-                                  .map(Date::getTime)
-                                  .map(Date::new)
-                                  .orElse(null),
-                              orderBookReference.getAsks().stream()
-                                  .map(order -> LimitOrder.Builder.from(order).build()),
-                              orderBookReference.getBids().stream()
-                                  .map(order -> LimitOrder.Builder.from(order).build()));
-                      Map<String, Object> metadata =
-                          Map.of(BittrexDepthV3.SEQUENCE, currentSequenceNumber);
+                          new OrderBook(null,
+                                        orderBookReference.getAsks().stream()
+                                                          .map(order -> LimitOrder.Builder.from(order).build()),
+                                        orderBookReference.getBids().stream()
+                                                          .map(order -> LimitOrder.Builder.from(order).build()));
+                      Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, currentSequenceNumber);
                       orderBookClone.setMetadata(metadata);
                       observer.onNext(orderBookClone);
                     }
@@ -132,9 +138,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @param updates
    * @return
    */
-  protected static OrderBook updateOrderBook(
-      OrderBook orderBookToUpdate, BittrexOrderBook updates) {
-    applyUpdates(orderBookToUpdate, updates);
+  protected static OrderBook updateOrderBook(OrderBook orderBookToUpdate, BittrexOrderBook updates) {
+    CurrencyPair market = BittrexUtils.toCurrencyPair(updates.getMarketSymbol(), true);
+    applyUpdates(orderBookToUpdate, updates.getAskDeltas(), Order.OrderType.ASK, market);
+    applyUpdates(orderBookToUpdate, updates.getBidDeltas(), Order.OrderType.BID, market);
     Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, updates.getSequence());
     orderBookToUpdate.setMetadata(metadata);
     return orderBookToUpdate;
@@ -148,34 +155,22 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @param orderType
    * @param market
    */
-  private static void applyUpdates(
-      OrderBook orderBookToUpdate,
-      BittrexOrderBookEntry[] updates,
-      Order.OrderType orderType,
-      CurrencyPair market) {
-    Arrays.stream(updates)
-        .forEach(
-            update -> {
-              if (BigDecimal.ZERO.compareTo(update.getQuantity()) == 0) {
-                orderBookToUpdate
-                    .getOrders(orderType)
-                    .removeIf(order -> order.getLimitPrice().compareTo(update.getRate()) == 0);
-              } else {
-                LimitOrder limitOrderUpdate =
-                    new LimitOrder.Builder(orderType, market)
-                        .originalAmount(update.getQuantity())
-                        .limitPrice(update.getRate())
-                        .build();
-                orderBookToUpdate.update(limitOrderUpdate);
-              }
-            });
-  }
-
-  private static void applyUpdates(
-      OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook) {
-    CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBook.getMarketSymbol(), true);
-    applyUpdates(orderBookReference, bittrexOrderBook.getAskDeltas(), Order.OrderType.ASK, market);
-    applyUpdates(orderBookReference, bittrexOrderBook.getBidDeltas(), Order.OrderType.BID, market);
+  private static void applyUpdates(OrderBook orderBookToUpdate,
+                                   BittrexOrderBookEntry[] updates,
+                                   Order.OrderType orderType,
+                                   CurrencyPair market) {
+    Arrays.stream(updates).forEach(update -> {
+      if (BigDecimal.ZERO.compareTo(update.getQuantity()) == 0) {
+        orderBookToUpdate.getOrders(orderType)
+                         .removeIf(order -> order.getLimitPrice().compareTo(update.getRate()) == 0);
+      } else {
+        LimitOrder limitOrderUpdate = new LimitOrder.Builder(orderType, market)
+            .originalAmount(update.getQuantity())
+            .limitPrice(update.getRate())
+            .build();
+        orderBookToUpdate.update(limitOrderUpdate);
+      }
+    });
   }
 
   /**
@@ -191,8 +186,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       // get OrderBookV3 via REST
       LOG.debug("Getting OrderBook V3 via REST for Currency Pair {} ...", currencyPair);
       Pair<OrderBook, String> orderBookV3 = bittrexMarketDataService.getOrderBookV3(currencyPair);
-      LOG.debug(
-          "Received OrderBook V3 for Currency Pair {} : {}", currencyPair, orderBookV3.getLeft());
+      LOG.debug("Received OrderBook V3 for Currency Pair {} : {}", currencyPair, orderBookV3.getLeft());
       LOG.debug("OrderBook V3 Sequence number : {}", orderBookV3.getRight());
       orderBookV3Cache.put(currencyPair, orderBookV3);
       int orderBookV3SequenceNumber = Integer.parseInt(orderBookV3.getRight());
