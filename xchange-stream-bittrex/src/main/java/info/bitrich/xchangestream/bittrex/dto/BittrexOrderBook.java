@@ -9,7 +9,12 @@ public class BittrexOrderBook {
 
   public BittrexOrderBook() {}
 
-  public BittrexOrderBook(String marketSymbol, int depth, int sequence, BittrexOrderBookEntry[] askDeltas, BittrexOrderBookEntry[] bidDeltas) {
+  public BittrexOrderBook(
+      String marketSymbol,
+      int depth,
+      int sequence,
+      BittrexOrderBookEntry[] askDeltas,
+      BittrexOrderBookEntry[] bidDeltas) {
     this.marketSymbol = marketSymbol;
     this.depth = depth;
     this.sequence = sequence;

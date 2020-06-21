@@ -17,58 +17,61 @@ import java.math.BigDecimal;
 
 public class BittrexStreamingAccountService implements StreamingAccountService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingAccountService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingAccountService.class);
 
-    private final BittrexStreamingService service;
+  private final BittrexStreamingService service;
 
-    ObjectMapper objectMapper;
+  ObjectMapper objectMapper;
 
-    public BittrexStreamingAccountService(BittrexStreamingService service) {
-        this.service = service;
-        objectMapper = new ObjectMapper();
-    }
+  public BittrexStreamingAccountService(BittrexStreamingService service) {
+    this.service = service;
+    objectMapper = new ObjectMapper();
+  }
 
-    @Override
-    public Observable<Balance> getBalanceChanges(Currency currency, Object... args) {
+  @Override
+  public Observable<Balance> getBalanceChanges(Currency currency, Object... args) {
 
-        String balanceChannel = "balance";
-        String[] channels = {balanceChannel};
-        LOG.info("Subscribing to channel : {}", balanceChannel);
+    String balanceChannel = "balance";
+    String[] channels = {balanceChannel};
+    LOG.info("Subscribing to channel : {}", balanceChannel);
 
-        Observable<Balance> obs =
-                new Observable<>() {
-                    @Override
-                    protected void subscribeActual(Observer<? super Balance> observer) {
-                        SubscriptionHandler1 balanceHandler =
-                                (SubscriptionHandler1<String>)
-                                        message -> {
-                                            LOG.debug("Incoming balance message : {}", message);
-                                            try {
-                                                String decommpressedMessage = EncryptionUtility.decompress(message);
-                                                LOG.debug("Decompressed balance message : {}", decommpressedMessage);
-                                                // parse JSON to Object
-                                                BittrexBalance bittrexBalance =
-                                                        objectMapper.readValue(decommpressedMessage, BittrexBalance.class);
-                                                // forge OrderBook from BittrexOrderBook
-                                                Balance balance = bittrexBalanceToBalance(bittrexBalance);
-                                                observer.onNext(balance);
-                                            } catch (IOException e) {
-                                                e.printStackTrace();
-                                            }
-                                        };
-                        service.setHandler("balance", balanceHandler);
-                    }
-                };
+    Observable<Balance> obs =
+        new Observable<>() {
+          @Override
+          protected void subscribeActual(Observer<? super Balance> observer) {
+            SubscriptionHandler1 balanceHandler =
+                (SubscriptionHandler1<String>)
+                    message -> {
+                      LOG.debug("Incoming balance message : {}", message);
+                      try {
+                        String decommpressedMessage = EncryptionUtility.decompress(message);
+                        LOG.debug("Decompressed balance message : {}", decommpressedMessage);
+                        // parse JSON to Object
+                        BittrexBalance bittrexBalance =
+                            objectMapper.readValue(decommpressedMessage, BittrexBalance.class);
+                        // forge OrderBook from BittrexOrderBook
+                        Balance balance = bittrexBalanceToBalance(bittrexBalance);
+                        observer.onNext(balance);
+                      } catch (IOException e) {
+                        e.printStackTrace();
+                      }
+                    };
+            service.setHandler("balance", balanceHandler);
+          }
+        };
 
+    this.service.subscribeToChannels(channels);
 
-        this.service.subscribeToChannels(channels);
+    return obs;
+  }
 
-        return obs;
-    }
-
-    private Balance bittrexBalanceToBalance(BittrexBalance bittrexBalance) {
-        BittrexBalanceDelta balanceDelta = bittrexBalance.getDelta();
-        Balance balance = new Balance(balanceDelta.getCurrencySymbol(), BigDecimal.valueOf(balanceDelta.getTotal()), BigDecimal.valueOf(balanceDelta.getAvailable()));
-        return balance;
-    }
+  private Balance bittrexBalanceToBalance(BittrexBalance bittrexBalance) {
+    BittrexBalanceDelta balanceDelta = bittrexBalance.getDelta();
+    Balance balance =
+        new Balance(
+            balanceDelta.getCurrencySymbol(),
+            BigDecimal.valueOf(balanceDelta.getTotal()),
+            BigDecimal.valueOf(balanceDelta.getAvailable()));
+    return balance;
+  }
 }

@@ -29,7 +29,8 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
     streamingService = new BittrexStreamingService(API_BASE_URI, exchangeSpecification);
     streamingAccountService = new BittrexStreamingAccountService(streamingService);
     bittrexMarketDataService = new BittrexMarketDataService(this);
-    streamingMarketDataService = new BittrexStreamingMarketDataService(streamingService, bittrexMarketDataService);
+    streamingMarketDataService =
+        new BittrexStreamingMarketDataService(streamingService, bittrexMarketDataService);
   }
 
   public io.reactivex.Completable connect(ProductSubscription... args) {
@@ -49,7 +50,9 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
     return streamingMarketDataService;
   }
 
-  public StreamingAccountService getStreamingAccountService() { return streamingAccountService; }
+  public StreamingAccountService getStreamingAccountService() {
+    return streamingAccountService;
+  }
 
   public void useCompressedMessages(boolean compressedMessages) {}
 }
