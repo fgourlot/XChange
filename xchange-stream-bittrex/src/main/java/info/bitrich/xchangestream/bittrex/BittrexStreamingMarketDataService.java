@@ -82,7 +82,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
           @Override
           protected void subscribeActual(Observer<? super OrderBook> observer) {
             // create handler for `orderbook` messages
-            SubscriptionHandler1 orderBookHandler = (SubscriptionHandler1<String>)
+            SubscriptionHandler1<String> orderBookHandler =
                 message -> {
                   LOG.debug("Incoming orderbook message : {}", message);
                   try {
@@ -104,7 +104,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                       observer.onNext(orderBookClone);
                     }
                   } catch (IOException e) {
-                    e.printStackTrace();
+                    LOG.error("Error while receiving and treating orderbook message", e);
                     throw new RuntimeException(e);
                   }
                 };
@@ -167,7 +167,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @throws IOException
    */
   private OrderBook getOrderBookReference(CurrencyPair currencyPair) throws IOException {
-    if (bittrexOrderBookQueue.size() > 0) {
+    if (!bittrexOrderBookQueue.isEmpty()) {
       // get OrderBookV3 via REST
       LOG.debug("Getting OrderBook V3 via REST for Currency Pair {} ...", currencyPair);
       Pair<OrderBook, String> orderBookV3 = bittrexMarketDataService.getOrderBookV3(currencyPair);
@@ -177,10 +177,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       int orderBookV3SequenceNumber = Integer.parseInt(orderBookV3.getRight());
       if (orderBookV3SequenceNumber > bittrexOrderBookQueue.getFirst().getSequence()) {
         LOG.info("Reference verified ! Start sequence number is : {}", orderBookV3SequenceNumber);
-        OrderBook orderBookReference = orderBookV3.getLeft();
+        OrderBook bookReference = orderBookV3.getLeft();
         this.firstSequenceNumberVerified = true;
         currentSequenceNumber = orderBookV3SequenceNumber;
-        return orderBookReference;
+        return bookReference;
       }
     }
     return null;
