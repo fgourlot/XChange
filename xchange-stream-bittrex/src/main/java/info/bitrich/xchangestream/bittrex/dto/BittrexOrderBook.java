@@ -1,7 +1,5 @@
 package info.bitrich.xchangestream.bittrex.dto;
 
-import org.knowm.xchange.currency.CurrencyPair;
-
 public class BittrexOrderBook {
   private String marketSymbol;
   private int depth;

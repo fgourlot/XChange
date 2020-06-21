@@ -60,6 +60,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private ObjectMapper objectMapper;
 
+  /**
+   * OrderBook snapshot reference
+   * to be updated after each WebSocket message
+   */
   OrderBook orderBookReference;
 
   public BittrexStreamingMarketDataService(BittrexStreamingService service, BittrexMarketDataService bittrexMarketDataService) {
@@ -76,6 +80,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
     // create result Observable
     Observable<OrderBook> obs =
+            
         new Observable<>() {
           @Override
           protected void subscribeActual(Observer<? super OrderBook> observer) {
@@ -167,7 +172,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   /**
    * Verify first BittrexOrderBook sequence number
    * with OrderBook V3 sequence number (requested via Bittrex REST API)
-   *
+   * When sequence number is verified, set current sequence number
+   * and return OrderBook snapshot reference
    * @param currencyPair
    * @throws IOException
    */

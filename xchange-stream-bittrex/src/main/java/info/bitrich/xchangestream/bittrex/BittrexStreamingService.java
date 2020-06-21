@@ -1,5 +1,6 @@
 package info.bitrich.xchangestream.bittrex;
 
+import com.github.signalr4j.client.ConnectionState;
 import com.github.signalr4j.client.hubs.HubConnection;
 import com.github.signalr4j.client.hubs.HubProxy;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
@@ -62,6 +63,10 @@ public class BittrexStreamingService {
 
   public void setHandler(String eventName, SubscriptionHandler1 handler) {
     _hubProxy.on(eventName, handler, String.class);
+  }
+
+  public ConnectionState getConnexionState() {
+    return _hubConnection.getState();
   }
 
   private void connectedToWebSocket() {
