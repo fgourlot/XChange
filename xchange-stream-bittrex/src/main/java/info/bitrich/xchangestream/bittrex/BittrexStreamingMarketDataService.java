@@ -123,32 +123,32 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   /**
    * Update a given OrderBook with Bittrex deltas in a BittrexOrderBook message
    *
-   * @param orderBookReference
-   * @param bittrexOrderBook
+   * @param orderBookToUpdate
+   * @param updates
    * @return
    */
-  protected static OrderBook updateOrderBook(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook) {
-    applyUpdates(orderBookReference, bittrexOrderBook);
-    Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
-    orderBookReference.setMetadata(metadata);
-    return orderBookReference;
+  protected static OrderBook updateOrderBook(OrderBook orderBookToUpdate, BittrexOrderBook updates) {
+    applyUpdates(orderBookToUpdate, updates);
+    Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, updates.getSequence());
+    orderBookToUpdate.setMetadata(metadata);
+    return orderBookToUpdate;
   }
 
   /**
    * Effective orders updates method (add and delete)
    *
-   * @param orderBookReference
+   * @param orderBookToUpdate
    * @param updates
    * @param orderType
    * @param market
    */
-  private static void applyUpdates(OrderBook orderBookReference, BittrexOrderBookEntry[] updates, Order.OrderType orderType, CurrencyPair market) {
+  private static void applyUpdates(OrderBook orderBookToUpdate, BittrexOrderBookEntry[] updates, Order.OrderType orderType, CurrencyPair market) {
     Arrays.stream(updates).forEach(update -> {
       if (BigDecimal.ZERO.compareTo(update.getQuantity()) == 0) {
-        orderBookReference.getOrders(orderType).removeIf(order -> order.getLimitPrice().compareTo(update.getRate()) == 0);
+        orderBookToUpdate.getOrders(orderType).removeIf(order -> order.getLimitPrice().compareTo(update.getRate()) == 0);
       } else {
         LimitOrder limitOrderUpdate = new LimitOrder.Builder(orderType, market).originalAmount(update.getQuantity()).limitPrice(update.getRate()).build();
-        orderBookReference.update(limitOrderUpdate);
+        orderBookToUpdate.update(limitOrderUpdate);
       }
     });
   }
