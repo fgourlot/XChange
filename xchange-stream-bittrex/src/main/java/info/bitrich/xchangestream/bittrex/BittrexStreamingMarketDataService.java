@@ -99,8 +99,9 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                     } else if (bittrexOrderBook.getSequence() == (currentSequenceNumber + 1)) {
                       LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
                       currentSequenceNumber = bittrexOrderBook.getSequence();
-                      orderBookReference = updateOrderBook(orderBookReference, bittrexOrderBook);
-                      observer.onNext(orderBookReference);
+                      updateOrderBook(orderBookReference, bittrexOrderBook);
+                      OrderBook orderBookClone = SerializationUtils.clone(orderBookReference);
+                      observer.onNext(orderBookClone);
                     }
                   } catch (IOException e) {
                     e.printStackTrace();
@@ -128,11 +129,9 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   protected static OrderBook updateOrderBook(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook) {
     applyUpdates(orderBookReference, bittrexOrderBook);
-    OrderBook orderBookClone = SerializationUtils.clone(orderBookReference);
-    // set metadata
-    Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence() + 1);
-    orderBookClone.setMetadata(metadata);
-    return orderBookClone;
+    Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence());
+    orderBookReference.setMetadata(metadata);
+    return orderBookReference;
   }
 
   /**
