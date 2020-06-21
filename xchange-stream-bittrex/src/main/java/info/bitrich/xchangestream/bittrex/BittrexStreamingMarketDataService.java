@@ -159,18 +159,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                                    BittrexOrderBookEntry[] updates,
                                    Order.OrderType orderType,
                                    CurrencyPair market) {
-    Arrays.stream(updates).forEach(update -> {
-      if (BigDecimal.ZERO.compareTo(update.getQuantity()) == 0) {
-        orderBookToUpdate.getOrders(orderType)
-                         .removeIf(order -> order.getLimitPrice().compareTo(update.getRate()) == 0);
-      } else {
-        LimitOrder limitOrderUpdate = new LimitOrder.Builder(orderType, market)
-            .originalAmount(update.getQuantity())
-            .limitPrice(update.getRate())
-            .build();
-        orderBookToUpdate.update(limitOrderUpdate);
-      }
-    });
+    Arrays.stream(updates)
+          .map(update -> new LimitOrder.Builder(orderType, market).originalAmount(update.getQuantity())
+                                                                  .limitPrice(update.getRate())
+                                                                  .build())
+          .forEach(orderBookToUpdate::update);
   }
 
   /**
