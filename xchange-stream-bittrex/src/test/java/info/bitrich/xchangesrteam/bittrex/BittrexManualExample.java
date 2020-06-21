@@ -126,11 +126,11 @@ public class BittrexManualExample {
                                       }
                                     },
                                     0,
-                                    TimeUnit.SECONDS.toMillis(5));
+                                    TimeUnit.SECONDS.toMillis(3));
 
     // Let it run for 20_000ms
     try {
-      Thread.sleep(20_000);
+      Thread.sleep(30_000);
     } catch (InterruptedException e) {
       e.printStackTrace();
     } finally {

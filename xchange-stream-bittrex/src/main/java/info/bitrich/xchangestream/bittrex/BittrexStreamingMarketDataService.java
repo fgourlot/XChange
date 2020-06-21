@@ -2,13 +2,16 @@ package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBook;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
+
 import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.tuple.Pair;
+import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -26,6 +29,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
@@ -72,38 +76,38 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
     // create result Observable
     Observable<OrderBook> obs =
-            new Observable<>() {
-              @Override
-              protected void subscribeActual(Observer<? super OrderBook> observer) {
-                // create handler for `orderbook` messages
-                SubscriptionHandler1 orderBookHandler = (SubscriptionHandler1<String>)
-                        message -> {
-                          LOG.debug("Incoming orderbook message : {}", message);
-                          try {
-                            String decompressedMessage = EncryptionUtility.decompress(message);
-                            LOG.debug("Decompressed orderbook message : {}", decompressedMessage);
-                            // parse JSON to Object
-                            BittrexOrderBook bittrexOrderBook = objectMapper.readValue(decompressedMessage, BittrexOrderBook.class);
-                            // check sequence before dispatch
-                            if (!firstSequenceNumberVerified) {
-                              // add to queue for further verifications
-                              bittrexOrderBookQueue.add(bittrexOrderBook);
-                              // check first orderbook sequence number
-                              orderBookReference = getOrderBookReference(currencyPair);
-                            } else if (bittrexOrderBook.getSequence() == (currentSequenceNumber + 1)) {
-                              LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
-                              currentSequenceNumber = bittrexOrderBook.getSequence();
-                              orderBookReference = updateOrderBook(orderBookReference, bittrexOrderBook);
-                              observer.onNext(orderBookReference);
-                            }
-                          } catch (IOException e) {
-                            e.printStackTrace();
-                            throw new RuntimeException(e);
-                          }
-                        };
-                service.setHandler("orderbook", orderBookHandler);
-              }
-            };
+        new Observable<>() {
+          @Override
+          protected void subscribeActual(Observer<? super OrderBook> observer) {
+            // create handler for `orderbook` messages
+            SubscriptionHandler1 orderBookHandler = (SubscriptionHandler1<String>)
+                message -> {
+                  LOG.debug("Incoming orderbook message : {}", message);
+                  try {
+                    String decompressedMessage = EncryptionUtility.decompress(message);
+                    LOG.debug("Decompressed orderbook message : {}", decompressedMessage);
+                    // parse JSON to Object
+                    BittrexOrderBook bittrexOrderBook = objectMapper.readValue(decompressedMessage, BittrexOrderBook.class);
+                    // check sequence before dispatch
+                    if (!firstSequenceNumberVerified) {
+                      // add to queue for further verifications
+                      bittrexOrderBookQueue.add(bittrexOrderBook);
+                      // check first orderbook sequence number
+                      orderBookReference = getOrderBookReference(currencyPair);
+                    } else if (bittrexOrderBook.getSequence() == (currentSequenceNumber + 1)) {
+                      LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
+                      currentSequenceNumber = bittrexOrderBook.getSequence();
+                      orderBookReference = updateOrderBook(orderBookReference, bittrexOrderBook);
+                      observer.onNext(orderBookReference);
+                    }
+                  } catch (IOException e) {
+                    e.printStackTrace();
+                    throw new RuntimeException(e);
+                  }
+                };
+            service.setHandler("orderbook", orderBookHandler);
+          }
+        };
 
     String orderBookChannel = "orderbook_" + currencyPair.base.toString() + "-" + currencyPair.counter.toString() + "_500";
     String[] channels = {orderBookChannel};
@@ -124,10 +128,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     // apply updates
     applyUpdates(orderBookReference, bittrexOrderBook, Order.OrderType.ASK);
     applyUpdates(orderBookReference, bittrexOrderBook, Order.OrderType.BID);
-    // set metadata
-    HashMap<String, Object> metadata = new HashMap<>();
-    metadata.put(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence() + 1);
+
     OrderBook orderBookClone = SerializationUtils.clone(orderBookReference);
+    // set metadata
+    Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence() + 1);
     orderBookClone.setMetadata(metadata);
     return orderBookClone;
   }
@@ -140,43 +144,21 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @param orderType
    */
   private static void applyUpdates(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook, Order.OrderType orderType) {
-    // save orders to remove in a list
-    ArrayList<LimitOrder> ordersToRemove = new ArrayList<>();
-
+    List<LimitOrder> ordersToUpdate = Order.OrderType.ASK.equals(orderType) ? orderBookReference.getAsks() : orderBookReference.getBids();
     // iterate on Bittrex deltas
-    for (BittrexOrderBookEntry deltaEntry : orderType.equals(Order.OrderType.ASK) ? bittrexOrderBook.getAskDeltas() : bittrexOrderBook.getBidDeltas()) {
-      // remove orders of quantity 0
-      if (deltaEntry.getQuantity().compareTo(BigDecimal.ZERO) == 0) {
-        // iterate on all OrderBook orders to find orders to delete
-        List<LimitOrder> ordersList = orderType.equals(Order.OrderType.ASK) ? orderBookReference.getAsks() : orderBookReference.getBids();
-        ordersList.forEach(limitOrder -> {
-          if (limitOrder.getLimitPrice().compareTo(deltaEntry.getRate()) == 0) {
-            // add order to remove list
-            ordersToRemove.add(limitOrder);
-          }
-        });
+    for (BittrexOrderBookEntry deltaEntry : Order.OrderType.ASK.equals(orderType) ? bittrexOrderBook.getAskDeltas() : bittrexOrderBook.getBidDeltas()) {
+      if (BigDecimal.ZERO.compareTo(deltaEntry.getQuantity()) == 0) {
+        // remove orders of quantity 0
+        ordersToUpdate.removeIf(order -> order.getLimitPrice().compareTo(deltaEntry.getRate()) == 0);
       } else {
         // create and apply LimitOrder update
-        LimitOrder limitOrderUpdate = new LimitOrder(
-                orderType,
-                deltaEntry.getQuantity(),
-                bittrexMarketSymbolToCurrencyPair(bittrexOrderBook.getMarketSymbol()),
-                null,
-                null,
-                deltaEntry.getRate()
-        );
+        LimitOrder limitOrderUpdate =
+            new LimitOrder.Builder(orderType, BittrexUtils.toCurrencyPair(bittrexOrderBook.getMarketSymbol(), true))
+                .originalAmount(deltaEntry.getQuantity())
+                .limitPrice(deltaEntry.getRate()).build();
         orderBookReference.update(limitOrderUpdate);
       }
     }
-
-    // perform orders deletion on remove list
-    ordersToRemove.forEach(order -> {
-      if (orderType.equals(Order.OrderType.ASK)) {
-        orderBookReference.getAsks().remove(order);
-      } else {
-        orderBookReference.getBids().remove(order);
-      }
-    });
   }
 
   /**
