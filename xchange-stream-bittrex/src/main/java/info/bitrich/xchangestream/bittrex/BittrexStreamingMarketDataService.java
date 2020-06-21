@@ -32,6 +32,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
@@ -100,7 +101,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                       LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
                       currentSequenceNumber = bittrexOrderBook.getSequence();
                       updateOrderBook(orderBookReference, bittrexOrderBook);
-                      OrderBook orderBookClone = SerializationUtils.clone(orderBookReference);
+                      OrderBook orderBookClone = cloneOrderBook(orderBookReference);
                       observer.onNext(orderBookClone);
                     }
                   } catch (IOException e) {
@@ -118,6 +119,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.service.subscribeToChannels(channels);
 
     return obs;
+  }
+
+  private OrderBook cloneOrderBook(OrderBook bookToClone) {
+    OrderBook orderBookClone = new OrderBook(bookToClone.getTimeStamp(),
+                                             bookToClone.getAsks().stream().map(order -> LimitOrder.Builder.from(order).build()),
+                                             bookToClone.getBids().stream().map(order -> LimitOrder.Builder.from(order).build()));
+    orderBookClone.setMetadata(Map.of(BittrexDepthV3.SEQUENCE,
+                                      bookToClone.getMetadata().get(BittrexDepthV3.SEQUENCE).toString()));
+    return orderBookClone;
   }
 
   /**
