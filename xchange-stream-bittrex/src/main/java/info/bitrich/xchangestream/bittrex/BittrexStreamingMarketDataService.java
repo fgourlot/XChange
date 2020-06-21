@@ -1,15 +1,14 @@
 package info.bitrich.xchangestream.bittrex;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map;
+import java.util.Optional;
 
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBook;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
-import info.bitrich.xchangestream.core.StreamingMarketDataService;
-import io.reactivex.Observable;
-import io.reactivex.Observer;
-
-import org.apache.commons.lang3.SerializationUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
@@ -23,16 +22,14 @@ import org.knowm.xchange.dto.trade.LimitOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBook;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import io.reactivex.Observable;
+import io.reactivex.Observer;
 
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
@@ -101,7 +98,14 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                       LOG.debug("Emitting OrderBook with sequence {}", bittrexOrderBook.getSequence());
                       currentSequenceNumber = bittrexOrderBook.getSequence();
                       updateOrderBook(orderBookReference, bittrexOrderBook);
-                      OrderBook orderBookClone = cloneOrderBook(orderBookReference);
+                      OrderBook orderBookClone = new OrderBook(Optional.ofNullable(orderBookReference.getTimeStamp())
+                                                                       .map(Date::getTime)
+                                                                       .map(Date::new)
+                                                                       .orElse(null),
+                                                               orderBookReference.getAsks().stream().map(order -> LimitOrder.Builder.from(order).build()),
+                                                               orderBookReference.getBids().stream().map(order -> LimitOrder.Builder.from(order).build()));
+                      Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, currentSequenceNumber);
+                      orderBookClone.setMetadata(metadata);
                       observer.onNext(orderBookClone);
                     }
                   } catch (IOException e) {
@@ -119,15 +123,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.service.subscribeToChannels(channels);
 
     return obs;
-  }
-
-  private OrderBook cloneOrderBook(OrderBook bookToClone) {
-    OrderBook orderBookClone = new OrderBook(bookToClone.getTimeStamp(),
-                                             bookToClone.getAsks().stream().map(order -> LimitOrder.Builder.from(order).build()),
-                                             bookToClone.getBids().stream().map(order -> LimitOrder.Builder.from(order).build()));
-    orderBookClone.setMetadata(Map.of(BittrexDepthV3.SEQUENCE,
-                                      bookToClone.getMetadata().get(BittrexDepthV3.SEQUENCE).toString()));
-    return orderBookClone;
   }
 
   /**
