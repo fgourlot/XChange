@@ -15,11 +15,20 @@ import org.knowm.xchange.dto.trade.LimitOrder;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
 
+/**
+ * Utility class for the bittrex streaming.
+ */
 public final class BittrexStreamingUtils {
 
   private BittrexStreamingUtils() {
+    // Utility class
   }
 
+  /**
+   * Clone orders
+   * @param orders the orders to clone
+   * @return the cloned orders
+   */
   public static Stream<LimitOrder> cloneOrders(Collection<LimitOrder> orders) {
     return orders.stream().map(order -> LimitOrder.Builder.from(order).build());
   }
@@ -27,31 +36,31 @@ public final class BittrexStreamingUtils {
   /**
    * Update a given OrderBook with Bittrex deltas in a BittrexOrderBook message
    *
-   * @param orderBookToUpdate
-   * @param updates
-   * @return
+   * @param orderBookToUpdate the order book to update
+   * @param updates the updates to apply
+   * @return the updated order book
    */
   public static OrderBook updateOrderBook(OrderBook orderBookToUpdate, BittrexOrderBookDeltas updates) {
     CurrencyPair market = BittrexUtils.toCurrencyPair(updates.getMarketSymbol(), true);
-    applyUpdates(orderBookToUpdate, updates.getAskDeltas(), Order.OrderType.ASK, market);
-    applyUpdates(orderBookToUpdate, updates.getBidDeltas(), Order.OrderType.BID, market);
+    applyOrderBookUpdates(orderBookToUpdate, updates.getAskDeltas(), Order.OrderType.ASK, market);
+    applyOrderBookUpdates(orderBookToUpdate, updates.getBidDeltas(), Order.OrderType.BID, market);
     Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, updates.getSequence());
     orderBookToUpdate.setMetadata(metadata);
     return orderBookToUpdate;
   }
 
   /**
-   * Effective orders updates method (add and delete)
+   * Apply updates to an order book.
    *
-   * @param orderBookToUpdate
-   * @param updates
-   * @param orderType
-   * @param market
+   * @param orderBookToUpdate the order book to update
+   * @param updates the updates to apply
+   * @param orderType the order book side to update (bids or asks)
+   * @param market the market name
    */
-  public static void applyUpdates(OrderBook orderBookToUpdate,
-                                  BittrexOrderBookEntry[] updates,
-                                  Order.OrderType orderType,
-                                  CurrencyPair market) {
+  public static void applyOrderBookUpdates(OrderBook orderBookToUpdate,
+                                           BittrexOrderBookEntry[] updates,
+                                           Order.OrderType orderType,
+                                           CurrencyPair market) {
     Arrays.stream(updates)
           .map(update -> new LimitOrder.Builder(orderType, market).originalAmount(update.getQuantity())
                                                                   .limitPrice(update.getRate())
