@@ -1,8 +1,10 @@
 package info.bitrich.xchangestream.bittrex;
 
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBook;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
-import junit.framework.TestCase;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 import org.junit.Assert;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -10,12 +12,11 @@ import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import junit.framework.TestCase;
 
-public class BittrexStreamingMarketDataServiceTest extends TestCase {
+public class BittrexStreamingUtilsTest extends TestCase {
 
   public void testUpdateOrderBook() {
     CurrencyPair market = CurrencyPair.ETH_BTC;
@@ -70,13 +71,13 @@ public class BittrexStreamingMarketDataServiceTest extends TestCase {
     BittrexOrderBookEntry[] deltaBidsEntries = {deleteEntry};
     BittrexOrderBookEntry[] deltaAsksEntries = {deleteEntry3, addEntry, addEntry2, deleteEntry2};
 
-    BittrexOrderBook bittrexOrderBook =
-        new BittrexOrderBook(
+    BittrexOrderBookDeltas bittrexOrderBookDeltas =
+        new BittrexOrderBookDeltas(
             "ETH-BTC", 500, Integer.parseInt(sequence), deltaAsksEntries, deltaBidsEntries);
 
     // apply the updates
     OrderBook orderBookUpdated =
-        BittrexStreamingMarketDataService.updateOrderBook(orderBook, bittrexOrderBook);
+        BittrexStreamingUtils.updateOrderBook(orderBook, bittrexOrderBookDeltas);
 
     // Expected Orderbook
     List<LimitOrder> updatedBookBids = new ArrayList<>();
@@ -113,4 +114,5 @@ public class BittrexStreamingMarketDataServiceTest extends TestCase {
     // Test that the initial orderbook with deltas applied is equal to the expected orderbook
     Assert.assertTrue(orderBookUpdated.ordersEqual(expectedUpdatedOrderBook));
   }
+
 }

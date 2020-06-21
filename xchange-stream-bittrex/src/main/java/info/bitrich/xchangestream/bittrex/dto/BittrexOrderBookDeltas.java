@@ -1,15 +1,15 @@
 package info.bitrich.xchangestream.bittrex.dto;
 
-public class BittrexOrderBook {
+public class BittrexOrderBookDeltas {
   private String marketSymbol;
   private int depth;
   private int sequence;
   private BittrexOrderBookEntry askDeltas[];
   private BittrexOrderBookEntry bidDeltas[];
 
-  public BittrexOrderBook() {}
+  public BittrexOrderBookDeltas() {}
 
-  public BittrexOrderBook(
+  public BittrexOrderBookDeltas(
       String marketSymbol,
       int depth,
       int sequence,
