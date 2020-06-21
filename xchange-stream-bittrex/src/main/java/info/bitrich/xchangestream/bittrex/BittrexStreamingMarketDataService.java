@@ -25,7 +25,9 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -125,10 +127,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @return
    */
   protected static OrderBook updateOrderBook(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook) {
-    // apply updates
-    applyUpdates(orderBookReference, bittrexOrderBook, Order.OrderType.ASK);
-    applyUpdates(orderBookReference, bittrexOrderBook, Order.OrderType.BID);
-
+    applyUpdates(orderBookReference, bittrexOrderBook);
     OrderBook orderBookClone = SerializationUtils.clone(orderBookReference);
     // set metadata
     Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, bittrexOrderBook.getSequence() + 1);
@@ -140,25 +139,25 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * Effective orders updates method (add and delete)
    *
    * @param orderBookReference
-   * @param bittrexOrderBook
+   * @param updates
    * @param orderType
+   * @param market
    */
-  private static void applyUpdates(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook, Order.OrderType orderType) {
-    List<LimitOrder> ordersToUpdate = Order.OrderType.ASK.equals(orderType) ? orderBookReference.getAsks() : orderBookReference.getBids();
-    // iterate on Bittrex deltas
-    for (BittrexOrderBookEntry deltaEntry : Order.OrderType.ASK.equals(orderType) ? bittrexOrderBook.getAskDeltas() : bittrexOrderBook.getBidDeltas()) {
-      if (BigDecimal.ZERO.compareTo(deltaEntry.getQuantity()) == 0) {
-        // remove orders of quantity 0
-        ordersToUpdate.removeIf(order -> order.getLimitPrice().compareTo(deltaEntry.getRate()) == 0);
+  private static void applyUpdates(OrderBook orderBookReference, BittrexOrderBookEntry[] updates, Order.OrderType orderType, CurrencyPair market) {
+    Arrays.stream(updates).forEach(update -> {
+      if (BigDecimal.ZERO.compareTo(update.getQuantity()) == 0) {
+        orderBookReference.getOrders(orderType).removeIf(order -> order.getLimitPrice().compareTo(update.getRate()) == 0);
       } else {
-        // create and apply LimitOrder update
-        LimitOrder limitOrderUpdate =
-            new LimitOrder.Builder(orderType, BittrexUtils.toCurrencyPair(bittrexOrderBook.getMarketSymbol(), true))
-                .originalAmount(deltaEntry.getQuantity())
-                .limitPrice(deltaEntry.getRate()).build();
+        LimitOrder limitOrderUpdate = new LimitOrder.Builder(orderType, market).originalAmount(update.getQuantity()).limitPrice(update.getRate()).build();
         orderBookReference.update(limitOrderUpdate);
       }
-    }
+    });
+  }
+
+  private static void applyUpdates(OrderBook orderBookReference, BittrexOrderBook bittrexOrderBook) {
+    CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBook.getMarketSymbol(), true);
+    applyUpdates(orderBookReference, bittrexOrderBook.getAskDeltas(), Order.OrderType.ASK, market);
+    applyUpdates(orderBookReference, bittrexOrderBook.getBidDeltas(), Order.OrderType.BID, market);
   }
 
   /**
@@ -198,15 +197,5 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   public Observable<Trade> getTrades(CurrencyPair currencyPair, Object... args) {
     // TODO
     return null;
-  }
-
-  /**
-   * Converts a Bittrex marketSymbol (String with `-` separator) to CurrencyPair
-   *
-   * @param bittrexMarketSymbol
-   * @return
-   */
-  private static CurrencyPair bittrexMarketSymbolToCurrencyPair(String bittrexMarketSymbol) {
-    return new CurrencyPair(bittrexMarketSymbol.replace("-", "/"));
   }
 }
