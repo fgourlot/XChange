@@ -1,13 +1,11 @@
 package info.bitrich.xchangestream.bittrex;
 
-import com.github.signalr4j.client.ConnectionState;
 import com.github.signalr4j.client.hubs.HubConnection;
 import com.github.signalr4j.client.hubs.HubProxy;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
 import org.knowm.xchange.ExchangeSpecification;
-import org.knowm.xchange.service.account.AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,8 +22,6 @@ public class BittrexStreamingService {
 
   private HubConnection _hubConnection;
   private HubProxy _hubProxy;
-
-  private AccountService accountService;
 
   public BittrexStreamingService(String apiUrl, ExchangeSpecification exchangeSpecification) {
     this.exchangeSpecification = exchangeSpecification;
