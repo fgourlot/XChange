@@ -62,10 +62,6 @@ public class BittrexStreamingService {
     _hubProxy.on(eventName, handler, String.class);
   }
 
-  public ConnectionState getConnexionState() {
-    return _hubConnection.getState();
-  }
-
   private void connectedToWebSocket() {
     this.setupAutoReAuthentication();
     this.authenticate();
@@ -77,6 +73,7 @@ public class BittrexStreamingService {
     Long ts = date.getTime();
     UUID uuid = UUID.randomUUID();
     String randomContent = ts.toString() + uuid.toString();
+
     try {
       String signedContent =
           EncryptionUtility.calculateHash(
@@ -95,7 +92,7 @@ public class BittrexStreamingService {
               })
           .done(
               obj -> {
-                LOG.info("Authentication success");
+                LOG.info("Authentication success {}");
               });
     } catch (InvalidKeyException e) {
       e.printStackTrace();
