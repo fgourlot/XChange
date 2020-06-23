@@ -26,8 +26,8 @@ public final class OrderBook implements Serializable {
   private final List<LimitOrder> bids;
   /** the timestamp of the orderbook according to the exchange's server, null if not provided */
   private Date timeStamp;
-  /** the metadata, possibly provided by the api*/
-  private Map<String,Object> metadata;
+  /** the metadata, possibly provided by the api */
+  private Map<String, Serializable> metadata;
 
   /**
    * Constructor
@@ -266,21 +266,25 @@ public final class OrderBook implements Serializable {
     return thisOb.equals(thatOb);
   }
 
-  public Map<String, Object> getMetadata() {
+  public Map<String, Serializable> getMetadata() {
     return metadata;
   }
 
-  public void setMetadata(Map<String, Object> metadata) {
+  public void setMetadata(Map<String, Serializable> metadata) {
     this.metadata = metadata;
   }
 
   @Override
   public String toString() {
-    return "OrderBook{" +
-        "asks=" + asks +
-        ", bids=" + bids +
-        ", timeStamp=" + timeStamp +
-        ", metadata=" + metadata +
-        '}';
+    return "OrderBook{"
+        + "asks="
+        + asks
+        + ", bids="
+        + bids
+        + ", timeStamp="
+        + timeStamp
+        + ", metadata="
+        + metadata
+        + '}';
   }
 }
