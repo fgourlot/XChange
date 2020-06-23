@@ -134,6 +134,14 @@ public final class OrderBook implements Serializable {
     return type == OrderType.ASK ? asks : bids;
   }
 
+  public Map<String, Serializable> getMetadata() {
+    return metadata;
+  }
+
+  public void setMetadata(Map<String, Serializable> metadata) {
+    this.metadata = metadata;
+  }
+
   /**
    * Given a new LimitOrder, it will replace a matching limit order in the orderbook if one is
    * found, or add the new LimitOrder if one is not. timeStamp will be updated if the new timestamp
@@ -264,14 +272,6 @@ public final class OrderBook implements Serializable {
     OrderBook thisOb = new OrderBook(timestamp, this.getAsks(), this.getBids());
     OrderBook thatOb = new OrderBook(timestamp, ob.getAsks(), ob.getBids());
     return thisOb.equals(thatOb);
-  }
-
-  public Map<String, Serializable> getMetadata() {
-    return metadata;
-  }
-
-  public void setMetadata(Map<String, Serializable> metadata) {
-    this.metadata = metadata;
   }
 
   @Override

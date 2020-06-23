@@ -278,6 +278,11 @@ public final class Balance implements Comparable<Balance>, Serializable {
     return depositing;
   }
 
+  /**
+   * Returns the timestamp of the balance
+   *
+   * @return the timestamp.
+   */
   public Date getTimestamp() {
     return timestamp;
   }
