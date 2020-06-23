@@ -29,7 +29,6 @@ public class BittrexStreamingAccountServiceTest {
   static ExchangeSpecification exchangeSpecification;
   static CurrencyPair market = CurrencyPair.ETH_BTC;
   static StreamingExchange exchange;
-  static Optional<Timer> timer;
   String limitOrderId;
 
   @BeforeClass
@@ -97,7 +96,6 @@ public class BittrexStreamingAccountServiceTest {
     } finally {
       // Stopping everyone
       wsDisposable.dispose();
-      timer.ifPresent(Timer::cancel);
     }
   }
 }
