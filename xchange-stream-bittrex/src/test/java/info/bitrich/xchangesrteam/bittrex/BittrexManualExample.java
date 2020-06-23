@@ -12,6 +12,7 @@ import org.junit.Test;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
+import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.slf4j.Logger;
@@ -38,12 +39,19 @@ public class BittrexManualExample {
     StreamingExchange exchange =
         StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
     exchange.connect().blockingAwait();
+//        exchange
+//            .getStreamingMarketDataService()
+//            .getOrderBook(CurrencyPair.ETH_BTC)
+//            .subscribe(
+//                orderBook -> {
+//                  LOG.info("Received order book {}", orderBook);
+//                });
     exchange
-        .getStreamingMarketDataService()
-        .getOrderBook(CurrencyPair.ETH_BTC)
+        .getStreamingAccountService()
+        .getBalanceChanges(Currency.BTC)
         .subscribe(
-            orderBook -> {
-              LOG.info("Received order book {}", orderBook);
+            balance -> {
+              LOG.info("Received balance {}", balance);
             });
   }
 

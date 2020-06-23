@@ -2,18 +2,19 @@ package info.bitrich.xchangestream.bittrex.dto;
 
 import org.knowm.xchange.currency.Currency;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 public class BittrexBalanceDelta {
   private Currency currencySymbol;
-  private double total;
-  private double available;
+  private BigDecimal total;
+  private BigDecimal available;
   private Date updatedAt;
 
   public BittrexBalanceDelta() {}
 
   public BittrexBalanceDelta(
-      Currency currencySymbol, double total, double available, Date updatedAt) {
+          Currency currencySymbol, BigDecimal total, BigDecimal available, Date updatedAt) {
     this.currencySymbol = currencySymbol;
     this.total = total;
     this.available = available;
@@ -24,11 +25,11 @@ public class BittrexBalanceDelta {
     return currencySymbol;
   }
 
-  public double getTotal() {
+  public BigDecimal getTotal() {
     return total;
   }
 
-  public double getAvailable() {
+  public BigDecimal getAvailable() {
     return available;
   }
 
