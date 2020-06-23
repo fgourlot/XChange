@@ -1,5 +1,6 @@
 package info.bitrich.xchangestream.bittrex;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
@@ -44,7 +45,7 @@ public final class BittrexStreamingUtils {
     CurrencyPair market = BittrexUtils.toCurrencyPair(updates.getMarketSymbol(), true);
     applyOrderBookUpdates(orderBookToUpdate, updates.getAskDeltas(), Order.OrderType.ASK, market);
     applyOrderBookUpdates(orderBookToUpdate, updates.getBidDeltas(), Order.OrderType.BID, market);
-    Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, updates.getSequence());
+    Map<String, Serializable> metadata = Map.of(BittrexDepthV3.SEQUENCE, updates.getSequence());
     orderBookToUpdate.setMetadata(metadata);
     return orderBookToUpdate;
   }

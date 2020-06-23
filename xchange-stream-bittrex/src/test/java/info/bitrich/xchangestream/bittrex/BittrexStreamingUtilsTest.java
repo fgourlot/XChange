@@ -1,5 +1,6 @@
 package info.bitrich.xchangestream.bittrex;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
@@ -53,7 +54,7 @@ public class BittrexStreamingUtilsTest extends TestCase {
     bookAsks.add(ask3);
 
     OrderBook orderBook = new OrderBook(null, bookAsks, bookBids, true);
-    Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, sequence);
+    Map<String, Serializable> metadata = Map.of(BittrexDepthV3.SEQUENCE, sequence);
     orderBook.setMetadata(metadata);
 
     // delta entries to apply to the orderbook to update

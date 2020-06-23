@@ -1,6 +1,7 @@
 package info.bitrich.xchangestream.bittrex;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -99,7 +100,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                       OrderBook orderBookClone = new OrderBook(null,
                                                                BittrexStreamingUtils.cloneOrders(orderBookReference.getAsks()),
                                                                BittrexStreamingUtils.cloneOrders(orderBookReference.getBids()));
-                      Map<String, Object> metadata = Map.of(BittrexDepthV3.SEQUENCE, currentSequenceNumber);
+                      Map<String, Serializable> metadata = Map.of(BittrexDepthV3.SEQUENCE, currentSequenceNumber);
                       orderBookClone.setMetadata(metadata);
                       observer.onNext(orderBookClone);
                     }
