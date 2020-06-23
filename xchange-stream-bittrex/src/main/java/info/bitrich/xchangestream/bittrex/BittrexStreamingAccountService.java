@@ -12,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 
 public class BittrexStreamingAccountService implements StreamingAccountService {
 
@@ -45,15 +44,17 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
                     // parse JSON to Object
                     BittrexBalance bittrexBalance =
                         objectMapper.readValue(decompressedMessage, BittrexBalance.class);
-                    Balance balance = new Balance.Builder()
-                            .frozen(BigDecimal.ZERO)
-                            .currency(bittrexBalance.getDelta().getCurrencySymbol())
-                            .total(bittrexBalance.getDelta().getTotal())
-                            .available(bittrexBalance.getDelta().getAvailable())
-                            .build();
-                      LOG.debug(
-                              "Emitting Balance on currency {} with {} available on {} total", balance.getCurrency(), balance.getAvailable(), balance.getTotal());
-                      observer.onNext(balance);
+                    Balance balance =
+                        new Balance(
+                            bittrexBalance.getDelta().getCurrencySymbol(),
+                            bittrexBalance.getDelta().getTotal(),
+                            bittrexBalance.getDelta().getAvailable());
+                    LOG.debug(
+                        "Emitting Balance on currency {} with {} available on {} total",
+                        balance.getCurrency(),
+                        balance.getAvailable(),
+                        balance.getTotal());
+                    observer.onNext(balance);
 
                   } catch (IOException e) {
                     LOG.error("Error while receiving and treating balance message", e);
@@ -71,5 +72,4 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
 
     return obs;
   }
-
 }
