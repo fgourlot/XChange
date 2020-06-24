@@ -131,12 +131,7 @@ public class BittrexStreamingMarketDataServiceTest {
   }
 
   private int findBookInList(OrderBook b1, ArrayList<OrderBook> books) {
-    for (OrderBook book : books) {
-      if (b1.ordersEqual(book)) {
-        return books.indexOf(book);
-      }
-    }
-    return -1;
+    return books.stream().filter(b1::ordersEqual).findFirst().map(books::indexOf).orElse(-1);
   }
 
   @AfterClass
