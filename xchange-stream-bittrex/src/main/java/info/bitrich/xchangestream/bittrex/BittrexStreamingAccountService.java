@@ -45,10 +45,11 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
                     BittrexBalance bittrexBalance =
                         objectMapper.readValue(decompressedMessage, BittrexBalance.class);
                     Balance balance =
-                        new Balance(
-                            bittrexBalance.getDelta().getCurrencySymbol(),
-                            bittrexBalance.getDelta().getTotal(),
-                            bittrexBalance.getDelta().getUpdatedAt());
+                        new Balance.Builder()
+                        .currency(bittrexBalance.getDelta().getCurrencySymbol())
+                        .total(bittrexBalance.getDelta().getTotal())
+                        .timestamp(bittrexBalance.getDelta().getUpdatedAt())
+                        .build();
                     LOG.debug(
                         "Emitting Balance on currency {} with {} available on {} total",
                         balance.getCurrency(),
