@@ -25,11 +25,14 @@ import java.util.List;
 public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest {
   private static final Logger LOG =
       LoggerFactory.getLogger(BittrexStreamingAccountServiceTest.class);
+
+  /** Test order id for assertion */
   String limitOrderId;
 
   @Test
   public void balanceAfterOrderTest() {
 
+    // init services
     BittrexTradeService bittrexTradeService = new BittrexTradeService(exchange);
     BittrexMarketDataService marketDataService = new BittrexMarketDataService(this.exchange);
 
@@ -78,6 +81,7 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
               .originalAmount(tradeAmount)
               .build();
       limitOrderId = bittrexTradeService.placeLimitOrder(limitOrder);
+      LOG.info("Performed order with id : {}", limitOrderId);
     } catch (IOException e) {
       e.printStackTrace();
     }
