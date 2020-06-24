@@ -130,8 +130,8 @@ public class BittrexStreamingMarketDataServiceTest {
     Assert.assertEquals(indexes.stream().sorted().collect(Collectors.toList()), indexes);
   }
 
-  private int findBookInList(OrderBook b1, ArrayList<OrderBook> books) {
-    return books.stream().filter(b1::ordersEqual).findFirst().map(books::indexOf).orElse(-1);
+  private int findBookInList(OrderBook bookToFind, ArrayList<OrderBook> books) {
+    return books.stream().filter(bookToFind::ordersEqual).findFirst().map(books::indexOf).orElse(-1);
   }
 
   @AfterClass
