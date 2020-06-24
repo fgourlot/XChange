@@ -12,14 +12,21 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
+
+import org.knowm.xchange.bittrex.dto.BittrexBaseResponse;
+import org.knowm.xchange.bittrex.dto.BittrexException;
 import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalances;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOpenOrder;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOpenOrderV3;
 import org.knowm.xchange.bittrex.service.batch.BatchOrderResponse;
 import org.knowm.xchange.bittrex.service.batch.order.BatchOrder;
 import org.knowm.xchange.bittrex.service.batch.order.neworder.NewOrderPayload;
 import si.mazi.rescu.ParamsDigest;
+import si.mazi.rescu.SynchronizedValueFactory;
 
 @Path("v3")
 @Produces(MediaType.APPLICATION_JSON)
@@ -83,5 +90,14 @@ public interface BittrexAuthenticatedV3 extends BittrexV3 {
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
       @HeaderParam("Api-Signature") ParamsDigest signature,
       @PathParam("currencySymbol") String currencySymbol)
+      throws IOException;
+
+  @GET
+  @Path("orders/open")
+  Collection<BittrexOpenOrderV3> openorders(
+      @HeaderParam("Api-Key") String apiKey,
+      @HeaderParam("Api-Timestamp") Long timestamp,
+      @HeaderParam("Api-Content-Hash") ParamsDigest hash,
+      @HeaderParam("Api-Signature") ParamsDigest signature)
       throws IOException;
 }
