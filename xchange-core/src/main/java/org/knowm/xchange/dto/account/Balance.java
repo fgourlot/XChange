@@ -43,9 +43,8 @@ public final class Balance implements Comparable<Balance>, Serializable {
    *
    * @param currency The underlying currency
    * @param total The total
-   * @param timestamp Time the balance was valid on the exchange server
    */
-  public Balance(Currency currency, BigDecimal total, Date timestamp) {
+  public Balance(Currency currency, BigDecimal total) {
 
     this(
         currency,
@@ -56,7 +55,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
         BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
-        timestamp);
+        null);
   }
 
   /**
@@ -67,9 +66,8 @@ public final class Balance implements Comparable<Balance>, Serializable {
    * @param total the total amount of the <code>currency</code> in this balance.
    * @param available the amount of the <code>currency</code> in this balance that is available to
    *     trade.
-   * @param timestamp Time the balance was valid on the exchange server
    */
-  public Balance(Currency currency, BigDecimal total, BigDecimal available, Date timestamp) {
+  public Balance(Currency currency, BigDecimal total, BigDecimal available) {
 
     this(
         currency,
@@ -79,8 +77,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
         BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        timestamp);
+        BigDecimal.ZERO);
   }
 
   /**
@@ -93,14 +90,12 @@ public final class Balance implements Comparable<Balance>, Serializable {
    *     trade.
    * @param frozen the frozen amount of the <code>currency</code> in this balance that is locked in
    *     trading.
-   * @param timestamp Time the balance was valid on the exchange server
    */
   public Balance(
       Currency currency,
       BigDecimal total,
       BigDecimal available,
-      BigDecimal frozen,
-      Date timestamp) {
+      BigDecimal frozen) {
 
     this(
         currency,
@@ -111,7 +106,7 @@ public final class Balance implements Comparable<Balance>, Serializable {
         BigDecimal.ZERO,
         BigDecimal.ZERO,
         BigDecimal.ZERO,
-        timestamp);
+        null);
   }
 
   /**
@@ -164,6 +159,56 @@ public final class Balance implements Comparable<Balance>, Serializable {
     this.withdrawing = withdrawing;
     this.depositing = depositing;
     this.timestamp = timestamp;
+  }
+
+  /**
+   * Constructs a balance.
+   *
+   * @param currency the underlying currency of this balance.
+   * @param total the total amount of the <code>currency</code> in this balance, equal to <code>
+   *     available + frozen - borrowed + loaned</code>.
+   * @param available the amount of the <code>currency</code> in this balance that is available to
+   *     trade, including the <code>borrowed</code>.
+   * @param frozen the frozen amount of the <code>currency</code> in this balance that is locked in
+   *     trading.
+   * @param borrowed the borrowed amount of the available <code>currency</code> in this balance that
+   *     must be repaid.
+   * @param loaned the loaned amount of the total <code>currency</code> in this balance that will be
+   *     returned.
+   * @param withdrawing the amount of the <code>currency</code> in this balance that is scheduled
+   *     for withdrawal.
+   * @param depositing the amount of the <code>currency</code> in this balance that is being
+   *     deposited but not available yet.
+   */
+  public Balance(
+      Currency currency,
+      BigDecimal total,
+      BigDecimal available,
+      BigDecimal frozen,
+      BigDecimal borrowed,
+      BigDecimal loaned,
+      BigDecimal withdrawing,
+      BigDecimal depositing) {
+
+    if (total != null && available != null) {
+      BigDecimal sum =
+          available.add(frozen).subtract(borrowed).add(loaned).add(withdrawing).add(depositing);
+      if (0 != total.compareTo(sum)) {
+        log.warn(
+            "{} = total != available + frozen - borrowed + loaned + withdrawing + depositing = {}",
+            total,
+            sum);
+      }
+    }
+    this.currency = currency;
+    this.total = total;
+    this.available = available;
+    this.frozen = frozen;
+    this.borrowed = borrowed;
+    this.loaned = loaned;
+    this.withdrawing = withdrawing;
+    this.depositing = depositing;
+    this.timestamp = null;
   }
 
   /**
@@ -520,6 +565,8 @@ public final class Balance implements Comparable<Balance>, Serializable {
       if (frozen == null) {
         if (total == null || available == null) {
           frozen = BigDecimal.ZERO;
+        } else if (total != null) {
+          frozen = total.subtract(available);
         }
       }
 

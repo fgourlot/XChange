@@ -16,9 +16,8 @@ import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevelV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOpenOrder;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrderBase;
 import org.knowm.xchange.bittrex.dto.trade.BittrexUserTrade;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -61,35 +60,29 @@ public final class BittrexAdapters {
     return new CurrencyPair(baseSymbol, counterSymbol);
   }
 
-  public static List<LimitOrder> adaptOpenOrders(List<BittrexOpenOrder> bittrexOpenOrders) {
+  public static List<LimitOrder> adaptOpenOrders(List<BittrexOrderV3> bittrexOpenOrders) {
 
     List<LimitOrder> openOrders = new ArrayList<>();
 
-    for (BittrexOpenOrder order : bittrexOpenOrders) {
+    for (BittrexOrderV3 order : bittrexOpenOrders) {
       openOrders.add(adaptOrder(order));
     }
 
     return openOrders;
   }
 
-  public static LimitOrder adaptOrder(BittrexOrderBase order, OrderStatus status) {
+  public static LimitOrder adaptOrder(BittrexOrderV3 order, OrderStatus status) {
 
-    OrderType type =
-        order.getOrderType().equalsIgnoreCase("LIMIT_SELL") ? OrderType.ASK : OrderType.BID;
-    String[] currencies = order.getExchange().split("-");
-    CurrencyPair pair = new CurrencyPair(currencies[1], currencies[0]);
+    OrderType type = order.getDirection().equalsIgnoreCase("SELL") ? OrderType.ASK : OrderType.BID;
+    CurrencyPair pair = BittrexUtils.toCurrencyPair(order.getMarketSymbol(), true);
 
     return new LimitOrder.Builder(type, pair)
         .originalAmount(order.getQuantity())
-        .id(order.getOrderUuid())
-        .timestamp(order.getOpened())
+        .id(order.getId())
+        .timestamp(order.getUpdatedAt() != null ? order.getUpdatedAt() : order.getCreatedAt())
         .limitPrice(order.getLimit())
-        .averagePrice(order.getPricePerUnit())
-        .cumulativeAmount(
-            order.getQuantityRemaining() == null
-                ? null
-                : order.getQuantity().subtract(order.getQuantityRemaining()))
-        .fee(order.getCommissionPaid())
+        .remainingAmount(order.getQuantity().subtract(order.getFillQuantity()))
+        .fee(order.getCommission())
         .orderStatus(status)
         .build();
   }
@@ -140,11 +133,7 @@ public final class BittrexAdapters {
     return new LimitOrder(orderType, amount, currencyPair, id, null, price);
   }
 
-  public static LimitOrder adaptOrder(BittrexOrder order) {
-    return adaptOrder(order, adaptOrderStatus(order));
-  }
-
-  public static LimitOrder adaptOrder(BittrexOpenOrder order) {
+  public static LimitOrder adaptOrder(BittrexOrderV3 order) {
     return adaptOrder(order, adaptOrderStatus(order));
   }
 
@@ -175,21 +164,15 @@ public final class BittrexAdapters {
     return status;
   }
 
-  private static OrderStatus adaptOrderStatus(BittrexOpenOrder order) {
+  private static OrderStatus adaptOrderStatus(BittrexOrderV3 order) {
     OrderStatus status = OrderStatus.NEW;
-
     BigDecimal qty = order.getQuantity();
-    BigDecimal qtyRem =
-        order.getQuantityRemaining() != null ? order.getQuantityRemaining() : order.getQuantity();
-    Boolean isCancelling = order.getCancelInitiated();
+    BigDecimal qtyRem = order.getQuantity().subtract(order.getFillQuantity());
     int qtyRemainingToQty = qtyRem.compareTo(qty);
 
-    if (!isCancelling && qtyRemainingToQty < 0) {
+    if (qtyRemainingToQty < 0) {
       /* The order is open and remaining quantity less than order quantity */
       status = OrderStatus.PARTIALLY_FILLED;
-    } else if (isCancelling) {
-      /* The order is open and the isCancelling flag has been set */
-      status = OrderStatus.PENDING_CANCEL;
     }
     return status;
   }
@@ -267,14 +250,24 @@ public final class BittrexAdapters {
 
     for (BittrexBalanceV3 balance : balances) {
       wallets.add(
-          new Balance(balance.getCurrencySymbol(), balance.getTotal(), balance.getAvailable(), balance.getUpdatedAt()));
+          new Balance.Builder()
+          .currency(balance.getCurrencySymbol())
+          .total(balance.getTotal())
+          .available(balance.getAvailable())
+          .timestamp(balance.getUpdatedAt())
+          .build());
     }
 
     return Wallet.Builder.from(wallets).build();
   }
 
   public static Balance adaptBalance(BittrexBalanceV3 balance) {
-    return new Balance(balance.getCurrencySymbol(), balance.getTotal(), balance.getAvailable(), balance.getUpdatedAt());
+    return new Balance.Builder()
+        .currency(balance.getCurrencySymbol())
+        .total(balance.getTotal())
+        .available(balance.getAvailable())
+        .timestamp(balance.getUpdatedAt())
+        .build();
   }
 
   public static List<UserTrade> adaptUserTrades(List<BittrexUserTrade> bittrexUserTrades) {

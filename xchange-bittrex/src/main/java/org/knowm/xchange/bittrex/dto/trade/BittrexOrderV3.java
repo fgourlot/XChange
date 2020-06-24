@@ -5,12 +5,14 @@ import java.util.Date;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class BittrexOpenOrderV3 {
+@AllArgsConstructor
+public class BittrexOrderV3 {
 
   private String id;
   private String marketSymbol;

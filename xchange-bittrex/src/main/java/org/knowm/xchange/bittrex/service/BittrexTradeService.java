@@ -8,7 +8,7 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexAdapters;
 import org.knowm.xchange.bittrex.BittrexErrorAdapter;
 import org.knowm.xchange.bittrex.dto.BittrexException;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
 import org.knowm.xchange.bittrex.dto.trade.BittrexUserTrade;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
@@ -131,7 +131,7 @@ public class BittrexTradeService extends BittrexTradeServiceRaw implements Trade
 
       for (String orderId : orderIds) {
 
-        BittrexOrder order = getBittrexOrder(orderId);
+        BittrexOrderV3 order = getBittrexOrder(orderId);
         if (order != null) {
           LimitOrder limitOrder = BittrexAdapters.adaptOrder(order);
           orders.add(limitOrder);
