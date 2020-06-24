@@ -1,0 +1,32 @@
+package org.knowm.xchange.bittrex.dto.trade;
+
+import java.math.BigDecimal;
+import java.util.Date;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+@Data
+@NoArgsConstructor
+public class BittrexOpenOrderV3 {
+
+  private String id;
+  private String marketSymbol;
+  private String direction;
+  private String type;
+  private BigDecimal quantity;
+  private BigDecimal limit;
+  private BigDecimal ceiling;
+  private String timeInForce;
+  private String clientOrderId;
+  private BigDecimal fillQuantity;
+  private BigDecimal commission;
+  private BigDecimal proceeds;
+  private String status;
+  private Date createdAt;
+  private Date updatedAt;
+  private Date closedAt;
+  private OrderToCancel orderToCancel;
+}
