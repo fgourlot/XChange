@@ -4,6 +4,7 @@ import io.reactivex.disposables.Disposable;
 import org.junit.Assert;
 import org.junit.Test;
 import org.knowm.xchange.bittrex.BittrexUtils;
+import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
 import org.knowm.xchange.bittrex.service.BittrexTradeService;
@@ -12,9 +13,6 @@ import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.dto.trade.UserTrade;
-import org.knowm.xchange.dto.trade.UserTrades;
-import org.knowm.xchange.service.trade.params.DefaultTradeHistoryParamCurrencyPair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,18 +27,22 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
   /** Test order id for assertion */
   String limitOrderId;
 
+  BigDecimal availableCurrencyBeforeOrder;
+  BigDecimal orderCostWithFees;
+
   @Test
   public void balanceAfterOrderTest() {
 
     // init services
-    BittrexTradeService bittrexTradeService = new BittrexTradeService(exchange);
+    BittrexTradeService bittrexTradeService = new BittrexTradeService(this.exchange);
     BittrexMarketDataService marketDataService = new BittrexMarketDataService(this.exchange);
+    BittrexAccountService accountService = new BittrexAccountService(this.exchange);
 
     // test order params
     CurrencyPair currencyPair = CurrencyPair.ETH_BTC;
     Order.OrderType orderType = Order.OrderType.BID;
-    BigDecimal tradeAmount = new BigDecimal(0.1);
-    BigDecimal tradePrice = new BigDecimal(0);
+    BigDecimal orderAmount = new BigDecimal(0.1);
+    BigDecimal orderPrice = new BigDecimal(0);
 
     // get last bid order price from REST OrderBook
     try {
@@ -50,7 +52,14 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
       OrderBook orderBook = sequencedOrderBook.getOrderBook();
       List<LimitOrder> bidOrders = orderBook.getBids();
       LimitOrder lastBidOrder = bidOrders.get(bidOrders.size() - 1);
-      tradePrice = lastBidOrder.getLimitPrice();
+      orderPrice = lastBidOrder.getLimitPrice();
+      // calculate order cost
+      BigDecimal fees = new BigDecimal("1.002");
+      BigDecimal orderCost = orderPrice.multiply(orderAmount);
+      orderCostWithFees = orderCost.multiply(fees);
+      // get available currency
+      availableCurrencyBeforeOrder = accountService.getBittrexBalance(Currency.BTC).getAvailable();
+      LOG.info("available before trade {}", availableCurrencyBeforeOrder);
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -64,21 +73,16 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
             .subscribe(
                 balance -> {
                   LOG.debug("Received balance : {}", balance);
-                  // get trade history
-                  DefaultTradeHistoryParamCurrencyPair tradeHistoryParams =
-                      new DefaultTradeHistoryParamCurrencyPair(currencyPair);
-                  UserTrades userTrades = bittrexTradeService.getTradeHistory(tradeHistoryParams);
-                  // find and assert test order
-                  Assert.assertTrue(
-                      userTrades.getTrades().contains(new UserTrade.Builder().id(limitOrderId)));
+                  BigDecimal newBalance = availableCurrencyBeforeOrder.subtract(orderCostWithFees);
+                  Assert.assertTrue(balance.getAvailable().compareTo(newBalance) == 0);
                 });
 
     try {
       // forge and execute test order
       LimitOrder limitOrder =
           new LimitOrder.Builder(orderType, currencyPair)
-              .limitPrice(tradePrice)
-              .originalAmount(tradeAmount)
+              .limitPrice(orderPrice)
+              .originalAmount(orderAmount)
               .build();
       limitOrderId = bittrexTradeService.placeLimitOrder(limitOrder);
       LOG.info("Performed order with id : {}", limitOrderId);
