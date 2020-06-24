@@ -13,9 +13,10 @@ import org.knowm.xchange.bittrex.dto.account.BittrexDepositHistory;
 import org.knowm.xchange.bittrex.dto.account.BittrexWithdrawalHistory;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevel;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevelV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummaryV3;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbolV3;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexTickerV3;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexTradeV3;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.bittrex.dto.trade.BittrexUserTrade;
@@ -44,19 +45,19 @@ public final class BittrexAdapters {
 
   private BittrexAdapters() {}
 
-  public static List<CurrencyPair> adaptCurrencyPairs(Collection<BittrexSymbol> bittrexSymbol) {
+  public static List<CurrencyPair> adaptCurrencyPairs(Collection<BittrexSymbolV3> bittrexSymbol) {
 
     List<CurrencyPair> currencyPairs = new ArrayList<>();
-    for (BittrexSymbol symbol : bittrexSymbol) {
+    for (BittrexSymbolV3 symbol : bittrexSymbol) {
       currencyPairs.add(adaptCurrencyPair(symbol));
     }
     return currencyPairs;
   }
 
-  public static CurrencyPair adaptCurrencyPair(BittrexSymbol bittrexSymbol) {
+  public static CurrencyPair adaptCurrencyPair(BittrexSymbolV3 bittrexSymbol) {
 
-    String baseSymbol = bittrexSymbol.getMarketCurrency();
-    String counterSymbol = bittrexSymbol.getBaseCurrency();
+    Currency baseSymbol = bittrexSymbol.getBaseCurrencySymbol();
+    Currency counterSymbol = bittrexSymbol.getQuoteCurrencySymbol();
     return new CurrencyPair(baseSymbol, counterSymbol);
   }
 
@@ -177,13 +178,13 @@ public final class BittrexAdapters {
     return status;
   }
 
-  public static Trade adaptTrade(BittrexTrade trade, CurrencyPair currencyPair) {
+  public static Trade adaptTrade(BittrexTradeV3 trade, CurrencyPair currencyPair) {
 
     OrderType orderType =
-        trade.getOrderType().equalsIgnoreCase("BUY") ? OrderType.BID : OrderType.ASK;
+        "BUY".equalsIgnoreCase(trade.getTakerSide()) ? OrderType.BID : OrderType.ASK;
     BigDecimal amount = trade.getQuantity();
-    BigDecimal price = trade.getPrice();
-    Date date = BittrexUtils.toDate(trade.getTimeStamp());
+    BigDecimal price = trade.getRate();
+    Date date = trade.getExecutedAt();
     final String tradeId = String.valueOf(trade.getId());
     return new Trade.Builder()
         .type(orderType)
@@ -195,12 +196,12 @@ public final class BittrexAdapters {
         .build();
   }
 
-  public static Trades adaptTrades(List<BittrexTrade> trades, CurrencyPair currencyPair) {
+  public static Trades adaptTrades(List<BittrexTradeV3> trades, CurrencyPair currencyPair) {
 
     List<Trade> tradesList = new ArrayList<>(trades.size());
     long lastTradeId = 0;
-    for (BittrexTrade trade : trades) {
-      long tradeId = Long.valueOf(trade.getId());
+    for (BittrexTradeV3 trade : trades) {
+      long tradeId = Long.parseLong(trade.getId());
       if (tradeId > lastTradeId) {
         lastTradeId = tradeId;
       }
@@ -209,16 +210,17 @@ public final class BittrexAdapters {
     return new Trades(tradesList, lastTradeId, TradeSortType.SortByID);
   }
 
-  public static Ticker adaptTicker(BittrexMarketSummary marketSummary, CurrencyPair currencyPair) {
+  public static Ticker adaptTicker(BittrexMarketSummaryV3 bittrexMarketSummaryV3, BittrexTickerV3 bittrexTickerV3) {
 
-    BigDecimal last = marketSummary.getLast();
-    BigDecimal bid = marketSummary.getBid();
-    BigDecimal ask = marketSummary.getAsk();
-    BigDecimal high = marketSummary.getHigh();
-    BigDecimal low = marketSummary.getLow();
-    BigDecimal volume = marketSummary.getVolume();
-
-    Date timestamp = BittrexUtils.toDate(marketSummary.getTimeStamp());
+    CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(bittrexTickerV3.getSymbol(), true);
+    BigDecimal last = bittrexTickerV3.getLastTradeRate();
+    BigDecimal bid = bittrexTickerV3.getBidRate();
+    BigDecimal ask = bittrexTickerV3.getAskRate();
+    BigDecimal high = bittrexMarketSummaryV3.getHigh();
+    BigDecimal low = bittrexMarketSummaryV3.getLow();
+    BigDecimal quoteVolume = bittrexMarketSummaryV3.getQuoteVolume();
+    BigDecimal volume = bittrexMarketSummaryV3.getVolume();
+    Date timestamp = bittrexMarketSummaryV3.getUpdatedAt();
 
     return new Ticker.Builder()
         .currencyPair(currencyPair)
@@ -227,6 +229,7 @@ public final class BittrexAdapters {
         .ask(ask)
         .high(high)
         .low(low)
+        .quoteVolume(quoteVolume)
         .volume(volume)
         .timestamp(timestamp)
         .build();
@@ -313,7 +316,7 @@ public final class BittrexAdapters {
   }
 
   public static ExchangeMetaData adaptMetaData(
-      List<BittrexSymbol> rawSymbols, ExchangeMetaData metaData) {
+      List<BittrexSymbolV3> rawSymbols, ExchangeMetaData metaData) {
 
     List<CurrencyPair> currencyPairs = BittrexAdapters.adaptCurrencyPairs(rawSymbols);
 

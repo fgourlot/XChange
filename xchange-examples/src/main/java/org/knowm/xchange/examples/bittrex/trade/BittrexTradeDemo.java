@@ -78,7 +78,7 @@ public class BittrexTradeDemo {
       System.out.println(tradeService.getBittrexOpenOrders(null));
 
       System.out.println("Attempting to cancel order " + uuid);
-      boolean cancelled = tradeService.cancelBittrexLimitOrder(uuid);
+      boolean cancelled = "CLOSED".equalsIgnoreCase(tradeService.cancelBittrexLimitOrder(uuid).getStatus());
 
       if (cancelled) {
         System.out.println("Order successfully canceled.");

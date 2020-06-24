@@ -17,6 +17,7 @@ import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.dto.trade.MarketOrder;
 import org.knowm.xchange.dto.trade.OpenOrders;
 import org.knowm.xchange.dto.trade.UserTrades;
+import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.knowm.xchange.service.trade.TradeService;
 import org.knowm.xchange.service.trade.params.CancelOrderByIdParams;
 import org.knowm.xchange.service.trade.params.CancelOrderParams;
@@ -36,15 +37,6 @@ public class BittrexTradeService extends BittrexTradeServiceRaw implements Trade
   public BittrexTradeService(Exchange exchange) {
 
     super(exchange);
-  }
-
-  @Override
-  public String placeMarketOrder(MarketOrder marketOrder) throws IOException {
-    try {
-      return placeBittrexMarketOrder(marketOrder);
-    } catch (BittrexException e) {
-      throw BittrexErrorAdapter.adapt(e);
-    }
   }
 
   @Override
@@ -76,11 +68,7 @@ public class BittrexTradeService extends BittrexTradeServiceRaw implements Trade
 
   @Override
   public boolean cancelOrder(String orderId) throws IOException {
-    try {
-      return cancelBittrexLimitOrder(orderId);
-    } catch (BittrexException e) {
-      throw BittrexErrorAdapter.adapt(e);
-    }
+    return "CLOSED".equalsIgnoreCase(cancelBittrexLimitOrder(orderId).getStatus());
   }
 
   @Override
@@ -98,20 +86,7 @@ public class BittrexTradeService extends BittrexTradeServiceRaw implements Trade
 
   @Override
   public UserTrades getTradeHistory(TradeHistoryParams params) throws IOException {
-    try {
-      CurrencyPair currencyPair = null;
-      if (params instanceof TradeHistoryParamCurrencyPair) {
-        TradeHistoryParamCurrencyPair tradeHistoryParamCurrencyPair =
-            (TradeHistoryParamCurrencyPair) params;
-        currencyPair = tradeHistoryParamCurrencyPair.getCurrencyPair();
-      }
-
-      List<BittrexUserTrade> bittrexTradeHistory = getBittrexTradeHistory(currencyPair);
-      return new UserTrades(
-          BittrexAdapters.adaptUserTrades(bittrexTradeHistory), TradeSortType.SortByTimestamp);
-    } catch (BittrexException e) {
-      throw BittrexErrorAdapter.adapt(e);
-    }
+    throw new NotYetImplementedForExchangeException();
   }
 
   @Override

@@ -16,6 +16,7 @@ import javax.ws.rs.core.MediaType;
 
 import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
+import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
 import org.knowm.xchange.bittrex.service.batch.BatchOrderResponse;
 import org.knowm.xchange.bittrex.service.batch.order.BatchOrder;
@@ -49,17 +50,17 @@ public interface BittrexAuthenticatedV3 extends BittrexV3 {
   @POST
   @Path("orders")
   @Consumes(MediaType.APPLICATION_JSON)
-  Map<String, Object> placeOrder(
+  BittrexOrderV3 placeOrder(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
       @HeaderParam("Api-Signature") ParamsDigest signature,
-      NewOrderPayload newOrderPayload)
+      BittrexNewOrder newOrderPayload)
       throws IOException;
 
   @DELETE
   @Path("orders/{order_id}")
-  Map<String, Object> cancelOrder(
+  BittrexOrderV3 cancelOrder(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,

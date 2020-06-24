@@ -42,9 +42,6 @@ public class BittrexAccountDemo {
     Collection<BittrexBalanceV3> balances = accountService.getBittrexBalances();
     System.out.println(balances);
 
-    String depositAddress = accountService.getBittrexDepositAddress("BTC");
-    System.out.println(depositAddress);
-
     BittrexBalanceV3 balance = accountService.getBittrexBalance(Currency.getInstance("BCC"));
     System.out.println(balance);
   }
