@@ -52,7 +52,7 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
       throws IOException {
     BittrexDepthV3 bittrexDepthV3 = bittrexAuthenticatedV3.getBookV3(market, depth);
 
-    CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(market, true);
+    CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(market);
     List<LimitOrder> asks =
         BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getAsks(), currencyPair, "ask", null, depth);
     List<LimitOrder> bids =

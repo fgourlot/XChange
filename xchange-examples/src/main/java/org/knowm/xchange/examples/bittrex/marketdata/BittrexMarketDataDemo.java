@@ -81,7 +81,7 @@ public class BittrexMarketDataDemo {
     List<BittrexTradeV3> trades = marketDataService.getBittrexTrades(pairString);
     System.out.println(trades);
 
-    BittrexTickerV3 ticker = marketDataService.getBittrexTicker(BittrexUtils.toPairString(pair, true));
+    BittrexTickerV3 ticker = marketDataService.getBittrexTicker(BittrexUtils.toPairString(pair));
     System.out.println(ticker);
   }
 }

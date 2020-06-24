@@ -39,7 +39,7 @@ public final class BittrexStreamingUtils {
    */
   public static OrderBook updateOrderBook(
       OrderBook orderBookToUpdate, BittrexOrderBookDeltas updates) {
-    CurrencyPair market = BittrexUtils.toCurrencyPair(updates.getMarketSymbol(), true);
+    CurrencyPair market = BittrexUtils.toCurrencyPair(updates.getMarketSymbol());
     applyOrderBookUpdates(orderBookToUpdate, updates.getAskDeltas(), Order.OrderType.ASK, market);
     applyOrderBookUpdates(orderBookToUpdate, updates.getBidDeltas(), Order.OrderType.BID, market);
     return orderBookToUpdate;

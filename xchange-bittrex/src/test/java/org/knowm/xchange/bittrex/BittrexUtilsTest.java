@@ -17,8 +17,8 @@ public class BittrexUtilsTest extends TestCase {
     String oldApiVersionPairString = market.counter + MARKET_NAME_SEPARATOR + market.base;
     String v3ApiVersionPairString = market.base + MARKET_NAME_SEPARATOR + market.counter;
 
-    Assert.assertEquals(v3ApiVersionPairString, toPairString(market, true));
-    Assert.assertEquals(oldApiVersionPairString, toPairString(market, false));
+    Assert.assertEquals(v3ApiVersionPairString, toPairString(market));
+    Assert.assertEquals(oldApiVersionPairString, toPairString(market));
   }
 
   @Test
@@ -27,7 +27,7 @@ public class BittrexUtilsTest extends TestCase {
     String marketOldVersionString = "BTC-ETH";
     String marketV3ApiString = "ETH-BTC";
 
-    Assert.assertEquals(market, toCurrencyPair(marketV3ApiString, true));
-    Assert.assertEquals(market, toCurrencyPair(marketOldVersionString, false));
+    Assert.assertEquals(market, toCurrencyPair(marketV3ApiString));
+    Assert.assertEquals(market, toCurrencyPair(marketOldVersionString));
   }
 }

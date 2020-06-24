@@ -75,7 +75,7 @@ public final class BittrexAdapters {
   public static LimitOrder adaptOrder(BittrexOrderV3 order, OrderStatus status) {
 
     OrderType type = order.getDirection().equalsIgnoreCase("SELL") ? OrderType.ASK : OrderType.BID;
-    CurrencyPair pair = BittrexUtils.toCurrencyPair(order.getMarketSymbol(), true);
+    CurrencyPair pair = BittrexUtils.toCurrencyPair(order.getMarketSymbol());
 
     return new LimitOrder.Builder(type, pair)
         .originalAmount(order.getQuantity())
@@ -138,32 +138,6 @@ public final class BittrexAdapters {
     return adaptOrder(order, adaptOrderStatus(order));
   }
 
-  private static OrderStatus adaptOrderStatus(BittrexOrder order) {
-    OrderStatus status = OrderStatus.NEW;
-
-    BigDecimal qty = order.getQuantity();
-    BigDecimal qtyRem =
-        order.getQuantityRemaining() != null ? order.getQuantityRemaining() : order.getQuantity();
-    Boolean isOpen = order.getOpen();
-    Boolean isCancelling = order.getCancelInitiated();
-    int qtyRemainingToQty = qtyRem.compareTo(qty);
-    int qtyRemainingIsZero = qtyRem.compareTo(BigDecimal.ZERO);
-
-    if (isOpen && !isCancelling && qtyRemainingToQty < 0) {
-      /* The order is open and remaining quantity less than order quantity */
-      status = OrderStatus.PARTIALLY_FILLED;
-    } else if (!isOpen && !isCancelling && qtyRemainingIsZero <= 0) {
-      /* The order is closed and remaining quantity is zero */
-      status = OrderStatus.FILLED;
-    } else if (isOpen && isCancelling) {
-      /* The order is open and the isCancelling flag has been set */
-      status = OrderStatus.PENDING_CANCEL;
-    } else if (!isOpen && isCancelling) {
-      /* The order is closed and the isCancelling flag has been set */
-      status = OrderStatus.CANCELED;
-    }
-    return status;
-  }
 
   private static OrderStatus adaptOrderStatus(BittrexOrderV3 order) {
     OrderStatus status = OrderStatus.NEW;
@@ -212,7 +186,7 @@ public final class BittrexAdapters {
 
   public static Ticker adaptTicker(BittrexMarketSummaryV3 bittrexMarketSummaryV3, BittrexTickerV3 bittrexTickerV3) {
 
-    CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(bittrexTickerV3.getSymbol(), true);
+    CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(bittrexTickerV3.getSymbol());
     BigDecimal last = bittrexTickerV3.getLastTradeRate();
     BigDecimal bid = bittrexTickerV3.getBidRate();
     BigDecimal ask = bittrexTickerV3.getAskRate();
@@ -264,57 +238,6 @@ public final class BittrexAdapters {
     return Wallet.Builder.from(wallets).build();
   }
 
-  public static Balance adaptBalance(BittrexBalanceV3 balance) {
-    return new Balance.Builder()
-        .currency(balance.getCurrencySymbol())
-        .total(balance.getTotal())
-        .available(balance.getAvailable())
-        .timestamp(balance.getUpdatedAt())
-        .build();
-  }
-
-  public static List<UserTrade> adaptUserTrades(List<BittrexUserTrade> bittrexUserTrades) {
-
-    List<UserTrade> trades = new ArrayList<>();
-
-    for (BittrexUserTrade bittrexTrade : bittrexUserTrades) {
-      if (!isOrderWithoutTrade(bittrexTrade)) {
-        trades.add(adaptUserTrade(bittrexTrade));
-      }
-    }
-    return trades;
-  }
-
-  public static UserTrade adaptUserTrade(BittrexUserTrade trade) {
-
-    String[] currencies = trade.getExchange().split("-");
-    CurrencyPair currencyPair = new CurrencyPair(currencies[1], currencies[0]);
-
-    OrderType orderType =
-        trade.getOrderType().equalsIgnoreCase("LIMIT_BUY") ? OrderType.BID : OrderType.ASK;
-    BigDecimal amount = trade.getQuantity().subtract(trade.getQuantityRemaining());
-    Date date = BittrexUtils.toDate(trade.getClosed());
-    String orderId = String.valueOf(trade.getOrderUuid());
-
-    BigDecimal price = trade.getPricePerUnit();
-
-    if (price == null) {
-      price = trade.getLimit();
-    }
-
-    return new UserTrade.Builder()
-        .type(orderType)
-        .originalAmount(amount)
-        .currencyPair(currencyPair)
-        .price(price)
-        .timestamp(date)
-        .id(orderId)
-        .orderId(orderId)
-        .feeAmount(trade.getCommission())
-        .feeCurrency(currencyPair.counter)
-        .build();
-  }
-
   public static ExchangeMetaData adaptMetaData(
       List<BittrexSymbolV3> rawSymbols, ExchangeMetaData metaData) {
 
@@ -337,63 +260,4 @@ public final class BittrexAdapters {
     return metaData;
   }
 
-  public static List<FundingRecord> adaptDepositRecords(
-      List<BittrexDepositHistory> bittrexFundingHistories) {
-    final ArrayList<FundingRecord> fundingRecords = new ArrayList<>();
-    for (BittrexDepositHistory f : bittrexFundingHistories) {
-      if (f != null) {
-        fundingRecords.add(
-            new FundingRecord(
-                f.getCryptoAddress(),
-                f.getLastUpdated(),
-                Currency.getInstance(f.getCurrency()),
-                f.getAmount(),
-                String.valueOf(f.getId()),
-                f.getTxId(),
-                FundingRecord.Type.DEPOSIT,
-                FundingRecord.Status.COMPLETE,
-                null,
-                null,
-                null));
-      }
-    }
-    return fundingRecords;
-  }
-
-  private static FundingRecord.Status fromWithdrawalRecord(
-      BittrexWithdrawalHistory bittrexWithdrawal) {
-    if (bittrexWithdrawal.getCanceled()) return FundingRecord.Status.CANCELLED;
-    if (bittrexWithdrawal.getInvalidAddress()) return FundingRecord.Status.FAILED;
-    if (bittrexWithdrawal.getPendingPayment()) return FundingRecord.Status.PROCESSING;
-    if (bittrexWithdrawal.getAuthorized()) return FundingRecord.Status.COMPLETE;
-    return FundingRecord.Status.FAILED;
-  }
-
-  public static List<FundingRecord> adaptWithdrawalRecords(
-      List<BittrexWithdrawalHistory> bittrexFundingHistories) {
-    final ArrayList<FundingRecord> fundingRecords = new ArrayList<>();
-    for (BittrexWithdrawalHistory f : bittrexFundingHistories) {
-      if (f != null) {
-        final FundingRecord.Status status = fromWithdrawalRecord(f);
-        fundingRecords.add(
-            new FundingRecord(
-                f.getAddress(),
-                f.getOpened(),
-                Currency.getInstance(f.getCurrency()),
-                f.getAmount(),
-                f.getPaymentUuid(),
-                f.getTxId(),
-                FundingRecord.Type.WITHDRAWAL,
-                status,
-                null,
-                f.getTxCost(),
-                null));
-      }
-    }
-    return fundingRecords;
-  }
-
-  private static boolean isOrderWithoutTrade(BittrexUserTrade bittrexTrade) {
-    return bittrexTrade.getQuantity().compareTo(bittrexTrade.getQuantityRemaining()) == 0;
-  }
 }

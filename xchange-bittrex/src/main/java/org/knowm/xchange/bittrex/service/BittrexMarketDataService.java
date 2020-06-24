@@ -49,7 +49,7 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
 
   @Override
   public Ticker getTicker(CurrencyPair currencyPair, Object... args) throws IOException {
-    String marketSymbol = BittrexUtils.toPairString(currencyPair, true);
+    String marketSymbol = BittrexUtils.toPairString(currencyPair);
     // The only way is to make two API calls since the information is split between market summary
     // and ticker calls...
     BittrexMarketSummaryV3 bittrexMarketSummaryV3 =
@@ -75,11 +75,11 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
       bittrexMarketSummaries.forEach(
           marketSummary ->
               tickerCombinationMap.put(
-                  BittrexUtils.toCurrencyPair(marketSummary.getSymbol(), true),
+                  BittrexUtils.toCurrencyPair(marketSummary.getSymbol()),
                   Pair.of(marketSummary, null)));
       bittrexTickers.forEach(
           ticker -> {
-            CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(ticker.getSymbol(), true);
+            CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(ticker.getSymbol());
             tickerCombinationMap.putIfAbsent(currencyPair, Pair.of(null, ticker));
             tickerCombinationMap.get(currencyPair).setValue(ticker);
           });
@@ -111,7 +111,7 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
         depth = (Integer) args[0];
       }
     }
-    return getBittrexSequencedOrderBook(BittrexUtils.toPairString(currencyPair, true), depth)
+    return getBittrexSequencedOrderBook(BittrexUtils.toPairString(currencyPair), depth)
         .getOrderBook();
   }
 
@@ -122,7 +122,7 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
   @Override
   public Trades getTrades(CurrencyPair currencyPair, Object... args) throws IOException {
     try {
-      List<BittrexTradeV3> trades = getBittrexTrades(BittrexUtils.toPairString(currencyPair, true));
+      List<BittrexTradeV3> trades = getBittrexTrades(BittrexUtils.toPairString(currencyPair));
 
       return BittrexAdapters.adaptTrades(trades, currencyPair);
     } catch (BittrexException e) {

@@ -66,7 +66,7 @@ public class MarketDataIntegration {
   @Test
   public void orderBooksV3Test() throws Exception {
     BittrexMarketDataServiceRaw.SequencedOrderBook orderBookV3AndSequence =
-        marketDataService.getBittrexSequencedOrderBook(BittrexUtils.toPairString(CurrencyPair.ETH_BTC, true), 500);
+        marketDataService.getBittrexSequencedOrderBook(BittrexUtils.toPairString(CurrencyPair.ETH_BTC), 500);
     OrderBook orderBook = orderBookV3AndSequence.getOrderBook();
     List<LimitOrder> asks = orderBook.getAsks();
     assertThat(asks).isNotEmpty();

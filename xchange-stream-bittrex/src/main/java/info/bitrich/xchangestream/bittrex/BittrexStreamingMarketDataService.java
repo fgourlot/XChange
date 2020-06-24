@@ -126,7 +126,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       // get OrderBookV3 via REST
       LOG.debug("Getting OrderBook V3 via REST for Currency Pair {} ...", currencyPair);
       BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook=
-          marketDataService.getBittrexSequencedOrderBook(BittrexUtils.toPairString(currencyPair, true), 500);
+          marketDataService.getBittrexSequencedOrderBook(BittrexUtils.toPairString(currencyPair), 500);
       LOG.debug(
           "Received OrderBook V3 for Currency Pair {} : {}", currencyPair, sequencedOrderBook.getOrderBook());
       LOG.debug("OrderBook V3 Sequence number : {}", sequencedOrderBook.getSequence());

@@ -53,6 +53,7 @@ public interface BittrexV3 {
   @Consumes(MediaType.APPLICATION_JSON)
   List<BittrexTickerV3> getTickers() throws IOException;
 
+
   @GET
   @Path("markets/{marketSymbol}/trades")
   List<BittrexTradeV3> getTrades(@PathParam("marketSymbol") String marketSymbol)

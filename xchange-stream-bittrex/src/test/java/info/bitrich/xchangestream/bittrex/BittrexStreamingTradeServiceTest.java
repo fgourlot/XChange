@@ -42,7 +42,7 @@ public class BittrexStreamingTradeServiceTest extends BittrexStreamingBaseTest {
     try {
       BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook =
           marketDataService.getBittrexSequencedOrderBook(
-              BittrexUtils.toPairString(currencyPair, true), 500);
+              BittrexUtils.toPairString(currencyPair), 500);
       OrderBook orderBook = sequencedOrderBook.getOrderBook();
       List<LimitOrder> bidOrders = orderBook.getBids();
       LimitOrder lastBidOrder = bidOrders.get(bidOrders.size() - 1);

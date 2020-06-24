@@ -2,20 +2,16 @@ package org.knowm.xchange.bittrex.service;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
+
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexUtils;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexTradeV3;
 import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
-import org.knowm.xchange.bittrex.dto.trade.BittrexUserTrade;
 import org.knowm.xchange.bittrex.service.batch.BatchOrderResponse;
 import org.knowm.xchange.bittrex.service.batch.order.BatchOrder;
-import org.knowm.xchange.bittrex.service.batch.order.neworder.NewOrderPayload;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.dto.trade.MarketOrder;
 import org.knowm.xchange.service.trade.params.orders.OpenOrdersParams;
 
 public class BittrexTradeServiceRaw extends BittrexBaseService {
@@ -33,7 +29,7 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
   public String placeBittrexLimitOrder(LimitOrder limitOrder) throws IOException {
     BittrexNewOrder bittrexNewOrder =
         new BittrexNewOrder(
-            BittrexUtils.toPairString(limitOrder.getCurrencyPair(), true),
+            BittrexUtils.toPairString(limitOrder.getCurrencyPair()),
             OrderType.BID.equals(limitOrder.getType()) ? "BUY" : "SELL",
             "LIMIT",
             limitOrder.getRemainingAmount(),
@@ -58,8 +54,14 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3);
   }
 
-  public List<BittrexTradeV3> getBittrexTradeHistory(CurrencyPair currencyPair) throws IOException {
-    return bittrexAuthenticatedV3.getTrades(BittrexUtils.toPairString(currencyPair, true));
+  public List<BittrexOrderV3> getBittrexTradeHistory(CurrencyPair currencyPair) throws IOException {
+    return bittrexAuthenticatedV3.getClosedOrders(
+        apiKey,
+        System.currentTimeMillis(),
+        contentCreator,
+        signatureCreatorV3,
+        BittrexUtils.toPairString(currencyPair),
+        200);
   }
 
   public BittrexOrderV3 getBittrexOrder(String orderId) throws IOException {
