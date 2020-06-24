@@ -1,16 +1,16 @@
 package info.bitrich.xchangestream.bittrex;
 
-import info.bitrich.xchangestream.core.StreamingExchange;
-import info.bitrich.xchangestream.core.StreamingExchangeFactory;
 import io.reactivex.disposables.Disposable;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.knowm.xchange.ExchangeSpecification;
+import org.knowm.xchange.bittrex.BittrexUtils;
+import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
+import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
 import org.knowm.xchange.bittrex.service.BittrexTradeService;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
+import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.dto.trade.UserTrade;
 import org.knowm.xchange.dto.trade.UserTrades;
@@ -20,45 +20,39 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.util.Optional;
-import java.util.Timer;
+import java.util.List;
 
-public class BittrexStreamingAccountServiceTest {
+public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest {
   private static final Logger LOG =
       LoggerFactory.getLogger(BittrexStreamingAccountServiceTest.class);
-  static ExchangeSpecification exchangeSpecification;
-  static CurrencyPair market = CurrencyPair.ETH_BTC;
-  static StreamingExchange exchange;
   String limitOrderId;
-
-  @BeforeClass
-  public static void setup() {
-    String apiKey = System.getProperty("apiKey");
-    String apiSecret = System.getProperty("apiSecret");
-    market = CurrencyPair.ETH_BTC;
-    exchangeSpecification = new ExchangeSpecification(BittrexStreamingExchange.class.getName());
-    exchangeSpecification.setApiKey(apiKey);
-    exchangeSpecification.setSecretKey(apiSecret);
-    exchange = StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
-    exchange.connect().blockingAwait();
-  }
 
   @Test
   public void balanceAfterOrderTest() {
-    // test order params
-    Order.OrderType orderType = Order.OrderType.BID;
-    CurrencyPair currencyPair = CurrencyPair.ETH_BTC;
-    BigDecimal tradePrice = new BigDecimal(0.02513230); // TODO : find a way to not hard-code price
-    BigDecimal tradeAmount = new BigDecimal(0.1);
-    BittrexTradeService bittrexTradeService = new BittrexTradeService(exchange);
-    limitOrderId = null;
 
-    // forge test order
-    LimitOrder limitOrder =
-        new LimitOrder.Builder(orderType, currencyPair)
-            .limitPrice(tradePrice)
-            .originalAmount(tradeAmount)
-            .build();
+    BittrexTradeService bittrexTradeService = new BittrexTradeService(exchange);
+    BittrexMarketDataService marketDataService = new BittrexMarketDataService(this.exchange);
+
+    // test order params
+    CurrencyPair currencyPair = CurrencyPair.ETH_BTC;
+    Order.OrderType orderType = Order.OrderType.BID;
+    BigDecimal tradeAmount = new BigDecimal(0.1);
+    BigDecimal tradePrice = new BigDecimal(0);
+
+    // get last bid order price from REST OrderBook
+    try {
+      BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook =
+          marketDataService.getBittrexSequencedOrderBook(
+              BittrexUtils.toPairString(currencyPair, true), 500);
+      OrderBook orderBook = sequencedOrderBook.getOrderBook();
+      List<LimitOrder> bidOrders = orderBook.getBids();
+      LimitOrder lastBidOrder = bidOrders.get(bidOrders.size() - 1);
+      tradePrice = lastBidOrder.getLimitPrice();
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+
+    limitOrderId = null;
 
     Disposable wsDisposable =
         exchange
@@ -73,18 +67,16 @@ public class BittrexStreamingAccountServiceTest {
                   UserTrades userTrades = bittrexTradeService.getTradeHistory(tradeHistoryParams);
                   // find and assert test order
                   Assert.assertTrue(
-                      userTrades
-                          .getTrades()
-                          .contains(
-                              new UserTrade.Builder()
-                                  .price(tradePrice)
-                                  .originalAmount(tradeAmount)
-                                  .currencyPair(currencyPair)
-                                  .id(limitOrderId)));
+                      userTrades.getTrades().contains(new UserTrade.Builder().id(limitOrderId)));
                 });
 
     try {
-      // execute order
+      // forge and execute test order
+      LimitOrder limitOrder =
+          new LimitOrder.Builder(orderType, currencyPair)
+              .limitPrice(tradePrice)
+              .originalAmount(tradeAmount)
+              .build();
       limitOrderId = bittrexTradeService.placeLimitOrder(limitOrder);
     } catch (IOException e) {
       e.printStackTrace();

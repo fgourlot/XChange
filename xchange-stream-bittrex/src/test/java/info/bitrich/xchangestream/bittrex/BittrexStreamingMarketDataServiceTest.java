@@ -1,48 +1,25 @@
 package info.bitrich.xchangestream.bittrex;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
+import io.reactivex.disposables.Disposable;
 import org.junit.AfterClass;
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import info.bitrich.xchangestream.core.StreamingExchange;
-import info.bitrich.xchangestream.core.StreamingExchangeFactory;
-import io.reactivex.disposables.Disposable;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
-public class BittrexStreamingMarketDataServiceTest {
+public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseTest {
   private static final Logger LOG =
       LoggerFactory.getLogger(BittrexStreamingMarketDataServiceTest.class);
-  static ExchangeSpecification exchangeSpecification;
-  static CurrencyPair market = CurrencyPair.ETH_BTC;
-  static StreamingExchange exchange;
+  CurrencyPair market = CurrencyPair.ETH_BTC;
   static Optional<Timer> timer;
-
-  @BeforeClass
-  public static void setup() {
-    String apiKey = System.getProperty("apiKey");
-    String apiSecret = System.getProperty("apiSecret");
-    market = CurrencyPair.ETH_BTC;
-    exchangeSpecification = new ExchangeSpecification(BittrexStreamingExchange.class.getName());
-    exchangeSpecification.setApiKey(apiKey);
-    exchangeSpecification.setSecretKey(apiSecret);
-    exchange = StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
-    exchange.connect().blockingAwait();
-  }
 
   @Test
   public void orderBookSubTest() {
@@ -131,7 +108,11 @@ public class BittrexStreamingMarketDataServiceTest {
   }
 
   private int findBookInList(OrderBook bookToFind, ArrayList<OrderBook> books) {
-    return books.stream().filter(bookToFind::ordersEqual).findFirst().map(books::indexOf).orElse(-1);
+    return books.stream()
+        .filter(bookToFind::ordersEqual)
+        .findFirst()
+        .map(books::indexOf)
+        .orElse(-1);
   }
 
   @AfterClass
