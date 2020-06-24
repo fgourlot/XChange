@@ -18,12 +18,19 @@ public class BittrexManualExample {
         StreamingExchange exchange =
                 StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
         exchange.connect().blockingAwait();
-    exchange
-        .getStreamingMarketDataService()
-        .getOrderBook(CurrencyPair.ETH_BTC)
-        .subscribe(
-            orderBook -> {
-              LOG.info("Received order book {}", orderBook);
-            });
+//    exchange
+//        .getStreamingMarketDataService()
+//        .getOrderBook(CurrencyPair.ETH_BTC)
+//        .subscribe(
+//            orderBook -> {
+//              LOG.info("Received order book {}", orderBook);
+//            });
+        exchange
+                .getStreamingTradeService()
+                .getUserTrades(CurrencyPair.ETH_BTC)
+                .subscribe(
+                        userTrade -> {
+                            LOG.info("Received order {}", userTrade);
+                        });
     }
 }

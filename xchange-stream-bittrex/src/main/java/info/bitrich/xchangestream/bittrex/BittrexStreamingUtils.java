@@ -67,4 +67,20 @@ public final class BittrexStreamingUtils {
                     .build())
         .forEach(orderBookToUpdate::update);
   }
+
+  /**
+   * Creates an OrderType (ASK/BID) from an order direction String (`SELL`/`BUY`)
+   * @param orderDirection
+   * @return
+   */
+  public static Order.OrderType orderDirectionToOrderType(String orderDirection) {
+    switch (orderDirection.toUpperCase()) {
+      case "BUY":
+        return Order.OrderType.BID;
+      case "SELL":
+        return Order.OrderType.ASK;
+      default:
+        return null;
+    }
+  }
 }
