@@ -1,7 +1,6 @@
 package org.knowm.xchange.bittrex;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 
 import javax.ws.rs.Consumes;
@@ -12,9 +11,6 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import org.knowm.xchange.bittrex.dto.BittrexBaseResponse;
-import org.knowm.xchange.bittrex.dto.BittrexException;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepth;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummaryV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbolV3;

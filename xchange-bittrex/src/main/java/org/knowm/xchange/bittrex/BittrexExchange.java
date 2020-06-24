@@ -5,8 +5,6 @@ import java.util.List;
 import org.knowm.xchange.BaseExchange;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeSpecification;
-import org.knowm.xchange.bittrex.dto.BittrexException;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbolV3;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
@@ -53,13 +51,9 @@ public class BittrexExchange extends BaseExchange implements Exchange {
 
   @Override
   public void remoteInit() throws IOException, ExchangeException {
-    try {
       BittrexMarketDataServiceRaw dataService =
           (BittrexMarketDataServiceRaw) this.marketDataService;
       List<BittrexSymbolV3> bittrexSymbols = dataService.getBittrexSymbols();
       exchangeMetaData = BittrexAdapters.adaptMetaData(bittrexSymbols, exchangeMetaData);
-    } catch (BittrexException e) {
-      throw BittrexErrorAdapter.adapt(e);
-    }
   }
 }
