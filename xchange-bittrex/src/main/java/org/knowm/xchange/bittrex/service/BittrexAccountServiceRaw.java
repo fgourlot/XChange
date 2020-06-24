@@ -2,10 +2,12 @@ package org.knowm.xchange.bittrex.service;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.List;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
 import org.knowm.xchange.bittrex.dto.account.BittrexDepositHistory;
 import org.knowm.xchange.bittrex.dto.account.BittrexWithdrawalHistory;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
@@ -23,21 +25,20 @@ public class BittrexAccountServiceRaw extends BittrexBaseService {
     super(exchange);
   }
 
-  public List<BittrexBalance> getBittrexBalances() throws IOException {
+  public Collection<BittrexBalanceV3> getBittrexBalances() throws IOException {
 
-    return bittrexAuthenticated
-        .getBalances(apiKey, signatureCreator, exchange.getNonceFactory())
-        .getResult();
+    return bittrexAuthenticatedV3.getBalances(
+        apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3);
   }
 
-  public BittrexBalance getBittrexBalance(Currency currency) throws IOException {
-    return bittrexAuthenticated
+  public BittrexBalanceV3 getBittrexBalance(Currency currency) throws IOException {
+    return bittrexAuthenticatedV3
         .getBalance(
             apiKey,
-            signatureCreator,
-            exchange.getNonceFactory(),
-            currency == null ? null : currency.getCurrencyCode())
-        .getResult();
+            System.currentTimeMillis(),
+            contentCreator,
+            signatureCreatorV3,
+            currency.getCurrencyCode());
   }
 
   public BittrexOrder getBittrexOrder(String uuid) throws IOException {

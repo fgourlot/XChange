@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
 import org.knowm.xchange.bittrex.dto.account.BittrexDepositHistory;
 import org.knowm.xchange.bittrex.dto.account.BittrexWithdrawalHistory;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevel;
@@ -260,36 +261,20 @@ public final class BittrexAdapters {
     return frozenBalance[0];
   }
 
-  public static Wallet adaptWallet(List<BittrexBalance> balances) {
+  public static Wallet adaptWallet(Collection<BittrexBalanceV3> balances) {
 
     List<Balance> wallets = new ArrayList<>(balances.size());
 
-    for (BittrexBalance balance : balances) {
+    for (BittrexBalanceV3 balance : balances) {
       wallets.add(
-          new Balance(
-              Currency.getInstance(balance.getCurrency().toUpperCase()),
-              Optional.ofNullable(balance.getBalance()).orElse(BigDecimal.ZERO),
-              Optional.ofNullable(balance.getAvailable()).orElse(BigDecimal.ZERO),
-              calculateFrozenBalance(balance),
-              BigDecimal.ZERO,
-              BigDecimal.ZERO,
-              BigDecimal.ZERO,
-              Optional.ofNullable(balance.getPending()).orElse(BigDecimal.ZERO)));
+          new Balance(balance.getCurrencySymbol(), balance.getTotal(), balance.getAvailable(), balance.getUpdatedAt()));
     }
 
     return Wallet.Builder.from(wallets).build();
   }
 
-  public static Balance adaptBalance(BittrexBalance balance) {
-    return new Balance(
-        Currency.getInstance(balance.getCurrency().toUpperCase()),
-        Optional.ofNullable(balance.getBalance()).orElse(BigDecimal.ZERO),
-        Optional.ofNullable(balance.getAvailable()).orElse(BigDecimal.ZERO),
-        calculateFrozenBalance(balance),
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        BigDecimal.ZERO,
-        Optional.ofNullable(balance.getPending()).orElse(BigDecimal.ZERO));
+  public static Balance adaptBalance(BittrexBalanceV3 balance) {
+    return new Balance(balance.getCurrencySymbol(), balance.getTotal(), balance.getAvailable(), balance.getUpdatedAt());
   }
 
   public static List<UserTrade> adaptUserTrades(List<BittrexUserTrade> bittrexUserTrades) {

@@ -1,6 +1,8 @@
 package org.knowm.xchange.bittrex;
 
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -12,6 +14,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalances;
 import org.knowm.xchange.bittrex.service.batch.BatchOrderResponse;
 import org.knowm.xchange.bittrex.service.batch.order.BatchOrder;
 import org.knowm.xchange.bittrex.service.batch.order.neworder.NewOrderPayload;
@@ -60,5 +64,24 @@ public interface BittrexAuthenticatedV3 extends BittrexV3 {
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
       @HeaderParam("Api-Signature") ParamsDigest signature,
       @PathParam("order_id") String accountId)
+      throws IOException;
+
+  @GET
+  @Path("balances")
+  Collection<BittrexBalanceV3> getBalances(
+      @HeaderParam("Api-Key") String apiKey,
+      @HeaderParam("Api-Timestamp") Long timestamp,
+      @HeaderParam("Api-Content-Hash") ParamsDigest hash,
+      @HeaderParam("Api-Signature") ParamsDigest signature)
+      throws IOException;
+
+  @GET
+  @Path("balances/{currencySymbol}")
+  BittrexBalanceV3 getBalance(
+      @HeaderParam("Api-Key") String apiKey,
+      @HeaderParam("Api-Timestamp") Long timestamp,
+      @HeaderParam("Api-Content-Hash") ParamsDigest hash,
+      @HeaderParam("Api-Signature") ParamsDigest signature,
+      @PathParam("currencySymbol") String currencySymbol)
       throws IOException;
 }
