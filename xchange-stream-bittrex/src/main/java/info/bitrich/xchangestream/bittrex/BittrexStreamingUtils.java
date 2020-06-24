@@ -1,19 +1,17 @@
 package info.bitrich.xchangestream.bittrex;
 
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Stream;
+
 import org.knowm.xchange.bittrex.BittrexUtils;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 
-import java.io.Serializable;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.stream.Stream;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
 
 /** Utility class for the bittrex streaming. */
 public final class BittrexStreamingUtils {
@@ -44,8 +42,6 @@ public final class BittrexStreamingUtils {
     CurrencyPair market = BittrexUtils.toCurrencyPair(updates.getMarketSymbol(), true);
     applyOrderBookUpdates(orderBookToUpdate, updates.getAskDeltas(), Order.OrderType.ASK, market);
     applyOrderBookUpdates(orderBookToUpdate, updates.getBidDeltas(), Order.OrderType.BID, market);
-    Map<String, Serializable> metadata = Map.of(BittrexDepthV3.SEQUENCE, updates.getSequence());
-    orderBookToUpdate.setMetadata(metadata);
     return orderBookToUpdate;
   }
 

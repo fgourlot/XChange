@@ -1,19 +1,20 @@
 package org.knowm.xchange.dto.marketdata;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.trade.LimitOrder;
+
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 /** DTO representing the exchange order book */
 public final class OrderBook implements Serializable {
@@ -26,8 +27,6 @@ public final class OrderBook implements Serializable {
   private final List<LimitOrder> bids;
   /** the timestamp of the orderbook according to the exchange's server, null if not provided */
   private Date timeStamp;
-  /** the metadata, possibly provided by the api */
-  private Map<String, Serializable> metadata;
 
   /**
    * Constructor
@@ -132,14 +131,6 @@ public final class OrderBook implements Serializable {
   public List<LimitOrder> getOrders(OrderType type) {
 
     return type == OrderType.ASK ? asks : bids;
-  }
-
-  public Map<String, Serializable> getMetadata() {
-    return metadata;
-  }
-
-  public void setMetadata(Map<String, Serializable> metadata) {
-    this.metadata = metadata;
   }
 
   /**
@@ -283,8 +274,6 @@ public final class OrderBook implements Serializable {
         + bids
         + ", timeStamp="
         + timeStamp
-        + ", metadata="
-        + metadata
         + '}';
   }
 }

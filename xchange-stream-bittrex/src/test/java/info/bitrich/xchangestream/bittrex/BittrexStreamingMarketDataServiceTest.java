@@ -1,29 +1,28 @@
 package info.bitrich.xchangestream.bittrex;
 
-import info.bitrich.xchangestream.core.StreamingExchange;
-import info.bitrich.xchangestream.core.StreamingExchangeFactory;
-import io.reactivex.disposables.Disposable;
-import org.apache.commons.lang3.tuple.Pair;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.knowm.xchange.ExchangeSpecification;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
-import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import info.bitrich.xchangestream.core.StreamingExchange;
+import info.bitrich.xchangestream.core.StreamingExchangeFactory;
+import io.reactivex.disposables.Disposable;
 
 public class BittrexStreamingMarketDataServiceTest {
   private static final Logger LOG =
@@ -71,8 +70,8 @@ public class BittrexStreamingMarketDataServiceTest {
   @Test
   public void orderBookSynchroTest() {
     // Maps to compare
-    Map<String, OrderBook> bookMapWS = new ConcurrentHashMap<>();
-    Map<String, OrderBook> bookMapRest = new ConcurrentHashMap<>();
+    ArrayList<OrderBook> booksWS = new ArrayList<>();
+    ArrayList<OrderBook> booksRest = new ArrayList<>();
 
     // WS orderbook map filling
     AtomicBoolean canStartRestFilling = new AtomicBoolean();
@@ -83,8 +82,7 @@ public class BittrexStreamingMarketDataServiceTest {
             .subscribe(
                 orderBook -> {
                   LOG.debug("Received order book {}", orderBook);
-                  bookMapWS.put(
-                      orderBook.getMetadata().get(BittrexDepthV3.SEQUENCE).toString(), orderBook);
+                  booksWS.add(orderBook);
                   canStartRestFilling.set(true);
                 });
 
@@ -97,10 +95,8 @@ public class BittrexStreamingMarketDataServiceTest {
               public void run() {
                 if (canStartRestFilling.get()) {
                   try {
-                    Pair<OrderBook, String> orderBookV3 =
-                        ((BittrexMarketDataService) exchange.getMarketDataService())
-                            .getOrderBookV3(market);
-                    bookMapRest.put(orderBookV3.getRight(), orderBookV3.getLeft());
+                    OrderBook orderBook = exchange.getMarketDataService().getOrderBook(market);
+                    booksRest.add(orderBook);
                   } catch (IOException e) {
                     LOG.error("Error rest-getting the orderbook", e);
                   }
@@ -117,35 +113,30 @@ public class BittrexStreamingMarketDataServiceTest {
       e.printStackTrace();
     } finally {
       // Stopping everyone
-      wsDisposable.dispose();
       timer.ifPresent(Timer::cancel);
+      wsDisposable.dispose();
     }
 
     // Test we have fetched orderbooks
-    Assert.assertTrue(bookMapWS.size() > 0);
-    Assert.assertTrue(bookMapRest.size() > 0);
+    Assert.assertTrue(booksWS.size() > 0);
+    Assert.assertTrue(booksRest.size() > 0);
 
-    // Check the books are equal
-    bookMapRest.entrySet().stream()
-        // We discard the REST books outside of the WS running period, in case the REST filling
-        // started or ended outside of the WS
-        // connection window
-        .filter(
-            restBookMapEntry ->
-                bookMapWS.keySet().stream()
-                    .anyMatch(
-                        wsSeq -> {
-                          long restSeqLong = Long.parseLong(restBookMapEntry.getKey());
-                          long wsSeqLong = Long.parseLong(wsSeq);
-                          return restSeqLong <= wsSeqLong && wsSeqLong <= restSeqLong;
-                        }))
-        .forEach(
-            restBookMapEntry -> {
-              OrderBook orderBookWS = bookMapWS.get(restBookMapEntry.getKey());
-              Assert.assertNotNull(orderBookWS);
-              // using OrderBook.ordersEqual to prevent from comparing the timestamps
-              Assert.assertTrue(orderBookWS.ordersEqual(restBookMapEntry.getValue()));
-            });
+    // Try to find the rest books in ws books list
+    Collection<Integer> indexes =
+        booksRest.stream().map(book -> findBookInList(book, booksWS)).collect(Collectors.toList());
+    // Check that all the rest books were found in ws books
+    Assert.assertTrue(indexes.stream().allMatch(index -> index > 0));
+    // Check that the books are chronologically found
+    Assert.assertEquals(indexes.stream().sorted().collect(Collectors.toList()), indexes);
+  }
+
+  private int findBookInList(OrderBook b1, ArrayList<OrderBook> books) {
+    for (OrderBook book : books) {
+      if (b1.ordersEqual(book)) {
+        return books.indexOf(book);
+      }
+    }
+    return -1;
   }
 
   @AfterClass

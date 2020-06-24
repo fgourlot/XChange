@@ -7,8 +7,10 @@ import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import org.apache.commons.lang3.tuple.Pair;
+import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
+import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
@@ -31,7 +33,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final BittrexMarketDataService marketDataService;
 
   /** OrderBookV3 Cache (requested via Bittrex REST API) */
-  private HashMap<CurrencyPair, Pair<OrderBook, String>> orderBookCache;
+  private HashMap<CurrencyPair, BittrexMarketDataServiceRaw.SequencedOrderBook> orderBookCache;
 
   private LinkedList<BittrexOrderBookDeltas> orderBookDeltasQueue;
 
@@ -91,9 +93,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                               null,
                               BittrexStreamingUtils.cloneOrders(orderBookReference.getAsks()),
                               BittrexStreamingUtils.cloneOrders(orderBookReference.getBids()));
-                      Map<String, Serializable> metadata =
-                          Map.of(BittrexDepthV3.SEQUENCE, currentSequenceNumber);
-                      orderBookClone.setMetadata(metadata);
                       observer.onNext(orderBookClone);
                     }
                   } catch (IOException e) {
@@ -130,15 +129,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     if (!orderBookDeltasQueue.isEmpty()) {
       // get OrderBookV3 via REST
       LOG.debug("Getting OrderBook V3 via REST for Currency Pair {} ...", currencyPair);
-      Pair<OrderBook, String> orderBookV3 = marketDataService.getOrderBookV3(currencyPair);
+      BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook=
+          marketDataService.getBittrexSequencedOrderBook(BittrexUtils.toPairString(currencyPair, true), 500);
       LOG.debug(
-          "Received OrderBook V3 for Currency Pair {} : {}", currencyPair, orderBookV3.getLeft());
-      LOG.debug("OrderBook V3 Sequence number : {}", orderBookV3.getRight());
-      orderBookCache.put(currencyPair, orderBookV3);
-      int orderBookV3SequenceNumber = Integer.parseInt(orderBookV3.getRight());
+          "Received OrderBook V3 for Currency Pair {} : {}", currencyPair, sequencedOrderBook.getOrderBook());
+      LOG.debug("OrderBook V3 Sequence number : {}", sequencedOrderBook.getSequence());
+      orderBookCache.put(currencyPair, sequencedOrderBook);
+      int orderBookV3SequenceNumber = Integer.parseInt(sequencedOrderBook.getSequence());
       if (orderBookV3SequenceNumber > orderBookDeltasQueue.getFirst().getSequence()) {
         LOG.info("Reference verified ! Start sequence number is : {}", orderBookV3SequenceNumber);
-        OrderBook bookReference = orderBookV3.getLeft();
+        OrderBook bookReference = sequencedOrderBook.getOrderBook();
         this.firstSequenceNumberVerified = true;
         currentSequenceNumber = orderBookV3SequenceNumber;
         return bookReference;

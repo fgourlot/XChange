@@ -2,8 +2,13 @@ package org.knowm.xchange.bittrex.service;
 
 import java.io.IOException;
 import java.util.List;
+
+import org.apache.commons.lang3.tuple.Pair;
 import org.knowm.xchange.Exchange;
+import org.knowm.xchange.bittrex.BittrexAdapters;
+import org.knowm.xchange.bittrex.BittrexErrorAdapter;
 import org.knowm.xchange.bittrex.BittrexUtils;
+import org.knowm.xchange.bittrex.dto.BittrexException;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexChartData;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexCurrency;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepth;
@@ -14,6 +19,10 @@ import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexV2MarketSummary;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.trade.LimitOrder;
+
+import lombok.Data;
 
 public class BittrexMarketDataServiceRaw extends BittrexBaseService {
 
@@ -60,9 +69,18 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
     return bittrexAuthenticated.getBook(pair, "both", depth).getResult();
   }
 
-  public BittrexDepthV3 getBittrexOrderBookV3(String pair, int depth) throws IOException {
+  public SequencedOrderBook getBittrexSequencedOrderBook(String market, int depth)
+      throws IOException {
+    BittrexDepthV3 bittrexDepthV3 = bittrexAuthenticatedV3.getBookV3(market, depth);
 
-    return bittrexAuthenticatedV3.getBookV3(pair, depth);
+    CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(market, true);
+    List<LimitOrder> asks =
+        BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getAsks(), currencyPair, "ask", null, depth);
+    List<LimitOrder> bids =
+        BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getBids(), currencyPair, "bid", null, depth);
+
+    OrderBook orderBook = new OrderBook(null, asks, bids);
+    return new SequencedOrderBook(bittrexDepthV3.getSequence(), orderBook);
   }
 
   public List<BittrexTrade> getBittrexTrades(String pair) throws IOException {
@@ -88,5 +106,11 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
 
   public List<BittrexV2MarketSummary> getBittrexV2MarketSummaries() {
     return bittrexV2.getMarketSummaries().getResult();
+  }
+
+  @Data
+  public static class SequencedOrderBook {
+    private final String sequence;
+    private final OrderBook orderBook;
   }
 }
