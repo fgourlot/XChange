@@ -48,7 +48,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
                         new Balance(
                             bittrexBalance.getDelta().getCurrencySymbol(),
                             bittrexBalance.getDelta().getTotal(),
-                            bittrexBalance.getDelta().getAvailable());
+                            bittrexBalance.getDelta().getUpdatedAt());
                     LOG.debug(
                         "Emitting Balance on currency {} with {} available on {} total",
                         balance.getCurrency(),
