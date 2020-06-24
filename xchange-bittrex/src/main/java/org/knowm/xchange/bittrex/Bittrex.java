@@ -19,7 +19,7 @@ import org.knowm.xchange.bittrex.dto.marketdata.BittrexTradeV3;
 
 @Path("v3")
 @Produces(MediaType.APPLICATION_JSON)
-public interface BittrexV3 {
+public interface Bittrex {
 
   @GET
   @Path("markets/{marketSymbol}/orderbook")

@@ -26,7 +26,7 @@ import si.mazi.rescu.ParamsDigest;
 
 @Path("v3")
 @Produces(MediaType.APPLICATION_JSON)
-public interface BittrexAuthenticatedV3 extends BittrexV3 {
+public interface BittrexAuthenticated extends Bittrex {
 
   @GET
   @Path("account/volume")

@@ -1,7 +1,7 @@
 package org.knowm.xchange.bittrex.service;
 
 import org.knowm.xchange.Exchange;
-import org.knowm.xchange.bittrex.BittrexAuthenticatedV3;
+import org.knowm.xchange.bittrex.BittrexAuthenticated;
 import org.knowm.xchange.service.BaseExchangeService;
 import org.knowm.xchange.service.BaseService;
 import si.mazi.rescu.ParamsDigest;
@@ -10,7 +10,7 @@ import si.mazi.rescu.RestProxyFactory;
 public class BittrexBaseService extends BaseExchangeService implements BaseService {
 
   protected final String apiKey;
-  protected final BittrexAuthenticatedV3 bittrexAuthenticatedV3;
+  protected final BittrexAuthenticated bittrexAuthenticatedV3;
   protected final ParamsDigest contentCreator;
   protected final ParamsDigest signatureCreator;
   protected final BittrexDigestV3 signatureCreatorV3;
@@ -25,7 +25,7 @@ public class BittrexBaseService extends BaseExchangeService implements BaseServi
     super(exchange);
     this.bittrexAuthenticatedV3 =
         RestProxyFactory.createProxy(
-            BittrexAuthenticatedV3.class,
+            BittrexAuthenticated.class,
             (String) exchange.getExchangeSpecification().getParameter("rest.v3.url"),
             getClientConfig());
     this.apiKey = exchange.getExchangeSpecification().getApiKey();
