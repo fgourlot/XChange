@@ -19,8 +19,8 @@ import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
-import org.knowm.xchange.bittrex.service.batch.BatchOrderResponse;
-import org.knowm.xchange.bittrex.service.batch.order.BatchOrder;
+import org.knowm.xchange.bittrex.dto.batch.BatchOrderResponse;
+import org.knowm.xchange.bittrex.dto.batch.order.BatchOrder;
 
 import si.mazi.rescu.ParamsDigest;
 

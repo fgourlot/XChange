@@ -1,4 +1,4 @@
-package org.knowm.xchange.bittrex.service.batch;
+package org.knowm.xchange.bittrex.dto.batch;
 
 import lombok.Data;
 
