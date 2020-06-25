@@ -3,6 +3,7 @@ package org.knowm.xchange.bittrex.service;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 import static com.github.tomakehurst.wiremock.client.WireMock.get;
 import static com.github.tomakehurst.wiremock.client.WireMock.stubFor;
+import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static com.github.tomakehurst.wiremock.client.WireMock.urlPathEqualTo;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,7 +35,7 @@ public class AccountMockedIntegrationTest extends BaseMockedIntegrationTest {
   @Test
   public void accountInfoTest() throws Exception {
     stubFor(
-        get(urlPathEqualTo("/api/v3/balances"))
+        get(urlEqualTo("/v3/balances"))
             .willReturn(
                 aResponse()
                     .withStatus(200)

@@ -19,7 +19,7 @@ public class BaseMockedIntegrationTest {
             BittrexExchange.class.getName());
     ExchangeSpecification specification = exchange.getDefaultExchangeSpecification();
     specification.setHost("localhost");
-    specification.setSslUri("http://localhost:" + wireMockRule.port() + "/api/");
+    specification.setSslUri("http://localhost:" + wireMockRule.port());
     specification.setPort(wireMockRule.port());
     specification.setShouldLoadRemoteMetaData(false);
     exchange.applySpecification(specification);
