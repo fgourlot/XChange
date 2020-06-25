@@ -17,12 +17,10 @@ public class BittrexAccountServiceRaw extends BittrexBaseService {
    * @param exchange
    */
   public BittrexAccountServiceRaw(Exchange exchange) {
-
     super(exchange);
   }
 
   public Collection<BittrexBalance> getBittrexBalances() throws IOException {
-
     return bittrexAuthenticated.getBalances(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator);
   }

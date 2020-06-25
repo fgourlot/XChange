@@ -16,12 +16,11 @@ import si.mazi.rescu.SynchronizedValueFactory;
 
 public class BittrexExchange extends BaseExchange implements Exchange {
 
-  private SynchronizedValueFactory<Long> nonceFactory =
+  private final SynchronizedValueFactory<Long> nonceFactory =
       new AtomicLongIncrementalTime2013NonceFactory();
 
   @Override
   protected void initServices() {
-
     this.marketDataService = new BittrexMarketDataService(this);
     this.accountService = new BittrexAccountService(this);
     this.tradeService = new BittrexTradeService(this);
@@ -29,12 +28,9 @@ public class BittrexExchange extends BaseExchange implements Exchange {
 
   @Override
   public ExchangeSpecification getDefaultExchangeSpecification() {
-
     ExchangeSpecification exchangeSpecification =
         new ExchangeSpecification(this.getClass().getCanonicalName());
-    exchangeSpecification.setSslUri("https://bittrex.com/api/");
-    exchangeSpecification.setExchangeSpecificParametersItem(
-        "rest.v3.url", "https://api.bittrex.com/");
+    exchangeSpecification.setSslUri("https://api.bittrex.com/");
     exchangeSpecification.setHost("bittrex.com");
     exchangeSpecification.setPort(80);
     exchangeSpecification.setExchangeName("Bittrex");
@@ -45,15 +41,13 @@ public class BittrexExchange extends BaseExchange implements Exchange {
 
   @Override
   public SynchronizedValueFactory<Long> getNonceFactory() {
-
     return nonceFactory;
   }
 
   @Override
-  public void remoteInit() throws IOException, ExchangeException {
-      BittrexMarketDataServiceRaw dataService =
-          (BittrexMarketDataServiceRaw) this.marketDataService;
-      List<BittrexSymbol> bittrexSymbols = dataService.getBittrexSymbols();
-      exchangeMetaData = BittrexAdapters.adaptMetaData(bittrexSymbols, exchangeMetaData);
+  public void remoteInit() throws IOException {
+    BittrexMarketDataServiceRaw dataService = (BittrexMarketDataServiceRaw) this.marketDataService;
+    List<BittrexSymbol> bittrexSymbols = dataService.getBittrexSymbols();
+    BittrexAdapters.adaptMetaData(bittrexSymbols, exchangeMetaData);
   }
 }
