@@ -49,8 +49,8 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
     // The only way is to make two API calls since the information is split between market summary
     // and ticker calls...
     BittrexMarketSummaryV3 bittrexMarketSummaryV3 =
-        bittrexAuthenticatedV3.getMarketSummary(marketSymbol);
-    BittrexTickerV3 bittrexTickerV3 = bittrexAuthenticatedV3.getTicker(marketSymbol);
+        bittrexAuthenticated.getMarketSummary(marketSymbol);
+    BittrexTickerV3 bittrexTickerV3 = bittrexAuthenticated.getTicker(marketSymbol);
     return BittrexAdapters.adaptTicker(bittrexMarketSummaryV3, bittrexTickerV3);
   }
 

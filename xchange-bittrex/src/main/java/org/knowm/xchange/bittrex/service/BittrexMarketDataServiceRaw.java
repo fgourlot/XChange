@@ -30,28 +30,28 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
   }
 
   public List<BittrexSymbolV3> getBittrexSymbols() throws IOException {
-    return bittrexAuthenticatedV3.getMarkets();
+    return bittrexAuthenticated.getMarkets();
   }
 
   public BittrexMarketSummaryV3 getBittrexMarketSummary(String pair) throws IOException {
-    return bittrexAuthenticatedV3.getMarketSummary(pair);
+    return bittrexAuthenticated.getMarketSummary(pair);
   }
 
   public List<BittrexMarketSummaryV3> getBittrexMarketSummaries() throws IOException {
-    return bittrexAuthenticatedV3.getMarketSummaries();
+    return bittrexAuthenticated.getMarketSummaries();
   }
 
   public BittrexTickerV3 getBittrexTicker(String pair) throws IOException {
-    return bittrexAuthenticatedV3.getTicker(pair);
+    return bittrexAuthenticated.getTicker(pair);
   }
 
   public List<BittrexTickerV3> getBittrexTickers() throws IOException {
-    return bittrexAuthenticatedV3.getTickers();
+    return bittrexAuthenticated.getTickers();
   }
 
   public SequencedOrderBook getBittrexSequencedOrderBook(String market, int depth)
       throws IOException {
-    BittrexDepthV3 bittrexDepthV3 = bittrexAuthenticatedV3.getBookV3(market, depth);
+    BittrexDepthV3 bittrexDepthV3 = bittrexAuthenticated.getBookV3(market, depth);
 
     CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(market);
     List<LimitOrder> asks =
@@ -64,7 +64,7 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
   }
 
   public List<BittrexTradeV3> getBittrexTrades(String pair) throws IOException {
-    return bittrexAuthenticatedV3.getTrades(pair);
+    return bittrexAuthenticated.getTrades(pair);
   }
 
   @Data

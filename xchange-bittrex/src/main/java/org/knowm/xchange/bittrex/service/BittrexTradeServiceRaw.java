@@ -37,28 +37,28 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
             "GOOD_TIL_CANCELLED",
             null,
             null);
-    return bittrexAuthenticatedV3
+    return bittrexAuthenticated
         .placeOrder(
-            apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3, bittrexNewOrder)
+            apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, bittrexNewOrder)
         .getId();
   }
 
   public BittrexOrderV3 cancelBittrexLimitOrder(String orderId) throws IOException {
-    return bittrexAuthenticatedV3.cancelOrder(
-        apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3, orderId);
+    return bittrexAuthenticated.cancelOrder(
+        apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, orderId);
   }
 
   public List<BittrexOrderV3> getBittrexOpenOrders(OpenOrdersParams params) throws IOException {
-    return bittrexAuthenticatedV3.getOpenOrders(
-        apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3);
+    return bittrexAuthenticated.getOpenOrders(
+        apiKey, System.currentTimeMillis(), contentCreator, signatureCreator);
   }
 
   public List<BittrexOrderV3> getBittrexTradeHistory(CurrencyPair currencyPair) throws IOException {
-    return bittrexAuthenticatedV3.getClosedOrders(
+    return bittrexAuthenticated.getClosedOrders(
         apiKey,
         System.currentTimeMillis(),
         contentCreator,
-        signatureCreatorV3,
+        signatureCreator,
         BittrexUtils.toPairString(currencyPair),
         200);
   }
@@ -68,22 +68,22 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
   }
 
   public BittrexOrderV3 getBittrexOrder(String orderId) throws IOException {
-    return bittrexAuthenticatedV3.getOrder(
-        apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3, orderId);
+    return bittrexAuthenticated.getOrder(
+        apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, orderId);
   }
 
   public BatchOrderResponse[] executeOrdersBatch(BatchOrder[] batchOrders) throws IOException {
-    return bittrexAuthenticatedV3.executeOrdersBatch(
-        apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3, batchOrders);
+    return bittrexAuthenticated.executeOrdersBatch(
+        apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, batchOrders);
   }
 
   public BittrexOrderV3 cancelOrderV3(String orderId) throws IOException {
-    return bittrexAuthenticatedV3.cancelOrder(
-        apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3, orderId);
+    return bittrexAuthenticated.cancelOrder(
+        apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, orderId);
   }
 
   public BittrexOrderV3 placeOrderV3(BittrexNewOrder bittrexNewOrder) throws IOException {
-    return bittrexAuthenticatedV3.placeOrder(
-        apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3, bittrexNewOrder);
+    return bittrexAuthenticated.placeOrder(
+        apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, bittrexNewOrder);
   }
 }
