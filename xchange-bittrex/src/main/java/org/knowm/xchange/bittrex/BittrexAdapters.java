@@ -89,24 +89,7 @@ public final class BittrexAdapters {
   }
 
   public static List<LimitOrder> adaptOrders(
-      BittrexLevel[] orders, CurrencyPair currencyPair, String orderType, String id, int depth) {
-
-    if (orders == null) {
-      return new ArrayList<>();
-    }
-
-    List<LimitOrder> limitOrders = new ArrayList<>(orders.length);
-
-    for (int i = 0; i < Math.min(orders.length, depth); i++) {
-      BittrexLevel order = orders[i];
-      limitOrders.add(adaptOrder(order.getAmount(), order.getPrice(), currencyPair, orderType, id));
-    }
-
-    return limitOrders;
-  }
-
-  public static List<LimitOrder> adaptOrdersV3(
-      BittrexLevelV3[] orders, CurrencyPair currencyPair, String orderType, String id, int depth) {
+      BittrexLevelV3[] orders, CurrencyPair currencyPair, OrderType orderType, String id, int depth) {
 
     if (orders == null) {
       return new ArrayList<>();
@@ -126,11 +109,8 @@ public final class BittrexAdapters {
       BigDecimal amount,
       BigDecimal price,
       CurrencyPair currencyPair,
-      String orderTypeString,
+      OrderType orderType,
       String id) {
-
-    OrderType orderType = orderTypeString.equalsIgnoreCase("bid") ? OrderType.BID : OrderType.ASK;
-
     return new LimitOrder(orderType, amount, currencyPair, id, null, price);
   }
 

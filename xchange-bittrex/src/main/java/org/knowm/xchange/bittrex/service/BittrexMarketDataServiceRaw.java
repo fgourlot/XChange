@@ -12,6 +12,7 @@ import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbolV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTickerV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTradeV3;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 
@@ -54,9 +55,9 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
 
     CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(market);
     List<LimitOrder> asks =
-        BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getAsks(), currencyPair, "ask", null, depth);
+        BittrexAdapters.adaptOrders(bittrexDepthV3.getAsks(), currencyPair, Order.OrderType.ASK, null, depth);
     List<LimitOrder> bids =
-        BittrexAdapters.adaptOrdersV3(bittrexDepthV3.getBids(), currencyPair, "bid", null, depth);
+        BittrexAdapters.adaptOrders(bittrexDepthV3.getBids(), currencyPair, Order.OrderType.BID, null, depth);
 
     OrderBook orderBook = new OrderBook(null, asks, bids);
     return new SequencedOrderBook(bittrexDepthV3.getSequence(), orderBook);

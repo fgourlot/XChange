@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.tuple.Pair;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexAdapters;
 import org.knowm.xchange.bittrex.BittrexUtils;
@@ -41,7 +40,6 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
    * @param exchange
    */
   public BittrexMarketDataService(Exchange exchange) {
-
     super(exchange);
   }
 
@@ -95,12 +93,6 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
         .collect(Collectors.toList());
   }
 
-  /**
-   * @param currencyPair
-   * @param args
-   * @return A pair of orderbook and its sequence.
-   * @throws IOException
-   */
   @Override
   public OrderBook getOrderBook(CurrencyPair currencyPair, Object... args) throws IOException {
     int depth = 500;
@@ -114,10 +106,6 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
         .getOrderBook();
   }
 
-  /**
-   * @param currencyPair The CurrencyPair for which to query trades.
-   * @param args no further args are supported by the API
-   */
   @Override
   public Trades getTrades(CurrencyPair currencyPair, Object... args) throws IOException {
     List<BittrexTradeV3> trades = getBittrexTrades(BittrexUtils.toPairString(currencyPair));
@@ -126,7 +114,7 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
 
   @Data
   @AllArgsConstructor
-  class SummaryTickerPair {
+  private static class SummaryTickerPair {
     private BittrexMarketSummaryV3 summary;
     private BittrexTickerV3 ticker;
   }
