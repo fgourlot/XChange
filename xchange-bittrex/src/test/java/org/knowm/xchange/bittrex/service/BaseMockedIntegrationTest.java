@@ -11,6 +11,7 @@ import org.knowm.xchange.bittrex.BittrexExchange;
 public class BaseMockedIntegrationTest {
 
   @Rule public WireMockRule wireMockRule = new WireMockRule();
+  public static final String WIREMOCK_FILES_PATH = "__files";
 
   public Exchange createExchange() {
     Exchange exchange =
