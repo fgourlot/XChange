@@ -16,7 +16,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
-import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.bittrex.service.batch.BatchOrderResponse;
@@ -60,7 +60,7 @@ public interface BittrexAuthenticated extends Bittrex {
 
   @GET
   @Path("balances")
-  Collection<BittrexBalanceV3> getBalances(
+  Collection<BittrexBalance> getBalances(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
@@ -69,7 +69,7 @@ public interface BittrexAuthenticated extends Bittrex {
 
   @GET
   @Path("balances/{currencySymbol}")
-  BittrexBalanceV3 getBalance(
+  BittrexBalance getBalance(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,

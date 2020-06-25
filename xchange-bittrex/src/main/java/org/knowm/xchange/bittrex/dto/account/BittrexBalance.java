@@ -10,7 +10,7 @@ import lombok.NoArgsConstructor;
 
 @Data
 @NoArgsConstructor
-public class BittrexBalanceV3 {
+public class BittrexBalance {
   private Currency currencySymbol;
   private BigDecimal total;
   private BigDecimal available;

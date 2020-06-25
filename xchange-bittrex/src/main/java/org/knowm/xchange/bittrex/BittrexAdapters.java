@@ -6,9 +6,8 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
-import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevel;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
@@ -182,11 +181,11 @@ public final class BittrexAdapters {
         .build();
   }
 
-  public static Wallet adaptWallet(Collection<BittrexBalanceV3> balances) {
+  public static Wallet adaptWallet(Collection<BittrexBalance> balances) {
 
     List<Balance> wallets = new ArrayList<>(balances.size());
 
-    for (BittrexBalanceV3 balance : balances) {
+    for (BittrexBalance balance : balances) {
       wallets.add(
           new Balance.Builder()
           .currency(balance.getCurrencySymbol())

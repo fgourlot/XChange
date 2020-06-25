@@ -10,7 +10,7 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
-import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.dto.account.Balance;
@@ -33,7 +33,7 @@ public class BittrexTradeServiceRawTest extends TestCase {
         (BittrexMarketDataService) bittrex.getMarketDataService();
 
     // Account service tests
-    Collection<BittrexBalanceV3> bittrexBalancesV3 = accountService.getBittrexBalances();
+    Collection<BittrexBalance> bittrexBalancesV3 = accountService.getBittrexBalances();
     System.out.println(bittrexBalancesV3.toString());
     Map<Currency, Balance> bittrexBalances =
         accountService.getAccountInfo().getWallet().getBalances();

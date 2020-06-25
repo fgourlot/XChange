@@ -5,7 +5,7 @@ import java.util.Collection;
 
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
-import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.currency.Currency;
 
@@ -21,13 +21,13 @@ public class BittrexAccountServiceRaw extends BittrexBaseService {
     super(exchange);
   }
 
-  public Collection<BittrexBalanceV3> getBittrexBalances() throws IOException {
+  public Collection<BittrexBalance> getBittrexBalances() throws IOException {
 
     return bittrexAuthenticated.getBalances(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator);
   }
 
-  public BittrexBalanceV3 getBittrexBalance(Currency currency) throws IOException {
+  public BittrexBalance getBittrexBalance(Currency currency) throws IOException {
     return bittrexAuthenticated
         .getBalance(
             apiKey,
