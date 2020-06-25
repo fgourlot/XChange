@@ -22,7 +22,6 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
    * @param exchange
    */
   public BittrexTradeServiceRaw(Exchange exchange) {
-
     super(exchange);
   }
 
