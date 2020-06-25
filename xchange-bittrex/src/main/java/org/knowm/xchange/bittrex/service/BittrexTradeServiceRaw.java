@@ -64,6 +64,10 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         200);
   }
 
+  public List<BittrexOrderV3> getBittrexTradeHistory() throws IOException {
+    return getBittrexTradeHistory(null);
+  }
+
   public BittrexOrderV3 getBittrexOrder(String orderId) throws IOException {
     return bittrexAuthenticatedV3.getOrder(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreatorV3, orderId);

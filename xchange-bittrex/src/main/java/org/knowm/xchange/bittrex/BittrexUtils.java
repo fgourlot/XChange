@@ -23,13 +23,21 @@ public final class BittrexUtils {
   private BittrexUtils() {}
 
   public static String toPairString(CurrencyPair currencyPair) {
-    return currencyPair.base.getCurrencyCode().toUpperCase()
-        + MARKET_NAME_SEPARATOR
-        + currencyPair.counter.getCurrencyCode().toUpperCase();
+    return currencyPair == null
+        ? null
+        : currencyPair.base.getCurrencyCode().toUpperCase()
+            + MARKET_NAME_SEPARATOR
+            + currencyPair.counter.getCurrencyCode().toUpperCase();
   }
 
   public static CurrencyPair toCurrencyPair(String pairString) {
+    if (pairString == null) {
+      return null;
+    }
     String[] pairStringSplit = pairString.split(MARKET_NAME_SEPARATOR);
+    if (pairStringSplit.length < 2) {
+      return null;
+    }
     return new CurrencyPair(pairStringSplit[0], pairStringSplit[1]);
   }
 
