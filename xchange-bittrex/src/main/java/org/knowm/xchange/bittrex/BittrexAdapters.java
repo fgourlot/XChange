@@ -7,25 +7,20 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
-import org.knowm.xchange.bittrex.dto.account.BittrexDepositHistory;
-import org.knowm.xchange.bittrex.dto.account.BittrexWithdrawalHistory;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevel;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevelV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummaryV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbolV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexTickerV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexTradeV3;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
-import org.knowm.xchange.bittrex.dto.trade.BittrexUserTrade;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderStatus;
 import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.account.Balance;
-import org.knowm.xchange.dto.account.FundingRecord;
 import org.knowm.xchange.dto.account.Wallet;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
@@ -35,7 +30,6 @@ import org.knowm.xchange.dto.meta.CurrencyMetaData;
 import org.knowm.xchange.dto.meta.CurrencyPairMetaData;
 import org.knowm.xchange.dto.meta.ExchangeMetaData;
 import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.dto.trade.UserTrade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,16 +39,16 @@ public final class BittrexAdapters {
 
   private BittrexAdapters() {}
 
-  public static List<CurrencyPair> adaptCurrencyPairs(Collection<BittrexSymbolV3> bittrexSymbol) {
+  public static List<CurrencyPair> adaptCurrencyPairs(Collection<BittrexSymbol> bittrexSymbol) {
 
     List<CurrencyPair> currencyPairs = new ArrayList<>();
-    for (BittrexSymbolV3 symbol : bittrexSymbol) {
+    for (BittrexSymbol symbol : bittrexSymbol) {
       currencyPairs.add(adaptCurrencyPair(symbol));
     }
     return currencyPairs;
   }
 
-  public static CurrencyPair adaptCurrencyPair(BittrexSymbolV3 bittrexSymbol) {
+  public static CurrencyPair adaptCurrencyPair(BittrexSymbol bittrexSymbol) {
 
     Currency baseSymbol = bittrexSymbol.getBaseCurrencySymbol();
     Currency counterSymbol = bittrexSymbol.getQuoteCurrencySymbol();
@@ -89,7 +83,7 @@ public final class BittrexAdapters {
   }
 
   public static List<LimitOrder> adaptOrders(
-      BittrexLevelV3[] orders, CurrencyPair currencyPair, OrderType orderType, String id, int depth) {
+      BittrexLevel[] orders, CurrencyPair currencyPair, OrderType orderType, String id, int depth) {
 
     if (orders == null) {
       return new ArrayList<>();
@@ -98,7 +92,7 @@ public final class BittrexAdapters {
     List<LimitOrder> limitOrders = new ArrayList<>(orders.length);
 
     for (int i = 0; i < Math.min(orders.length, depth); i++) {
-      BittrexLevelV3 order = orders[i];
+      BittrexLevel order = orders[i];
       limitOrders.add(adaptOrder(order.getAmount(), order.getPrice(), currencyPair, orderType, id));
     }
 
@@ -132,7 +126,7 @@ public final class BittrexAdapters {
     return status;
   }
 
-  public static Trade adaptTrade(BittrexTradeV3 trade, CurrencyPair currencyPair) {
+  public static Trade adaptTrade(BittrexTrade trade, CurrencyPair currencyPair) {
 
     OrderType orderType =
         "BUY".equalsIgnoreCase(trade.getTakerSide()) ? OrderType.BID : OrderType.ASK;
@@ -150,11 +144,11 @@ public final class BittrexAdapters {
         .build();
   }
 
-  public static Trades adaptTrades(List<BittrexTradeV3> trades, CurrencyPair currencyPair) {
+  public static Trades adaptTrades(List<BittrexTrade> trades, CurrencyPair currencyPair) {
 
     List<Trade> tradesList = new ArrayList<>(trades.size());
     long lastTradeId = 0;
-    for (BittrexTradeV3 trade : trades) {
+    for (BittrexTrade trade : trades) {
       long tradeId = Long.parseLong(trade.getId());
       if (tradeId > lastTradeId) {
         lastTradeId = tradeId;
@@ -164,17 +158,17 @@ public final class BittrexAdapters {
     return new Trades(tradesList, lastTradeId, TradeSortType.SortByID);
   }
 
-  public static Ticker adaptTicker(BittrexMarketSummaryV3 bittrexMarketSummaryV3, BittrexTickerV3 bittrexTickerV3) {
+  public static Ticker adaptTicker(BittrexMarketSummary bittrexMarketSummary, BittrexTicker bittrexTicker) {
 
-    CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(bittrexTickerV3.getSymbol());
-    BigDecimal last = bittrexTickerV3.getLastTradeRate();
-    BigDecimal bid = bittrexTickerV3.getBidRate();
-    BigDecimal ask = bittrexTickerV3.getAskRate();
-    BigDecimal high = bittrexMarketSummaryV3.getHigh();
-    BigDecimal low = bittrexMarketSummaryV3.getLow();
-    BigDecimal quoteVolume = bittrexMarketSummaryV3.getQuoteVolume();
-    BigDecimal volume = bittrexMarketSummaryV3.getVolume();
-    Date timestamp = bittrexMarketSummaryV3.getUpdatedAt();
+    CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(bittrexTicker.getSymbol());
+    BigDecimal last = bittrexTicker.getLastTradeRate();
+    BigDecimal bid = bittrexTicker.getBidRate();
+    BigDecimal ask = bittrexTicker.getAskRate();
+    BigDecimal high = bittrexMarketSummary.getHigh();
+    BigDecimal low = bittrexMarketSummary.getLow();
+    BigDecimal quoteVolume = bittrexMarketSummary.getQuoteVolume();
+    BigDecimal volume = bittrexMarketSummary.getVolume();
+    Date timestamp = bittrexMarketSummary.getUpdatedAt();
 
     return new Ticker.Builder()
         .currencyPair(currencyPair)
@@ -219,7 +213,7 @@ public final class BittrexAdapters {
   }
 
   public static ExchangeMetaData adaptMetaData(
-      List<BittrexSymbolV3> rawSymbols, ExchangeMetaData metaData) {
+      List<BittrexSymbol> rawSymbols, ExchangeMetaData metaData) {
 
     List<CurrencyPair> currencyPairs = BittrexAdapters.adaptCurrencyPairs(rawSymbols);
 

@@ -6,11 +6,11 @@ import java.util.List;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexAdapters;
 import org.knowm.xchange.bittrex.BittrexUtils;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummaryV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbolV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexTickerV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexTradeV3;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepth;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
@@ -29,41 +29,41 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
     super(exchange);
   }
 
-  public List<BittrexSymbolV3> getBittrexSymbols() throws IOException {
+  public List<BittrexSymbol> getBittrexSymbols() throws IOException {
     return bittrexAuthenticated.getMarkets();
   }
 
-  public BittrexMarketSummaryV3 getBittrexMarketSummary(String pair) throws IOException {
+  public BittrexMarketSummary getBittrexMarketSummary(String pair) throws IOException {
     return bittrexAuthenticated.getMarketSummary(pair);
   }
 
-  public List<BittrexMarketSummaryV3> getBittrexMarketSummaries() throws IOException {
+  public List<BittrexMarketSummary> getBittrexMarketSummaries() throws IOException {
     return bittrexAuthenticated.getMarketSummaries();
   }
 
-  public BittrexTickerV3 getBittrexTicker(String pair) throws IOException {
+  public BittrexTicker getBittrexTicker(String pair) throws IOException {
     return bittrexAuthenticated.getTicker(pair);
   }
 
-  public List<BittrexTickerV3> getBittrexTickers() throws IOException {
+  public List<BittrexTicker> getBittrexTickers() throws IOException {
     return bittrexAuthenticated.getTickers();
   }
 
   public SequencedOrderBook getBittrexSequencedOrderBook(String market, int depth)
       throws IOException {
-    BittrexDepthV3 bittrexDepthV3 = bittrexAuthenticated.getBookV3(market, depth);
+    BittrexDepth bittrexDepth = bittrexAuthenticated.getBookV3(market, depth);
 
     CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(market);
     List<LimitOrder> asks =
-        BittrexAdapters.adaptOrders(bittrexDepthV3.getAsks(), currencyPair, Order.OrderType.ASK, null, depth);
+        BittrexAdapters.adaptOrders(bittrexDepth.getAsks(), currencyPair, Order.OrderType.ASK, null, depth);
     List<LimitOrder> bids =
-        BittrexAdapters.adaptOrders(bittrexDepthV3.getBids(), currencyPair, Order.OrderType.BID, null, depth);
+        BittrexAdapters.adaptOrders(bittrexDepth.getBids(), currencyPair, Order.OrderType.BID, null, depth);
 
     OrderBook orderBook = new OrderBook(null, asks, bids);
-    return new SequencedOrderBook(bittrexDepthV3.getSequence(), orderBook);
+    return new SequencedOrderBook(bittrexDepth.getSequence(), orderBook);
   }
 
-  public List<BittrexTradeV3> getBittrexTrades(String pair) throws IOException {
+  public List<BittrexTrade> getBittrexTrades(String pair) throws IOException {
     return bittrexAuthenticated.getTrades(pair);
   }
 
