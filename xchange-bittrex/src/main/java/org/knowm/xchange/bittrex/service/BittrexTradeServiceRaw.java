@@ -77,13 +77,4 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, batchOrders);
   }
 
-  public BittrexOrder cancelOrderV3(String orderId) throws IOException {
-    return bittrexAuthenticated.cancelOrder(
-        apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, orderId);
-  }
-
-  public BittrexOrder placeOrderV3(BittrexNewOrder bittrexNewOrder) throws IOException {
-    return bittrexAuthenticated.placeOrder(
-        apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, bittrexNewOrder);
-  }
 }

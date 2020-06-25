@@ -51,7 +51,7 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
 
   public SequencedOrderBook getBittrexSequencedOrderBook(String market, int depth)
       throws IOException {
-    BittrexDepth bittrexDepth = bittrexAuthenticated.getBookV3(market, depth);
+    BittrexDepth bittrexDepth = bittrexAuthenticated.getOrderBook(market, depth);
 
     CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(market);
     List<LimitOrder> asks =

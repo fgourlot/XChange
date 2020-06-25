@@ -24,7 +24,7 @@ public interface Bittrex {
   @GET
   @Path("markets/{marketSymbol}/orderbook")
   @Consumes(MediaType.APPLICATION_JSON)
-  BittrexDepth getBookV3(
+  BittrexDepth getOrderBook(
       @PathParam("marketSymbol") String marketSymbol, @QueryParam("depth") int depth)
       throws IOException;
 
@@ -48,7 +48,6 @@ public interface Bittrex {
   @Path("markets/tickers")
   @Consumes(MediaType.APPLICATION_JSON)
   List<BittrexTicker> getTickers() throws IOException;
-
 
   @GET
   @Path("markets/{marketSymbol}/trades")
