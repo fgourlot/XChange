@@ -22,6 +22,9 @@ import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.knowm.xchange.service.marketdata.params.CurrencyPairsParam;
 import org.knowm.xchange.service.marketdata.params.Params;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
 /**
  * Implementation of the market data service for Bittrex
  *
@@ -64,25 +67,31 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
     // and ticker calls...
     List<BittrexMarketSummaryV3> bittrexMarketSummaries = getBittrexMarketSummaries();
     List<BittrexTickerV3> bittrexTickers = getBittrexTickers();
-    Map<CurrencyPair, Pair<BittrexMarketSummaryV3, BittrexTickerV3>> tickerCombinationMap =
-        new HashMap<>(bittrexMarketSummaries.size());
+    Map<CurrencyPair, SummaryTickerPair> tickerCombinationMap =
+        new HashMap<>(Math.min(bittrexMarketSummaries.size(), bittrexTickers.size()));
     bittrexMarketSummaries.forEach(
         marketSummary ->
             tickerCombinationMap.put(
                 BittrexUtils.toCurrencyPair(marketSummary.getSymbol()),
-                Pair.of(marketSummary, null)));
+                new SummaryTickerPair(marketSummary, null)));
     bittrexTickers.forEach(
         ticker -> {
           CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(ticker.getSymbol());
-          tickerCombinationMap.putIfAbsent(currencyPair, Pair.of(null, ticker));
-          tickerCombinationMap.get(currencyPair).setValue(ticker);
+          if (tickerCombinationMap.containsKey(currencyPair)) {
+            tickerCombinationMap.get(currencyPair).setTicker(ticker);
+          }
         });
 
     return tickerCombinationMap.entrySet().stream()
-        .filter(entry -> currencyPairs.contains(entry.getKey()))
+        .filter(entry -> currencyPairs.isEmpty() || currencyPairs.contains(entry.getKey()))
+        .map(Map.Entry::getValue)
+        .filter(
+            summaryTickerPair ->
+                summaryTickerPair.getSummary() != null && summaryTickerPair.getTicker() != null)
         .map(
-            entry ->
-                BittrexAdapters.adaptTicker(entry.getValue().getKey(), entry.getValue().getValue()))
+            summaryTickerPair ->
+                BittrexAdapters.adaptTicker(
+                    summaryTickerPair.getSummary(), summaryTickerPair.getTicker()))
         .collect(Collectors.toList());
   }
 
@@ -113,5 +122,12 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
   public Trades getTrades(CurrencyPair currencyPair, Object... args) throws IOException {
     List<BittrexTradeV3> trades = getBittrexTrades(BittrexUtils.toPairString(currencyPair));
     return BittrexAdapters.adaptTrades(trades, currencyPair);
+  }
+
+  @Data
+  @AllArgsConstructor
+  class SummaryTickerPair {
+    private BittrexMarketSummaryV3 summary;
+    private BittrexTickerV3 ticker;
   }
 }
