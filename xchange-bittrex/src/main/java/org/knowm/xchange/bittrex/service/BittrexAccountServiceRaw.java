@@ -6,7 +6,7 @@ import java.util.Collection;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.currency.Currency;
 
 public class BittrexAccountServiceRaw extends BittrexBaseService {
@@ -37,7 +37,7 @@ public class BittrexAccountServiceRaw extends BittrexBaseService {
             currency.getCurrencyCode());
   }
 
-  public BittrexOrderV3 getBittrexOrder(String orderId) throws IOException {
+  public BittrexOrder getBittrexOrder(String orderId) throws IOException {
     return bittrexAuthenticated
         .getOrder(apiKey,
                   System.currentTimeMillis(),

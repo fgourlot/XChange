@@ -8,14 +8,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevel;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderStatus;
@@ -55,18 +54,18 @@ public final class BittrexAdapters {
     return new CurrencyPair(baseSymbol, counterSymbol);
   }
 
-  public static List<LimitOrder> adaptOpenOrders(List<BittrexOrderV3> bittrexOpenOrders) {
+  public static List<LimitOrder> adaptOpenOrders(List<BittrexOrder> bittrexOpenOrders) {
 
     List<LimitOrder> openOrders = new ArrayList<>();
 
-    for (BittrexOrderV3 order : bittrexOpenOrders) {
+    for (BittrexOrder order : bittrexOpenOrders) {
       openOrders.add(adaptOrder(order));
     }
 
     return openOrders;
   }
 
-  public static LimitOrder adaptOrder(BittrexOrderV3 order, OrderStatus status) {
+  public static LimitOrder adaptOrder(BittrexOrder order, OrderStatus status) {
 
     OrderType type = order.getDirection().equalsIgnoreCase("SELL") ? OrderType.ASK : OrderType.BID;
     CurrencyPair pair = BittrexUtils.toCurrencyPair(order.getMarketSymbol());
@@ -108,12 +107,12 @@ public final class BittrexAdapters {
     return new LimitOrder(orderType, amount, currencyPair, id, null, price);
   }
 
-  public static LimitOrder adaptOrder(BittrexOrderV3 order) {
+  public static LimitOrder adaptOrder(BittrexOrder order) {
     return adaptOrder(order, adaptOrderStatus(order));
   }
 
 
-  private static OrderStatus adaptOrderStatus(BittrexOrderV3 order) {
+  private static OrderStatus adaptOrderStatus(BittrexOrder order) {
     OrderStatus status = OrderStatus.NEW;
     BigDecimal qty = order.getQuantity();
     BigDecimal qtyRem = order.getQuantity().subtract(order.getFillQuantity());
@@ -181,18 +180,6 @@ public final class BittrexAdapters {
         .volume(volume)
         .timestamp(timestamp)
         .build();
-  }
-
-  protected static BigDecimal calculateFrozenBalance(BittrexBalance balance) {
-    if (balance.getBalance() == null) {
-      return BigDecimal.ZERO;
-    }
-    final BigDecimal[] frozenBalance = {balance.getBalance()};
-    Optional.ofNullable(balance.getAvailable())
-        .ifPresent(available -> frozenBalance[0] = frozenBalance[0].subtract(available));
-    Optional.ofNullable(balance.getPending())
-        .ifPresent(pending -> frozenBalance[0] = frozenBalance[0].subtract(pending));
-    return frozenBalance[0];
   }
 
   public static Wallet adaptWallet(Collection<BittrexBalanceV3> balances) {

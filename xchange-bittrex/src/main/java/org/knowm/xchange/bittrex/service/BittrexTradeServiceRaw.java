@@ -6,7 +6,7 @@ import java.util.List;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.bittrex.service.batch.BatchOrderResponse;
 import org.knowm.xchange.bittrex.service.batch.order.BatchOrder;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -43,17 +43,17 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         .getId();
   }
 
-  public BittrexOrderV3 cancelBittrexLimitOrder(String orderId) throws IOException {
+  public BittrexOrder cancelBittrexLimitOrder(String orderId) throws IOException {
     return bittrexAuthenticated.cancelOrder(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, orderId);
   }
 
-  public List<BittrexOrderV3> getBittrexOpenOrders(OpenOrdersParams params) throws IOException {
+  public List<BittrexOrder> getBittrexOpenOrders(OpenOrdersParams params) throws IOException {
     return bittrexAuthenticated.getOpenOrders(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator);
   }
 
-  public List<BittrexOrderV3> getBittrexTradeHistory(CurrencyPair currencyPair) throws IOException {
+  public List<BittrexOrder> getBittrexTradeHistory(CurrencyPair currencyPair) throws IOException {
     return bittrexAuthenticated.getClosedOrders(
         apiKey,
         System.currentTimeMillis(),
@@ -63,11 +63,11 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         200);
   }
 
-  public List<BittrexOrderV3> getBittrexTradeHistory() throws IOException {
+  public List<BittrexOrder> getBittrexTradeHistory() throws IOException {
     return getBittrexTradeHistory(null);
   }
 
-  public BittrexOrderV3 getBittrexOrder(String orderId) throws IOException {
+  public BittrexOrder getBittrexOrder(String orderId) throws IOException {
     return bittrexAuthenticated.getOrder(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, orderId);
   }
@@ -77,12 +77,12 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, batchOrders);
   }
 
-  public BittrexOrderV3 cancelOrderV3(String orderId) throws IOException {
+  public BittrexOrder cancelOrderV3(String orderId) throws IOException {
     return bittrexAuthenticated.cancelOrder(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, orderId);
   }
 
-  public BittrexOrderV3 placeOrderV3(BittrexNewOrder bittrexNewOrder) throws IOException {
+  public BittrexOrder placeOrderV3(BittrexNewOrder bittrexNewOrder) throws IOException {
     return bittrexAuthenticated.placeOrder(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, bittrexNewOrder);
   }
