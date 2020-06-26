@@ -44,13 +44,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
                     // parse JSON to Object
                     BittrexBalance bittrexBalance =
                         objectMapper.readValue(decompressedMessage, BittrexBalance.class);
-                    Balance balance =
-                        new Balance.Builder()
-                        .currency(bittrexBalance.getDelta().getCurrencySymbol())
-                        .total(bittrexBalance.getDelta().getTotal())
-                        .available(bittrexBalance.getDelta().getAvailable())
-                        .timestamp(bittrexBalance.getDelta().getUpdatedAt())
-                        .build();
+                    Balance balance = BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance);
                     LOG.debug(
                         "Emitting Balance on currency {} with {} available on {} total",
                         balance.getCurrency(),

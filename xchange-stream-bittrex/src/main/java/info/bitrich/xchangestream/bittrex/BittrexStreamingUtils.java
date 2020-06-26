@@ -1,17 +1,20 @@
 package info.bitrich.xchangestream.bittrex;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Stream;
-
+import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
+import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
+import org.knowm.xchange.dto.trade.UserTrade;
 
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Stream;
 
 /** Utility class for the bittrex streaming. */
 public final class BittrexStreamingUtils {
@@ -70,6 +73,7 @@ public final class BittrexStreamingUtils {
 
   /**
    * Creates an OrderType (ASK/BID) from an order direction String (`SELL`/`BUY`)
+   *
    * @param orderDirection
    * @return
    */
@@ -82,5 +86,39 @@ public final class BittrexStreamingUtils {
       default:
         return null;
     }
+  }
+
+  /**
+   * Creates an UserTrade object from a BittrexOrder object
+   *
+   * @param bittrexOrder
+   * @return
+   */
+  public static UserTrade bittrexOrderToUserTrade(BittrexOrder bittrexOrder) {
+    return new UserTrade.Builder()
+        .type(
+            BittrexStreamingUtils.orderDirectionToOrderType(bittrexOrder.getDelta().getDirection()))
+        .currencyPair(BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
+        .orderId(bittrexOrder.getDelta().getId())
+        .price(bittrexOrder.getDelta().getLimit())
+        .originalAmount(bittrexOrder.getDelta().getQuantity())
+        .timestamp(bittrexOrder.getDelta().getCreatedAt())
+        .feeAmount(bittrexOrder.getDelta().getCommission())
+        .build();
+  }
+
+  /**
+   * Creates a Balance object from a BittrexBalance object
+   *
+   * @param bittrexBalance
+   * @return
+   */
+  public static Balance bittrexBalanceToBalance(BittrexBalance bittrexBalance) {
+    return new Balance.Builder()
+        .currency(bittrexBalance.getDelta().getCurrencySymbol())
+        .total(bittrexBalance.getDelta().getTotal())
+        .available(bittrexBalance.getDelta().getAvailable())
+        .timestamp(bittrexBalance.getDelta().getUpdatedAt())
+        .build();
   }
 }

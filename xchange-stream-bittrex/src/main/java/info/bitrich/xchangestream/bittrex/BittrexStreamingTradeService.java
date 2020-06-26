@@ -50,7 +50,7 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
                     // parse JSON to Object
                     BittrexOrder bittrexOrder =
                         objectMapper.readValue(decompressedMessage, BittrexOrder.class);
-                    UserTrade userTrade = bittrexOrderToUserTrade(bittrexOrder);
+                    UserTrade userTrade = BittrexStreamingUtils.bittrexOrderToUserTrade(bittrexOrder);
                     LOG.debug(
                         "Emitting Order with ID {} for operation {} {} on price {} for amount {}",
                         userTrade.getOrderId(),
@@ -74,24 +74,5 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
     LOG.info("Subscribing to channel : {}", balanceChannel);
     this.service.subscribeToChannels(channels);
     return obs;
-  }
-
-  /**
-   * Creates a UserTrade from a BittrexOrder
-   *
-   * @param bittrexOrder
-   * @return
-   */
-  private UserTrade bittrexOrderToUserTrade(BittrexOrder bittrexOrder) {
-    return new UserTrade.Builder()
-        .type(
-            BittrexStreamingUtils.orderDirectionToOrderType(bittrexOrder.getDelta().getDirection()))
-        .currencyPair(BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
-        .orderId(bittrexOrder.getDelta().getId())
-        .price(bittrexOrder.getDelta().getLimit())
-        .originalAmount(bittrexOrder.getDelta().getQuantity())
-        .timestamp(bittrexOrder.getDelta().getCreatedAt())
-        .feeAmount(bittrexOrder.getDelta().getCommission())
-        .build();
   }
 }

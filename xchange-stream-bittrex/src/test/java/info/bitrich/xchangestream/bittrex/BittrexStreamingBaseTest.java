@@ -1,5 +1,6 @@
 package info.bitrich.xchangestream.bittrex;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingExchangeFactory;
 import org.junit.Before;
@@ -9,6 +10,7 @@ public class BittrexStreamingBaseTest {
 
   ExchangeSpecification exchangeSpecification;
   StreamingExchange exchange;
+  ObjectMapper objectMapper;
 
   @Before
   public void setup() {
@@ -19,5 +21,6 @@ public class BittrexStreamingBaseTest {
     exchangeSpecification.setSecretKey(apiSecret);
     exchange = StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
     exchange.connect().blockingAwait();
+    objectMapper = new ObjectMapper();
   }
 }
