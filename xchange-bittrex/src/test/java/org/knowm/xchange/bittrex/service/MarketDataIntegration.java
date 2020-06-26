@@ -30,27 +30,13 @@ public class MarketDataIntegration {
 
   @Test
   public void tickerTest() throws Exception {
-    Ticker ticker = marketDataService.getTicker(new CurrencyPair("LTC", "BTC"));
+    Ticker ticker = marketDataService.getTicker(CurrencyPair.ETH_BTC);
     System.out.println(ticker.toString());
     assertThat(ticker).isNotNull();
     assertThat(ticker.getLast()).isNotNull().isPositive();
+    assertThat(ticker.getQuoteVolume()).isNotNull().isPositive();
+    assertThat(ticker.getVolume()).isNotNull().isPositive();
     assertThat(ticker.getHigh()).isNotNull().isPositive();
-  }
-
-  @Test
-  public void invalidCurrencyPairForTickerTest() throws Exception {
-    Throwable excepton =
-        catchThrowable(
-            () -> marketDataService.getTicker(new CurrencyPair("NOT_EXISTING_CODE", "USD")));
-    assertThat(excepton).isExactlyInstanceOf(CurrencyPairNotValidException.class);
-  }
-
-  @Test
-  public void invalidCurrencyPairForTradesTest() throws Exception {
-    Throwable excepton =
-        catchThrowable(
-            () -> marketDataService.getTrades(new CurrencyPair("NOT_EXISTING_CODE", "USD")));
-    assertThat(excepton).isExactlyInstanceOf(CurrencyPairNotValidException.class);
   }
 
   @Test
@@ -64,13 +50,12 @@ public class MarketDataIntegration {
   }
 
   @Test
-  public void orderBooksV3Test() throws Exception {
-    BittrexMarketDataServiceRaw.SequencedOrderBook orderBookV3AndSequence =
+  public void sequencedOrderBookTest() throws Exception {
+    BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook =
         marketDataService.getBittrexSequencedOrderBook(BittrexUtils.toPairString(CurrencyPair.ETH_BTC), 500);
-    OrderBook orderBook = orderBookV3AndSequence.getOrderBook();
-    List<LimitOrder> asks = orderBook.getAsks();
+    List<LimitOrder> asks = sequencedOrderBook.getOrderBook().getAsks();
     assertThat(asks).isNotEmpty();
-    assertThat(orderBookV3AndSequence.getSequence().length()).isGreaterThan(1);
+    assertThat(sequencedOrderBook.getSequence().length()).isGreaterThan(1);
     LimitOrder firstAsk = asks.get(0);
     assertThat(firstAsk.getLimitPrice()).isNotNull().isPositive();
     assertThat(firstAsk.getRemainingAmount()).isNotNull().isPositive();

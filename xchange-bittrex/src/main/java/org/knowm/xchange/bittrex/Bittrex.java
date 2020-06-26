@@ -11,11 +11,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummaryV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbolV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexTickerV3;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexTradeV3;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepth;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
+import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
 
 @Path("v3")
 @Produces(MediaType.APPLICATION_JSON)
@@ -24,38 +24,37 @@ public interface Bittrex {
   @GET
   @Path("markets/{marketSymbol}/orderbook")
   @Consumes(MediaType.APPLICATION_JSON)
-  BittrexDepthV3 getBookV3(
+  BittrexDepth getOrderBook(
       @PathParam("marketSymbol") String marketSymbol, @QueryParam("depth") int depth)
       throws IOException;
 
   @GET
   @Path("markets")
   @Consumes(MediaType.APPLICATION_JSON)
-  List<BittrexSymbolV3> getMarkets() throws IOException;
+  List<BittrexSymbol> getMarkets() throws IOException;
 
   @GET
   @Path("markets/{marketSymbol}/summary")
   @Consumes(MediaType.APPLICATION_JSON)
-  BittrexMarketSummaryV3 getMarketSummary(@PathParam("marketSymbol") String marketSymbol)
+  BittrexMarketSummary getMarketSummary(@PathParam("marketSymbol") String marketSymbol)
       throws IOException;
 
   @GET
   @Path("markets/summaries")
   @Consumes(MediaType.APPLICATION_JSON)
-  List<BittrexMarketSummaryV3> getMarketSummaries() throws IOException;
+  List<BittrexMarketSummary> getMarketSummaries() throws IOException;
 
   @GET
   @Path("markets/tickers")
   @Consumes(MediaType.APPLICATION_JSON)
-  List<BittrexTickerV3> getTickers() throws IOException;
-
+  List<BittrexTicker> getTickers() throws IOException;
 
   @GET
   @Path("markets/{marketSymbol}/trades")
-  List<BittrexTradeV3> getTrades(@PathParam("marketSymbol") String marketSymbol)
+  List<BittrexTrade> getTrades(@PathParam("marketSymbol") String marketSymbol)
       throws IOException;
 
   @GET
   @Path("markets/{marketSymbol}/ticker")
-  BittrexTickerV3 getTicker(@PathParam("marketSymbol") String marketSymbol) throws IOException;
+  BittrexTicker getTicker(@PathParam("marketSymbol") String marketSymbol) throws IOException;
 }

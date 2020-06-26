@@ -16,11 +16,11 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
-import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
-import org.knowm.xchange.bittrex.service.batch.BatchOrderResponse;
-import org.knowm.xchange.bittrex.service.batch.order.BatchOrder;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
+import org.knowm.xchange.bittrex.dto.batch.BatchOrderResponse;
+import org.knowm.xchange.bittrex.dto.batch.order.BatchOrder;
 
 import si.mazi.rescu.ParamsDigest;
 
@@ -50,7 +50,7 @@ public interface BittrexAuthenticated extends Bittrex {
 
   @DELETE
   @Path("orders/{order_id}")
-  BittrexOrderV3 cancelOrder(
+  BittrexOrder cancelOrder(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
@@ -60,7 +60,7 @@ public interface BittrexAuthenticated extends Bittrex {
 
   @GET
   @Path("balances")
-  Collection<BittrexBalanceV3> getBalances(
+  Collection<BittrexBalance> getBalances(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
@@ -69,7 +69,7 @@ public interface BittrexAuthenticated extends Bittrex {
 
   @GET
   @Path("balances/{currencySymbol}")
-  BittrexBalanceV3 getBalance(
+  BittrexBalance getBalance(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
@@ -79,7 +79,7 @@ public interface BittrexAuthenticated extends Bittrex {
 
   @GET
   @Path("orders/{orderId}")
-  BittrexOrderV3 getOrder(
+  BittrexOrder getOrder(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
@@ -90,7 +90,7 @@ public interface BittrexAuthenticated extends Bittrex {
   @POST
   @Path("orders")
   @Consumes(MediaType.APPLICATION_JSON)
-  BittrexOrderV3 placeOrder(
+  BittrexOrder placeOrder(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
@@ -100,7 +100,7 @@ public interface BittrexAuthenticated extends Bittrex {
 
   @GET
   @Path("orders/open")
-  List<BittrexOrderV3> getOpenOrders(
+  List<BittrexOrder> getOpenOrders(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,
@@ -110,7 +110,7 @@ public interface BittrexAuthenticated extends Bittrex {
   // V3 replacement for get order history
   @GET
   @Path("orders/closed")
-  List<BittrexOrderV3> getClosedOrders(
+  List<BittrexOrder> getClosedOrders(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,

@@ -1,8 +1,8 @@
-package org.knowm.xchange.bittrex.service.batch.order.neworder;
+package org.knowm.xchange.bittrex.dto.batch.order.neworder;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import org.knowm.xchange.bittrex.service.batch.order.OrderPayload;
+import org.knowm.xchange.bittrex.dto.batch.order.OrderPayload;
 
 @Data
 @AllArgsConstructor

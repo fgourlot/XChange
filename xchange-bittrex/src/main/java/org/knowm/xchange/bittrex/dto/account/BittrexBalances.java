@@ -4,5 +4,5 @@ import lombok.Data;
 
 @Data
 public class BittrexBalances {
-  private final BittrexBalanceV3[] bittrexBalanceV3;
+  private final BittrexBalance[] bittrexBalance;
 }

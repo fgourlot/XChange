@@ -1,7 +1,6 @@
 package org.knowm.xchange.bittrex.service;
 
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -11,15 +10,9 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
-import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
-import org.knowm.xchange.bittrex.service.batch.order.neworder.Direction;
-import org.knowm.xchange.bittrex.service.batch.order.neworder.NewOrderPayload;
-import org.knowm.xchange.bittrex.service.batch.order.neworder.TimeInForce;
-import org.knowm.xchange.bittrex.service.batch.order.neworder.Type;
+import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.currency.Currency;
-import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.trade.LimitOrder;
 
@@ -40,7 +33,7 @@ public class BittrexTradeServiceRawTest extends TestCase {
         (BittrexMarketDataService) bittrex.getMarketDataService();
 
     // Account service tests
-    Collection<BittrexBalanceV3> bittrexBalancesV3 = accountService.getBittrexBalances();
+    Collection<BittrexBalance> bittrexBalancesV3 = accountService.getBittrexBalances();
     System.out.println(bittrexBalancesV3.toString());
     Map<Currency, Balance> bittrexBalances =
         accountService.getAccountInfo().getWallet().getBalances();
@@ -54,7 +47,10 @@ public class BittrexTradeServiceRawTest extends TestCase {
         .limitPrice(new BigDecimal("0.01")).build();
     String s = tradeService.placeLimitOrder(order);*/
 
-    List<BittrexOrderV3> bittrexTradeHistory = ((BittrexTradeServiceRaw) tradeService).getBittrexTradeHistory(CurrencyPair.ETH_BTC);
+    List<BittrexOrder> bittrexTradeHistory = ((BittrexTradeServiceRaw) tradeService).getBittrexTradeHistory(null);
+
+    // Market data service tests
+    List<Ticker> tickers = marketDataService.getTickers(null);
 
     System.out.println();
   }

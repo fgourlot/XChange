@@ -1,4 +1,4 @@
-package org.knowm.xchange.bittrex.service.batch.order;
+package org.knowm.xchange.bittrex.dto.batch.order;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

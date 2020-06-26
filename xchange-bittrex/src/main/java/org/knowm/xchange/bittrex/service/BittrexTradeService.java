@@ -6,7 +6,7 @@ import java.util.Collection;
 import java.util.List;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexAdapters;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrderV3;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.dto.trade.OpenOrders;
@@ -34,17 +34,17 @@ public class BittrexTradeService extends BittrexTradeServiceRaw implements Trade
 
   @Override
   public String placeLimitOrder(LimitOrder limitOrder) throws IOException {
-      return placeBittrexLimitOrder(limitOrder);
+    return placeBittrexLimitOrder(limitOrder);
   }
 
   @Override
   public OpenOrders getOpenOrders() throws IOException {
-      return getOpenOrders(createOpenOrdersParams());
+    return getOpenOrders(createOpenOrdersParams());
   }
 
   @Override
   public OpenOrders getOpenOrders(OpenOrdersParams params) throws IOException {
-      return new OpenOrders(BittrexAdapters.adaptOpenOrders(getBittrexOpenOrders(params)));
+    return new OpenOrders(BittrexAdapters.adaptOpenOrders(getBittrexOpenOrders(params)));
   }
 
   @Override
@@ -54,11 +54,10 @@ public class BittrexTradeService extends BittrexTradeServiceRaw implements Trade
 
   @Override
   public boolean cancelOrder(CancelOrderParams orderParams) throws IOException {
-      if (orderParams instanceof CancelOrderByIdParams) {
-        return cancelOrder(((CancelOrderByIdParams) orderParams).getOrderId());
-      } else {
-        return false;
-      }
+    if (orderParams instanceof CancelOrderByIdParams) {
+      return cancelOrder(((CancelOrderByIdParams) orderParams).getOrderId());
+    }
+    return false;
   }
 
   @Override
@@ -78,16 +77,14 @@ public class BittrexTradeService extends BittrexTradeServiceRaw implements Trade
 
   @Override
   public Collection<Order> getOrder(String... orderIds) throws IOException {
-      List<Order> orders = new ArrayList<>();
-
-      for (String orderId : orderIds) {
-
-        BittrexOrderV3 order = getBittrexOrder(orderId);
-        if (order != null) {
-          LimitOrder limitOrder = BittrexAdapters.adaptOrder(order);
-          orders.add(limitOrder);
-        }
+    List<Order> orders = new ArrayList<>();
+    for (String orderId : orderIds) {
+      BittrexOrder order = getBittrexOrder(orderId);
+      if (order != null) {
+        LimitOrder limitOrder = BittrexAdapters.adaptOrder(order);
+        orders.add(limitOrder);
       }
-      return orders;
+    }
+    return orders;
   }
 }

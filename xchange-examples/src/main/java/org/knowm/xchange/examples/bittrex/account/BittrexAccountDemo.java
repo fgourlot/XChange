@@ -2,11 +2,9 @@ package org.knowm.xchange.examples.bittrex.account;
 
 import java.io.IOException;
 import java.util.Collection;
-import java.util.List;
 import java.util.Map;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
-import org.knowm.xchange.bittrex.dto.account.BittrexBalanceV3;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.dto.account.Balance;
@@ -39,10 +37,10 @@ public class BittrexAccountDemo {
 
     System.out.println("------------RAW-----------");
 
-    Collection<BittrexBalanceV3> balances = accountService.getBittrexBalances();
+    Collection<BittrexBalance> balances = accountService.getBittrexBalances();
     System.out.println(balances);
 
-    BittrexBalanceV3 balance = accountService.getBittrexBalance(Currency.getInstance("BCC"));
+    BittrexBalance balance = accountService.getBittrexBalance(Currency.getInstance("BCC"));
     System.out.println(balance);
   }
 }

@@ -1,7 +1,8 @@
 package org.knowm.xchange.bittrex.dto.marketdata;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class BittrexLevel {
 
@@ -15,7 +16,7 @@ public class BittrexLevel {
    * @param quantity
    */
   public BittrexLevel(
-      @JsonProperty("Rate") BigDecimal rate, @JsonProperty("Quantity") BigDecimal quantity) {
+      @JsonProperty("rate") BigDecimal rate, @JsonProperty("quantity") BigDecimal quantity) {
 
     this.rate = rate;
     this.quantity = quantity;
