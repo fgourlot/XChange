@@ -13,7 +13,7 @@ import java.util.Base64;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterOutputStream;
 
-class EncryptionUtility {
+class EncryptionUtils {
 
   public static String calculateHash(String secret, String data, String algorithm)
       throws InvalidKeyException, NoSuchAlgorithmException {

@@ -68,7 +68,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                 message -> {
                   LOG.debug("Incoming orderbook message : {}", message);
                   try {
-                    String decompressedMessage = EncryptionUtility.decompress(message);
+                    String decompressedMessage = EncryptionUtils.decompress(message);
                     LOG.debug("Decompressed orderbook message : {}", decompressedMessage);
                     // parse JSON to Object
                     BittrexOrderBookDeltas orderBookDeltas =
@@ -125,10 +125,13 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     if (!orderBookDeltasQueue.isEmpty()) {
       // get OrderBookV3 via REST
       LOG.debug("Getting OrderBook V3 via REST for Currency Pair {} ...", currencyPair);
-      BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook=
-          marketDataService.getBittrexSequencedOrderBook(BittrexUtils.toPairString(currencyPair), 500);
+      BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook =
+          marketDataService.getBittrexSequencedOrderBook(
+              BittrexUtils.toPairString(currencyPair), 500);
       LOG.debug(
-          "Received OrderBook V3 for Currency Pair {} : {}", currencyPair, sequencedOrderBook.getOrderBook());
+          "Received OrderBook V3 for Currency Pair {} : {}",
+          currencyPair,
+          sequencedOrderBook.getOrderBook());
       LOG.debug("OrderBook V3 Sequence number : {}", sequencedOrderBook.getSequence());
       orderBookCache.put(currencyPair, sequencedOrderBook);
       int orderBookV3SequenceNumber = Integer.parseInt(sequencedOrderBook.getSequence());

@@ -72,7 +72,7 @@ public class BittrexStreamingService {
 
     try {
       String signedContent =
-          EncryptionUtility.calculateHash(
+          EncryptionUtils.calculateHash(
               this.exchangeSpecification.getSecretKey(), randomContent, "HmacSHA512");
       _hubProxy
           .invoke(
