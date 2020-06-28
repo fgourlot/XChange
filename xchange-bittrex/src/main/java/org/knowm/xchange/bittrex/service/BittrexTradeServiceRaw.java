@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.knowm.xchange.Exchange;
+import org.knowm.xchange.bittrex.BittrexConstants;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
@@ -29,12 +30,12 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
     BittrexNewOrder bittrexNewOrder =
         new BittrexNewOrder(
             BittrexUtils.toPairString(limitOrder.getCurrencyPair()),
-            OrderType.BID.equals(limitOrder.getType()) ? "BUY" : "SELL",
-            "LIMIT",
+            OrderType.BID.equals(limitOrder.getType()) ? BittrexConstants.BUY : BittrexConstants.SELL,
+            BittrexConstants.LIMIT,
             limitOrder.getRemainingAmount().toPlainString(),
             null,
             limitOrder.getLimitPrice().toPlainString(),
-            "GOOD_TIL_CANCELLED",
+            BittrexConstants.GOOD_TIL_CANCELLED,
             null,
             null);
     return bittrexAuthenticated

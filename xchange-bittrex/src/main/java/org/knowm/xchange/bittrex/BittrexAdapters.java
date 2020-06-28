@@ -60,7 +60,7 @@ public final class BittrexAdapters {
 
   public static LimitOrder adaptOrder(BittrexOrder order, OrderStatus status) {
 
-    OrderType type = order.getDirection().equalsIgnoreCase("SELL") ? OrderType.ASK : OrderType.BID;
+    OrderType type = order.getDirection().equalsIgnoreCase(BittrexConstants.SELL) ? OrderType.ASK : OrderType.BID;
     CurrencyPair pair = BittrexUtils.toCurrencyPair(order.getMarketSymbol());
 
     return new LimitOrder.Builder(type, pair)
@@ -120,7 +120,7 @@ public final class BittrexAdapters {
   public static Trade adaptTrade(BittrexTrade trade, CurrencyPair currencyPair) {
 
     OrderType orderType =
-        "BUY".equalsIgnoreCase(trade.getTakerSide()) ? OrderType.BID : OrderType.ASK;
+        BittrexConstants.BUY.equalsIgnoreCase(trade.getTakerSide()) ? OrderType.BID : OrderType.ASK;
     BigDecimal amount = trade.getQuantity();
     BigDecimal price = trade.getRate();
     Date date = trade.getExecutedAt();
@@ -155,7 +155,7 @@ public final class BittrexAdapters {
             bittrexOrder ->
                 new UserTrade.Builder()
                     .type(
-                        "BUY".equalsIgnoreCase(bittrexOrder.getType())
+                        BittrexConstants.BUY.equalsIgnoreCase(bittrexOrder.getType())
                             ? OrderType.BID
                             : OrderType.ASK)
                     .originalAmount(bittrexOrder.getFillQuantity())

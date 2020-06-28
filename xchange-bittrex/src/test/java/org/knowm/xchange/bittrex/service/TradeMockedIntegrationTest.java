@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.*;
 import java.math.BigDecimal;
 import org.junit.Before;
 import org.junit.Test;
+import org.knowm.xchange.bittrex.BittrexConstants;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.trade.LimitOrder;
@@ -45,7 +46,7 @@ public class TradeMockedIntegrationTest extends BaseMockedIntegrationTest {
                     .withHeader("Content-Type", "application/json")
                     .withBodyFile("placedorder.json")));
 
-    Order.OrderType type = "BUY".equals(jsonRoot.get("direction").asText()) ? Order.OrderType.BID: Order.OrderType.ASK;
+    Order.OrderType type = BittrexConstants.BUY.equals(jsonRoot.get("direction").asText()) ? Order.OrderType.BID: Order.OrderType.ASK;
     String[] currencyPairSplit = jsonRoot.get("marketSymbol").asText().split("-");
     CurrencyPair market = new CurrencyPair(currencyPairSplit[0], currencyPairSplit[1]);
     BigDecimal price = new BigDecimal(jsonRoot.get("limit").asText());
