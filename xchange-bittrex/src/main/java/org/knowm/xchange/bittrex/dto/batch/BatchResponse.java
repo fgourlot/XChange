@@ -4,7 +4,7 @@ import java.util.Map;
 import lombok.Data;
 
 @Data
-public class BatchOrderResponse {
+public class BatchResponse {
   private Map payload;
   private String status;
 }

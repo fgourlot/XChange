@@ -46,9 +46,6 @@ public class BittrexDigest extends BaseParamsDigest {
 
     String preSign = timestamp + uri + method + contentHash;
 
-    // var preSign = [timestamp, uri, method, contentHash, subaccountId].join('');
-    // var signature = CryptoJS.HmacSHA512(preSign, apiSecret).toString(CryptoJS.enc.Hex);
-
     Mac mac = getMac();
     mac.update(preSign.getBytes());
 

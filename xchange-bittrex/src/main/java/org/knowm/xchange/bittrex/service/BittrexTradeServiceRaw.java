@@ -7,7 +7,7 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
-import org.knowm.xchange.bittrex.dto.batch.BatchOrderResponse;
+import org.knowm.xchange.bittrex.dto.batch.BatchResponse;
 import org.knowm.xchange.bittrex.dto.batch.order.BatchOrder;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderType;
@@ -72,7 +72,7 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, orderId);
   }
 
-  public BatchOrderResponse[] executeOrdersBatch(BatchOrder[] batchOrders) throws IOException {
+  public BatchResponse[] executeOrdersBatch(BatchOrder[] batchOrders) throws IOException {
     return bittrexAuthenticated.executeOrdersBatch(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, batchOrders);
   }

@@ -19,7 +19,7 @@ import org.knowm.xchange.bittrex.dto.account.BittrexAccountVolume;
 import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
-import org.knowm.xchange.bittrex.dto.batch.BatchOrderResponse;
+import org.knowm.xchange.bittrex.dto.batch.BatchResponse;
 import org.knowm.xchange.bittrex.dto.batch.order.BatchOrder;
 
 import si.mazi.rescu.ParamsDigest;
@@ -40,7 +40,7 @@ public interface BittrexAuthenticated extends Bittrex {
   @POST
   @Path("batch")
   @Consumes(MediaType.APPLICATION_JSON)
-  BatchOrderResponse[] executeOrdersBatch(
+  BatchResponse[] executeOrdersBatch(
       @HeaderParam("Api-Key") String apiKey,
       @HeaderParam("Api-Timestamp") Long timestamp,
       @HeaderParam("Api-Content-Hash") ParamsDigest hash,

@@ -212,7 +212,7 @@ public final class BittrexAdapters {
     return Wallet.Builder.from(wallets).build();
   }
 
-  public static ExchangeMetaData adaptMetaData(
+  public static void adaptMetaData(
       List<BittrexSymbol> rawSymbols, ExchangeMetaData metaData) {
 
     List<CurrencyPair> currencyPairs = BittrexAdapters.adaptCurrencyPairs(rawSymbols);
@@ -230,7 +230,5 @@ public final class BittrexAdapters {
         currenciesMap.put(c.counter, null);
       }
     }
-
-    return metaData;
   }
 }
