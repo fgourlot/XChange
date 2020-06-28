@@ -1,9 +1,8 @@
 package org.knowm.xchange.bittrex.dto.batch.order.neworder;
 
-import org.knowm.xchange.bittrex.BittrexConstants;
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.knowm.xchange.bittrex.BittrexConstants;
 
 @AllArgsConstructor
 @Getter

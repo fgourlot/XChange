@@ -1,6 +1,5 @@
 package org.knowm.xchange.bittrex.dto.trade;
 
-import java.math.BigDecimal;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;

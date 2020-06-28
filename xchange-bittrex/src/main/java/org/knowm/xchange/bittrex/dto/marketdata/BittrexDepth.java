@@ -1,11 +1,9 @@
 package org.knowm.xchange.bittrex.dto.marketdata;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
-
 import si.mazi.rescu.HttpResponseAware;
 
 public class BittrexDepth implements HttpResponseAware {

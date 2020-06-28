@@ -6,7 +6,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexAdapters;
 import org.knowm.xchange.bittrex.BittrexUtils;
@@ -20,9 +21,6 @@ import org.knowm.xchange.dto.marketdata.Trades;
 import org.knowm.xchange.service.marketdata.MarketDataService;
 import org.knowm.xchange.service.marketdata.params.CurrencyPairsParam;
 import org.knowm.xchange.service.marketdata.params.Params;
-
-import lombok.AllArgsConstructor;
-import lombok.Data;
 
 /**
  * Implementation of the market data service for Bittrex
@@ -48,8 +46,7 @@ public class BittrexMarketDataService extends BittrexMarketDataServiceRaw
     String marketSymbol = BittrexUtils.toPairString(currencyPair);
     // The only way is to make two API calls since the information is split between market summary
     // and ticker calls...
-    BittrexMarketSummary bittrexMarketSummary =
-        bittrexAuthenticated.getMarketSummary(marketSymbol);
+    BittrexMarketSummary bittrexMarketSummary = bittrexAuthenticated.getMarketSummary(marketSymbol);
     BittrexTicker bittrexTicker = bittrexAuthenticated.getTicker(marketSymbol);
     return BittrexAdapters.adaptTicker(bittrexMarketSummary, bittrexTicker);
   }

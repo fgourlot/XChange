@@ -1,7 +1,6 @@
 package org.knowm.xchange.bittrex.service;
 
 import java.io.IOException;
-
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexAdapters;
 import org.knowm.xchange.dto.account.AccountInfo;
@@ -21,12 +20,11 @@ public class BittrexAccountService extends BittrexAccountServiceRaw implements A
 
   @Override
   public AccountInfo getAccountInfo() throws IOException {
-      return new AccountInfo(BittrexAdapters.adaptWallet(getBittrexBalances()));
+    return new AccountInfo(BittrexAdapters.adaptWallet(getBittrexBalances()));
   }
 
   @Override
   public TradeHistoryParams createFundingHistoryParams() {
     return TradeHistoryParamsZero.PARAMS_ZERO;
   }
-
 }

@@ -7,7 +7,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
-
 import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevel;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
@@ -15,7 +14,6 @@ import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
-import org.knowm.xchange.bittrex.dto.trade.BittrexUserTrade;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderStatus;
@@ -31,7 +29,6 @@ import org.knowm.xchange.dto.meta.CurrencyPairMetaData;
 import org.knowm.xchange.dto.meta.ExchangeMetaData;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.dto.trade.UserTrade;
-import org.knowm.xchange.dto.trade.UserTrades;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +57,10 @@ public final class BittrexAdapters {
 
   public static LimitOrder adaptOrder(BittrexOrder order, OrderStatus status) {
 
-    OrderType type = order.getDirection().equalsIgnoreCase(BittrexConstants.SELL) ? OrderType.ASK : OrderType.BID;
+    OrderType type =
+        order.getDirection().equalsIgnoreCase(BittrexConstants.SELL)
+            ? OrderType.ASK
+            : OrderType.BID;
     CurrencyPair pair = BittrexUtils.toCurrencyPair(order.getMarketSymbol());
 
     return new LimitOrder.Builder(type, pair)
@@ -212,8 +212,7 @@ public final class BittrexAdapters {
     return Wallet.Builder.from(wallets).build();
   }
 
-  public static void adaptMetaData(
-      List<BittrexSymbol> rawSymbols, ExchangeMetaData metaData) {
+  public static void adaptMetaData(List<BittrexSymbol> rawSymbols, ExchangeMetaData metaData) {
 
     List<CurrencyPair> currencyPairs = BittrexAdapters.adaptCurrencyPairs(rawSymbols);
 

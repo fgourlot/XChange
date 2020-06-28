@@ -1,10 +1,8 @@
 package org.knowm.xchange.bittrex.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.catchThrowable;
 
 import java.util.List;
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.knowm.xchange.Exchange;
@@ -15,7 +13,6 @@ import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.exceptions.CurrencyPairNotValidException;
 
 /** @author walec51 */
 public class MarketDataIntegration {
@@ -52,7 +49,8 @@ public class MarketDataIntegration {
   @Test
   public void sequencedOrderBookTest() throws Exception {
     BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook =
-        marketDataService.getBittrexSequencedOrderBook(BittrexUtils.toPairString(CurrencyPair.ETH_BTC), 500);
+        marketDataService.getBittrexSequencedOrderBook(
+            BittrexUtils.toPairString(CurrencyPair.ETH_BTC), 500);
     List<LimitOrder> asks = sequencedOrderBook.getOrderBook().getAsks();
     assertThat(asks).isNotEmpty();
     assertThat(sequencedOrderBook.getSequence().length()).isGreaterThan(1);

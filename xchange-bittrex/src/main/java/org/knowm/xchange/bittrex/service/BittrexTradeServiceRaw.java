@@ -2,14 +2,13 @@ package org.knowm.xchange.bittrex.service;
 
 import java.io.IOException;
 import java.util.List;
-
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexConstants;
 import org.knowm.xchange.bittrex.BittrexUtils;
-import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
-import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.bittrex.dto.batch.BatchResponse;
 import org.knowm.xchange.bittrex.dto.batch.order.BatchOrder;
+import org.knowm.xchange.bittrex.dto.trade.BittrexNewOrder;
+import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderType;
 import org.knowm.xchange.dto.trade.LimitOrder;
@@ -30,7 +29,9 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
     BittrexNewOrder bittrexNewOrder =
         new BittrexNewOrder(
             BittrexUtils.toPairString(limitOrder.getCurrencyPair()),
-            OrderType.BID.equals(limitOrder.getType()) ? BittrexConstants.BUY : BittrexConstants.SELL,
+            OrderType.BID.equals(limitOrder.getType())
+                ? BittrexConstants.BUY
+                : BittrexConstants.SELL,
             BittrexConstants.LIMIT,
             limitOrder.getRemainingAmount().toPlainString(),
             null,
@@ -54,7 +55,8 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator);
   }
 
-  public List<BittrexOrder> getBittrexUserTradeHistory(CurrencyPair currencyPair) throws IOException {
+  public List<BittrexOrder> getBittrexUserTradeHistory(CurrencyPair currencyPair)
+      throws IOException {
     return bittrexAuthenticated.getClosedOrders(
         apiKey,
         System.currentTimeMillis(),
@@ -77,5 +79,4 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
     return bittrexAuthenticated.executeOrdersBatch(
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator, batchOrders);
   }
-
 }

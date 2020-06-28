@@ -2,9 +2,6 @@ package org.knowm.xchange.bittrex.dto.marketdata;
 
 import java.math.BigDecimal;
 import java.util.Date;
-
-import org.knowm.xchange.currency.Currency;
-
 import lombok.Data;
 import lombok.NoArgsConstructor;
 

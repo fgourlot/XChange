@@ -2,7 +2,6 @@ package org.knowm.xchange.bittrex;
 
 import java.io.IOException;
 import java.util.List;
-
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
@@ -10,7 +9,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepth;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
@@ -51,8 +49,7 @@ public interface Bittrex {
 
   @GET
   @Path("markets/{marketSymbol}/trades")
-  List<BittrexTrade> getTrades(@PathParam("marketSymbol") String marketSymbol)
-      throws IOException;
+  List<BittrexTrade> getTrades(@PathParam("marketSymbol") String marketSymbol) throws IOException;
 
   @GET
   @Path("markets/{marketSymbol}/ticker")

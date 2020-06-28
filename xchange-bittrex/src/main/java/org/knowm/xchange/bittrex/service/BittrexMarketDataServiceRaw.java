@@ -2,7 +2,7 @@ package org.knowm.xchange.bittrex.service;
 
 import java.io.IOException;
 import java.util.List;
-
+import lombok.Data;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.bittrex.BittrexAdapters;
 import org.knowm.xchange.bittrex.BittrexUtils;
@@ -15,8 +15,6 @@ import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
-
-import lombok.Data;
 
 public class BittrexMarketDataServiceRaw extends BittrexBaseService {
 
@@ -55,9 +53,11 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
 
     CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(market);
     List<LimitOrder> asks =
-        BittrexAdapters.adaptOrders(bittrexDepth.getAsks(), currencyPair, Order.OrderType.ASK, null, depth);
+        BittrexAdapters.adaptOrders(
+            bittrexDepth.getAsks(), currencyPair, Order.OrderType.ASK, null, depth);
     List<LimitOrder> bids =
-        BittrexAdapters.adaptOrders(bittrexDepth.getBids(), currencyPair, Order.OrderType.BID, null, depth);
+        BittrexAdapters.adaptOrders(
+            bittrexDepth.getBids(), currencyPair, Order.OrderType.BID, null, depth);
 
     OrderBook orderBook = new OrderBook(null, asks, bids);
     return new SequencedOrderBook(bittrexDepth.getSequence(), orderBook);
