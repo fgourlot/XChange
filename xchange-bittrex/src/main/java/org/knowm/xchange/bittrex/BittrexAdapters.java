@@ -6,6 +6,7 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.knowm.xchange.bittrex.dto.account.BittrexBalance;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexLevel;
@@ -14,6 +15,7 @@ import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
 import org.knowm.xchange.bittrex.dto.trade.BittrexOrder;
+import org.knowm.xchange.bittrex.dto.trade.BittrexUserTrade;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order.OrderStatus;
@@ -28,6 +30,8 @@ import org.knowm.xchange.dto.meta.CurrencyMetaData;
 import org.knowm.xchange.dto.meta.CurrencyPairMetaData;
 import org.knowm.xchange.dto.meta.ExchangeMetaData;
 import org.knowm.xchange.dto.trade.LimitOrder;
+import org.knowm.xchange.dto.trade.UserTrade;
+import org.knowm.xchange.dto.trade.UserTrades;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,13 +41,10 @@ public final class BittrexAdapters {
 
   private BittrexAdapters() {}
 
-  public static List<CurrencyPair> adaptCurrencyPairs(Collection<BittrexSymbol> bittrexSymbol) {
-
-    List<CurrencyPair> currencyPairs = new ArrayList<>();
-    for (BittrexSymbol symbol : bittrexSymbol) {
-      currencyPairs.add(adaptCurrencyPair(symbol));
-    }
-    return currencyPairs;
+  public static List<CurrencyPair> adaptCurrencyPairs(Collection<BittrexSymbol> bittrexSymbols) {
+    return bittrexSymbols.stream()
+        .map(BittrexAdapters::adaptCurrencyPair)
+        .collect(Collectors.toList());
   }
 
   public static CurrencyPair adaptCurrencyPair(BittrexSymbol bittrexSymbol) {
@@ -54,14 +55,7 @@ public final class BittrexAdapters {
   }
 
   public static List<LimitOrder> adaptOpenOrders(List<BittrexOrder> bittrexOpenOrders) {
-
-    List<LimitOrder> openOrders = new ArrayList<>();
-
-    for (BittrexOrder order : bittrexOpenOrders) {
-      openOrders.add(adaptOrder(order));
-    }
-
-    return openOrders;
+    return bittrexOpenOrders.stream().map(BittrexAdapters::adaptOrder).collect(Collectors.toList());
   }
 
   public static LimitOrder adaptOrder(BittrexOrder order, OrderStatus status) {
@@ -110,7 +104,6 @@ public final class BittrexAdapters {
     return adaptOrder(order, adaptOrderStatus(order));
   }
 
-
   private static OrderStatus adaptOrderStatus(BittrexOrder order) {
     OrderStatus status = OrderStatus.NEW;
     BigDecimal qty = order.getQuantity();
@@ -156,7 +149,29 @@ public final class BittrexAdapters {
     return new Trades(tradesList, lastTradeId, TradeSortType.SortByID);
   }
 
-  public static Ticker adaptTicker(BittrexMarketSummary bittrexMarketSummary, BittrexTicker bittrexTicker) {
+  public static List<UserTrade> adaptUserTrades(List<BittrexOrder> bittrexUserTrades) {
+    return bittrexUserTrades.stream()
+        .map(
+            bittrexOrder ->
+                new UserTrade.Builder()
+                    .type(
+                        "BUY".equalsIgnoreCase(bittrexOrder.getType())
+                            ? OrderType.BID
+                            : OrderType.ASK)
+                    .originalAmount(bittrexOrder.getFillQuantity())
+                    .currencyPair(BittrexUtils.toCurrencyPair(bittrexOrder.getMarketSymbol()))
+                    .price(bittrexOrder.getLimit())
+                    .timestamp(bittrexOrder.getClosedAt())
+                    .id(bittrexOrder.getId())
+                    .feeAmount(bittrexOrder.getCommission())
+                    .feeCurrency(
+                        BittrexUtils.toCurrencyPair(bittrexOrder.getMarketSymbol()).counter)
+                    .build())
+        .collect(Collectors.toList());
+  }
+
+  public static Ticker adaptTicker(
+      BittrexMarketSummary bittrexMarketSummary, BittrexTicker bittrexTicker) {
 
     CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(bittrexTicker.getSymbol());
     BigDecimal last = bittrexTicker.getLastTradeRate();
@@ -182,18 +197,17 @@ public final class BittrexAdapters {
   }
 
   public static Wallet adaptWallet(Collection<BittrexBalance> balances) {
-
-    List<Balance> wallets = new ArrayList<>(balances.size());
-
-    for (BittrexBalance balance : balances) {
-      wallets.add(
-          new Balance.Builder()
-          .currency(balance.getCurrencySymbol())
-          .total(balance.getTotal())
-          .available(balance.getAvailable())
-          .timestamp(balance.getUpdatedAt())
-          .build());
-    }
+    List<Balance> wallets =
+        balances.stream()
+            .map(
+                bittrexBalance ->
+                    new Balance.Builder()
+                        .currency(bittrexBalance.getCurrencySymbol())
+                        .total(bittrexBalance.getTotal())
+                        .available(bittrexBalance.getAvailable())
+                        .timestamp(bittrexBalance.getUpdatedAt())
+                        .build())
+            .collect(Collectors.toList());
 
     return Wallet.Builder.from(wallets).build();
   }
@@ -219,5 +233,4 @@ public final class BittrexAdapters {
 
     return metaData;
   }
-
 }

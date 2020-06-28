@@ -53,7 +53,7 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         apiKey, System.currentTimeMillis(), contentCreator, signatureCreator);
   }
 
-  public List<BittrexOrder> getBittrexTradeHistory(CurrencyPair currencyPair) throws IOException {
+  public List<BittrexOrder> getBittrexUserTradeHistory(CurrencyPair currencyPair) throws IOException {
     return bittrexAuthenticated.getClosedOrders(
         apiKey,
         System.currentTimeMillis(),
@@ -63,8 +63,8 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
         200);
   }
 
-  public List<BittrexOrder> getBittrexTradeHistory() throws IOException {
-    return getBittrexTradeHistory(null);
+  public List<BittrexOrder> getBittrexUserTradeHistory() throws IOException {
+    return getBittrexUserTradeHistory(null);
   }
 
   public BittrexOrder getBittrexOrder(String orderId) throws IOException {
