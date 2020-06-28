@@ -14,10 +14,14 @@ import org.knowm.xchange.dto.trade.UserTrade;
 import org.knowm.xchange.dto.trade.UserTrades;
 import org.knowm.xchange.service.trade.params.TradeHistoryParams;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 /** @author walec51 */
 public class TradeMockedIntegrationTest extends BaseMockedIntegrationTest {
 
   private static BittrexTradeService tradeService;
+  private static final String NEWORDER_FILE_NAME = "newOrder.json";
 
   @Before
   public void setUp() {
@@ -26,21 +30,31 @@ public class TradeMockedIntegrationTest extends BaseMockedIntegrationTest {
 
   @Test
   public void placeOrderTest() throws Exception {
+    final ObjectMapper mapper = new ObjectMapper();
+    JsonNode jsonRoot =
+        mapper.readTree(
+            this.getClass().getResource("/" + WIREMOCK_FILES_PATH + "/" + NEWORDER_FILE_NAME));
+
     stubFor(
-        get(urlPathEqualTo("/api/v1.1/market/buylimit"))
-            .withQueryParam("market", equalTo("BTC-ETH"))
-            .withQueryParam("quantity", equalTo("1"))
-            .withQueryParam("rate", equalTo("0.004"))
+        post(urlPathEqualTo("/v3/orders"))
+            .withRequestBody(equalToJson(jsonRoot.toString()))
+            //.withRequestBody(matchingJsonPath(jsonRoot.toString()))
             .willReturn(
                 aResponse()
                     .withStatus(200)
                     .withHeader("Content-Type", "application/json")
                     .withBodyFile("placedorder.json")));
+
+    Order.OrderType type = "BUY".equals(jsonRoot.get("direction").asText()) ? Order.OrderType.BID: Order.OrderType.ASK;
+    String[] currencyPairSplit = jsonRoot.get("marketSymbol").asText().split("-");
+    CurrencyPair market = new CurrencyPair(currencyPairSplit[0], currencyPairSplit[1]);
+    BigDecimal price = new BigDecimal(jsonRoot.get("limit").asText());
+    BigDecimal quantity = new BigDecimal(jsonRoot.get("quantity").asText());
     String orderId =
         tradeService.placeLimitOrder(
-            new LimitOrder.Builder(Order.OrderType.BID, CurrencyPair.ETH_BTC)
-                .limitPrice(new BigDecimal("0.004"))
-                .originalAmount(new BigDecimal("1"))
+            new LimitOrder.Builder(type, market)
+                .limitPrice(price)
+                .originalAmount(quantity)
                 .build());
     assertThat(orderId).isNotNull().isNotEmpty();
   }
@@ -48,7 +62,7 @@ public class TradeMockedIntegrationTest extends BaseMockedIntegrationTest {
   @Test
   public void openOrdersTest() throws Exception {
     stubFor(
-        get(urlPathEqualTo("/api/v1.1/market/getopenorders"))
+        get(urlPathEqualTo("/v3/orders/open"))
             .willReturn(
                 aResponse()
                     .withStatus(200)

@@ -31,9 +31,9 @@ public class BittrexTradeServiceRaw extends BittrexBaseService {
             BittrexUtils.toPairString(limitOrder.getCurrencyPair()),
             OrderType.BID.equals(limitOrder.getType()) ? "BUY" : "SELL",
             "LIMIT",
-            limitOrder.getRemainingAmount(),
+            limitOrder.getRemainingAmount().toPlainString(),
             null,
-            limitOrder.getLimitPrice(),
+            limitOrder.getLimitPrice().toPlainString(),
             "GOOD_TIL_CANCELLED",
             null,
             null);

@@ -13,10 +13,10 @@ public class BittrexNewOrder {
   private String marketSymbol;
   private String direction;
   private String type;
-  private BigDecimal quantity;
-  private BigDecimal ceiling;
-  private BigDecimal limit;
+  private String quantity;
+  private String ceiling;
+  private String limit;
   private String timeInForce;
   private String clientOrderId;
-  private Boolean useAwards;
+  private String useAwards;
 }
