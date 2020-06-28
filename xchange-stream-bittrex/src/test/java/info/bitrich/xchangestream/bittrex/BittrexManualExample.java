@@ -8,16 +8,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BittrexManualExample {
-    private static final Logger LOG = LoggerFactory.getLogger(info.bitrich.xchangestream.bittrex.BittrexManualExample.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(info.bitrich.xchangestream.bittrex.BittrexManualExample.class);
 
-    public static void main(String[] args) {
-        ExchangeSpecification exchangeSpecification =
-                new ExchangeSpecification(BittrexStreamingExchange.class.getName());
-        exchangeSpecification.setApiKey(args[0]);
-        exchangeSpecification.setSecretKey(args[1]);
-        StreamingExchange exchange =
-                StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
-        exchange.connect().blockingAwait();
+  public static void main(String[] args) {
+    ExchangeSpecification exchangeSpecification =
+        new ExchangeSpecification(BittrexStreamingExchange.class.getName());
+    exchangeSpecification.setApiKey(args[0]);
+    exchangeSpecification.setSecretKey(args[1]);
+    StreamingExchange exchange =
+        StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
+    exchange.connect().blockingAwait();
     exchange
         .getStreamingMarketDataService()
         .getOrderBook(CurrencyPair.ETH_BTC)
@@ -25,12 +26,5 @@ public class BittrexManualExample {
             orderBook -> {
               LOG.info("Received order book {}", orderBook);
             });
-//        exchange
-//                .getStreamingTradeService()
-//                .getUserTrades(CurrencyPair.ETH_BTC)
-//                .subscribe(
-//                        userTrade -> {
-//                            LOG.info("Received order {}", userTrade);
-//                        });
-    }
+  }
 }

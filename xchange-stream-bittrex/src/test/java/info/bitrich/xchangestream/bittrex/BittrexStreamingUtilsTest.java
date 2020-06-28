@@ -1,20 +1,28 @@
 package info.bitrich.xchangestream.bittrex;
 
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import junit.framework.TestCase;
+import org.apache.commons.io.IOUtils;
+import org.junit.Assert;
+import org.knowm.xchange.currency.Currency;
+import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
+import org.knowm.xchange.dto.account.Balance;
+import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.trade.LimitOrder;
+import org.knowm.xchange.dto.trade.UserTrade;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.junit.Assert;
-import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.dto.Order;
-import org.knowm.xchange.dto.marketdata.OrderBook;
-import org.knowm.xchange.dto.trade.LimitOrder;
-
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
-import junit.framework.TestCase;
-
 public class BittrexStreamingUtilsTest extends TestCase {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingUtilsTest.class);
 
   public void testUpdateOrderBook() {
     CurrencyPair market = CurrencyPair.ETH_BTC;
@@ -111,4 +119,34 @@ public class BittrexStreamingUtilsTest extends TestCase {
     Assert.assertTrue(orderBookUpdated.ordersEqual(expectedUpdatedOrderBook));
   }
 
+  /** Test an encoded Bittrex order message to UserTrade object conversion */
+  public void testBittrexOrderToUserTrade() {
+    try {
+      // read encoded order message (from mock)
+      String orderMessage =
+          IOUtils.toString(getClass().getResource("/orderMessage_encoded.txt"), "UTF8");
+      UserTrade userTrade = BittrexStreamingUtils.bittrexOrderMessageToUserTrade(orderMessage);
+      assertEquals(userTrade.getOrderId(), "738a6aed-9d09-4035-92af-1dcae3872e52");
+      assertEquals(userTrade.getCurrencyPair(), CurrencyPair.ETH_BTC);
+      assertEquals(userTrade.getPrice(), new BigDecimal("0.02070000"));
+      assertEquals(userTrade.getOriginalAmount(), new BigDecimal("0.10000000"));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
+
+  /** Test an encoded Bittrex balance message to Balance object conversion */
+  public void testBittrexBalanceToBalance() {
+    try {
+      // read encoded balance message (from mock)
+      String balanceMessage =
+          IOUtils.toString(getClass().getResource("/balanceMessage_encoded.txt"), "UTF8");
+      Balance balance = BittrexStreamingUtils.bittrexBalanceMessageToBalance(balanceMessage);
+      assertEquals(balance.getCurrency(), Currency.BTC);
+      assertEquals(balance.getTotal(), new BigDecimal("0.00804302"));
+      assertEquals(balance.getAvailable(), new BigDecimal("0.00596149"));
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+  }
 }
