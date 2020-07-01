@@ -213,21 +213,12 @@ public final class BittrexAdapters {
   }
 
   public static void adaptMetaData(List<BittrexSymbol> rawSymbols, ExchangeMetaData metaData) {
-
-    List<CurrencyPair> currencyPairs = BittrexAdapters.adaptCurrencyPairs(rawSymbols);
-
-    Map<CurrencyPair, CurrencyPairMetaData> pairsMap = metaData.getCurrencyPairs();
-    Map<Currency, CurrencyMetaData> currenciesMap = metaData.getCurrencies();
-    for (CurrencyPair c : currencyPairs) {
-      if (!pairsMap.containsKey(c)) {
-        pairsMap.put(c, null);
-      }
-      if (!currenciesMap.containsKey(c.base)) {
-        currenciesMap.put(c.base, null);
-      }
-      if (!currenciesMap.containsKey(c.counter)) {
-        currenciesMap.put(c.counter, null);
-      }
-    }
+    BittrexAdapters.adaptCurrencyPairs(rawSymbols)
+        .forEach(
+            currencyPair -> {
+              metaData.getCurrencyPairs().putIfAbsent(currencyPair, null);
+              metaData.getCurrencies().putIfAbsent(currencyPair.base, null);
+              metaData.getCurrencies().putIfAbsent(currencyPair.counter, null);
+            });
   }
 }
