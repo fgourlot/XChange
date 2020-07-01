@@ -1,6 +1,7 @@
 package org.knowm.xchange.bittrex;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import org.knowm.xchange.BaseExchange;
 import org.knowm.xchange.Exchange;
@@ -17,6 +18,9 @@ public class BittrexExchange extends BaseExchange implements Exchange {
 
   private final SynchronizedValueFactory<Long> nonceFactory =
       new AtomicLongIncrementalTime2013NonceFactory();
+
+  private static List<BittrexSymbol> bittrexSymbols = new ArrayList<>();
+  private static final Object INIT_LOCK = new Object();
 
   @Override
   protected void initServices() {
@@ -45,8 +49,13 @@ public class BittrexExchange extends BaseExchange implements Exchange {
 
   @Override
   public void remoteInit() throws IOException {
-    BittrexMarketDataServiceRaw dataService = (BittrexMarketDataServiceRaw) this.marketDataService;
-    List<BittrexSymbol> bittrexSymbols = dataService.getBittrexSymbols();
-    BittrexAdapters.adaptMetaData(bittrexSymbols, exchangeMetaData);
+    if (bittrexSymbols.isEmpty()) {
+      synchronized (INIT_LOCK) {
+        if (bittrexSymbols.isEmpty()) {
+          bittrexSymbols = ((BittrexMarketDataServiceRaw) marketDataService).getBittrexSymbols();
+          BittrexAdapters.adaptMetaData(bittrexSymbols, exchangeMetaData);
+        }
+      }
+    }
   }
 }

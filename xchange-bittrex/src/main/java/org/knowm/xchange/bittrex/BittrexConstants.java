@@ -12,4 +12,8 @@ public class BittrexConstants {
   public static final String FILL_OR_KILL = "FILL_OR_KILL";
   public static final String POST_ONLY_GOOD_TIL_CANCELLED = "POST_ONLY_GOOD_TIL_CANCELLED";
   public static final String BUY_NOW = "BUY_NOW";
+  public static final String ONLINE = "ONLINE";
+  public static final String OFFLINE = "OFFLINE";
+  public static final String POST = "Post";
+  public static final String DELETE = "Delete";
 }

@@ -1,6 +1,5 @@
 package org.knowm.xchange.bittrex.dto.trade;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
