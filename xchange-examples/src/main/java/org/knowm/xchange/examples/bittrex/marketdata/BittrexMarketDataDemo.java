@@ -8,14 +8,10 @@ import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.bittrex.BittrexUtils;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexChartData;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexCurrency;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepth;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
-import org.knowm.xchange.bittrex.service.BittrexChartDataPeriodType;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
@@ -58,9 +54,6 @@ public class BittrexMarketDataDemo {
 
     System.out.println("------------RAW-----------");
 
-    List<BittrexCurrency> currencies = marketDataService.getBittrexCurrencies();
-    System.out.println(currencies);
-
     List<BittrexSymbol> symbols = marketDataService.getBittrexSymbols();
     System.out.println(symbols);
 
@@ -71,29 +64,16 @@ public class BittrexMarketDataDemo {
     System.out.println("Market data for " + pair + ":");
     String pairString = BittrexUtils.toPairString(pair);
 
-    BittrexMarketSummary merketSummary = marketDataService.getBittrexMarketSummary(pairString);
-    System.out.println(merketSummary);
+    BittrexMarketSummary marketSummary = marketDataService.getBittrexMarketSummary(pairString);
+    System.out.println(marketSummary);
 
     List<BittrexMarketSummary> marketSummaries = marketDataService.getBittrexMarketSummaries();
     System.out.println(marketSummaries);
 
-    BittrexDepth orderBook = marketDataService.getBittrexOrderBook(pairString, 50);
-    System.out.println(orderBook);
-
     List<BittrexTrade> trades = marketDataService.getBittrexTrades(pairString);
     System.out.println(trades);
 
-    BittrexTicker ticker = marketDataService.getBittrexTicker(pair);
+    BittrexTicker ticker = marketDataService.getBittrexTicker(BittrexUtils.toPairString(pair));
     System.out.println(ticker);
-
-    List<BittrexChartData> chartData =
-        marketDataService.getBittrexChartData(
-            CurrencyPair.ETH_BTC, BittrexChartDataPeriodType.ONE_DAY);
-    System.out.println(chartData);
-
-    List<BittrexChartData> latestTick =
-        marketDataService.getBittrexLatestTick(
-            CurrencyPair.ETH_BTC, BittrexChartDataPeriodType.ONE_DAY, 1500915289434L);
-    System.out.println(latestTick);
   }
 }

@@ -1,20 +1,18 @@
 package org.knowm.xchange.bittrex.service;
 
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
-
-import org.apache.commons.lang3.tuple.Pair;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.bittrex.BittrexExchange;
+import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.exceptions.CurrencyPairNotValidException;
 
 /** @author walec51 */
 public class MarketDataIntegration {
@@ -29,27 +27,13 @@ public class MarketDataIntegration {
 
   @Test
   public void tickerTest() throws Exception {
-    Ticker ticker = marketDataService.getTicker(new CurrencyPair("LTC", "BTC"));
+    Ticker ticker = marketDataService.getTicker(CurrencyPair.ETH_BTC);
     System.out.println(ticker.toString());
     assertThat(ticker).isNotNull();
     assertThat(ticker.getLast()).isNotNull().isPositive();
+    assertThat(ticker.getQuoteVolume()).isNotNull().isPositive();
+    assertThat(ticker.getVolume()).isNotNull().isPositive();
     assertThat(ticker.getHigh()).isNotNull().isPositive();
-  }
-
-  @Test
-  public void invalidCurrencyPairForTickerTest() throws Exception {
-    Throwable excepton =
-        catchThrowable(
-            () -> marketDataService.getTicker(new CurrencyPair("NOT_EXISTING_CODE", "USD")));
-    assertThat(excepton).isExactlyInstanceOf(CurrencyPairNotValidException.class);
-  }
-
-  @Test
-  public void invalidCurrencyPairForTradesTest() throws Exception {
-    Throwable excepton =
-        catchThrowable(
-            () -> marketDataService.getTrades(new CurrencyPair("NOT_EXISTING_CODE", "USD")));
-    assertThat(excepton).isExactlyInstanceOf(CurrencyPairNotValidException.class);
   }
 
   @Test
@@ -63,12 +47,13 @@ public class MarketDataIntegration {
   }
 
   @Test
-  public void orderBooksV3Test() throws Exception {
-    Pair<OrderBook, String> orderBookV3AndSequence = marketDataService.getOrderBookV3(CurrencyPair.ETH_BTC);
-    OrderBook orderBook = orderBookV3AndSequence.getLeft();
-    List<LimitOrder> asks = orderBook.getAsks();
+  public void sequencedOrderBookTest() throws Exception {
+    BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook =
+        marketDataService.getBittrexSequencedOrderBook(
+            BittrexUtils.toPairString(CurrencyPair.ETH_BTC), 500);
+    List<LimitOrder> asks = sequencedOrderBook.getOrderBook().getAsks();
     assertThat(asks).isNotEmpty();
-    assertThat(orderBookV3AndSequence.getRight().length()).isGreaterThan(1);
+    assertThat(sequencedOrderBook.getSequence().length()).isGreaterThan(1);
     LimitOrder firstAsk = asks.get(0);
     assertThat(firstAsk.getLimitPrice()).isNotNull().isPositive();
     assertThat(firstAsk.getRemainingAmount()).isNotNull().isPositive();

@@ -1,9 +1,6 @@
 package info.bitrich.xchangestream.bittrex;
 
-import info.bitrich.xchangestream.core.ProductSubscription;
-import info.bitrich.xchangestream.core.StreamingAccountService;
-import info.bitrich.xchangestream.core.StreamingExchange;
-import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import info.bitrich.xchangestream.core.*;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
@@ -19,6 +16,7 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
   private BittrexStreamingService streamingService;
   private BittrexStreamingAccountService streamingAccountService;
   private BittrexStreamingMarketDataService streamingMarketDataService;
+  private BittrexStreamingTradeService streamingTradeService;
   private BittrexMarketDataService bittrexMarketDataService;
 
   public BittrexStreamingExchange() {}
@@ -29,7 +27,9 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
     streamingService = new BittrexStreamingService(API_BASE_URI, exchangeSpecification);
     streamingAccountService = new BittrexStreamingAccountService(streamingService);
     bittrexMarketDataService = new BittrexMarketDataService(this);
-    streamingMarketDataService = new BittrexStreamingMarketDataService(streamingService, bittrexMarketDataService);
+    streamingMarketDataService =
+        new BittrexStreamingMarketDataService(streamingService, bittrexMarketDataService);
+    streamingTradeService = new BittrexStreamingTradeService(streamingService);
   }
 
   public io.reactivex.Completable connect(ProductSubscription... args) {
@@ -49,7 +49,11 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
     return streamingMarketDataService;
   }
 
-  public StreamingAccountService getStreamingAccountService() { return streamingAccountService; }
+  public StreamingAccountService getStreamingAccountService() {
+    return streamingAccountService;
+  }
+
+  public StreamingTradeService getStreamingTradeService() { return streamingTradeService; }
 
   public void useCompressedMessages(boolean compressedMessages) {}
 }

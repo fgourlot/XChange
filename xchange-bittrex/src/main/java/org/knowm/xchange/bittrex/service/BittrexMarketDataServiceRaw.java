@@ -2,18 +2,19 @@ package org.knowm.xchange.bittrex.service;
 
 import java.io.IOException;
 import java.util.List;
+import lombok.Data;
 import org.knowm.xchange.Exchange;
+import org.knowm.xchange.bittrex.BittrexAdapters;
 import org.knowm.xchange.bittrex.BittrexUtils;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexChartData;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexCurrency;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepth;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexDepthV3;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexMarketSummary;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexSymbol;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTicker;
 import org.knowm.xchange.bittrex.dto.marketdata.BittrexTrade;
-import org.knowm.xchange.bittrex.dto.marketdata.BittrexV2MarketSummary;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
+import org.knowm.xchange.dto.marketdata.OrderBook;
+import org.knowm.xchange.dto.trade.LimitOrder;
 
 public class BittrexMarketDataServiceRaw extends BittrexBaseService {
 
@@ -23,70 +24,52 @@ public class BittrexMarketDataServiceRaw extends BittrexBaseService {
    * @param exchange
    */
   public BittrexMarketDataServiceRaw(Exchange exchange) {
-
     super(exchange);
   }
 
-  public List<BittrexCurrency> getBittrexCurrencies() throws IOException {
-
-    return bittrexAuthenticated.getCurrencies().getResult();
-  }
-
-  public BittrexTicker getBittrexTicker(CurrencyPair currencyPair) throws IOException {
-    return bittrexAuthenticated.getTicker(BittrexUtils.toPairString(currencyPair)).getResult();
-  }
-
   public List<BittrexSymbol> getBittrexSymbols() throws IOException {
-
-    return bittrexAuthenticated.getSymbols().getResult();
+    return bittrexAuthenticated.getMarkets();
   }
 
   public BittrexMarketSummary getBittrexMarketSummary(String pair) throws IOException {
-
-    List<BittrexMarketSummary> result = bittrexAuthenticated.getMarketSummary(pair).getResult();
-    if (result == null || result.isEmpty()) {
-      return null;
-    }
-    return result.get(0);
+    return bittrexAuthenticated.getMarketSummary(pair);
   }
 
   public List<BittrexMarketSummary> getBittrexMarketSummaries() throws IOException {
-
-    return bittrexAuthenticated.getMarketSummaries().getResult();
+    return bittrexAuthenticated.getMarketSummaries();
   }
 
-  public BittrexDepth getBittrexOrderBook(String pair, int depth) throws IOException {
-
-    return bittrexAuthenticated.getBook(pair, "both", depth).getResult();
+  public BittrexTicker getBittrexTicker(String pair) throws IOException {
+    return bittrexAuthenticated.getTicker(pair);
   }
 
-  public BittrexDepthV3 getBittrexOrderBookV3(String pair, int depth) throws IOException {
+  public List<BittrexTicker> getBittrexTickers() throws IOException {
+    return bittrexAuthenticated.getTickers();
+  }
 
-    return bittrexAuthenticatedV3.getBookV3(pair, depth);
+  public SequencedOrderBook getBittrexSequencedOrderBook(String market, int depth)
+      throws IOException {
+    BittrexDepth bittrexDepth = bittrexAuthenticated.getOrderBook(market, depth);
+
+    CurrencyPair currencyPair = BittrexUtils.toCurrencyPair(market);
+    List<LimitOrder> asks =
+        BittrexAdapters.adaptOrders(
+            bittrexDepth.getAsks(), currencyPair, Order.OrderType.ASK, null, depth);
+    List<LimitOrder> bids =
+        BittrexAdapters.adaptOrders(
+            bittrexDepth.getBids(), currencyPair, Order.OrderType.BID, null, depth);
+
+    OrderBook orderBook = new OrderBook(null, asks, bids);
+    return new SequencedOrderBook(bittrexDepth.getSequence(), orderBook);
   }
 
   public List<BittrexTrade> getBittrexTrades(String pair) throws IOException {
-
-    return bittrexAuthenticated.getTrades(pair).getResult();
+    return bittrexAuthenticated.getTrades(pair);
   }
 
-  public List<BittrexChartData> getBittrexChartData(
-      CurrencyPair currencyPair, BittrexChartDataPeriodType periodType) throws IOException {
-
-    return bittrexV2
-        .getChartData(BittrexUtils.toPairString(currencyPair), periodType.getPeriod())
-        .getResult();
-  }
-
-  public List<BittrexChartData> getBittrexLatestTick(
-      CurrencyPair currencyPair, BittrexChartDataPeriodType periodType, Long timeStamp)
-      throws IOException {
-    return bittrexV2
-        .getLatestTick(BittrexUtils.toPairString(currencyPair), periodType.getPeriod(), timeStamp)
-        .getResult();
-  }
-
-  public List<BittrexV2MarketSummary> getBittrexV2MarketSummaries() {
-    return bittrexV2.getMarketSummaries().getResult();
+  @Data
+  public static class SequencedOrderBook {
+    private final String sequence;
+    private final OrderBook orderBook;
   }
 }

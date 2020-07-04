@@ -5,17 +5,10 @@ import com.github.signalr4j.client.hubs.HubProxy;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
-import org.knowm.xchange.Exchange;
-import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
-import org.knowm.xchange.bittrex.BittrexExchange;
-import org.knowm.xchange.bittrex.service.BittrexAccountService;
-import org.knowm.xchange.dto.account.AccountInfo;
-import org.knowm.xchange.service.account.AccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
@@ -29,8 +22,6 @@ public class BittrexStreamingService {
 
   private HubConnection _hubConnection;
   private HubProxy _hubProxy;
-
-  private AccountService accountService;
 
   public BittrexStreamingService(String apiUrl, ExchangeSpecification exchangeSpecification) {
     this.exchangeSpecification = exchangeSpecification;
@@ -50,14 +41,17 @@ public class BittrexStreamingService {
   }
 
   public Observable subscribeToChannels(String[] channels) {
-    return Observable.fromFuture(_hubProxy
+    return Observable.fromFuture(
+        _hubProxy
             .invoke(Object.class, "Subscribe", (Object) channels)
-            .onError(e -> {
-              LOG.error("Error subscribe {}", e);
-            })
-            .done(o -> {
-              LOG.info("Success subscribe {}", o);
-            }));
+            .onError(
+                e -> {
+                  LOG.error("Error subscribe {}", e);
+                })
+            .done(
+                o -> {
+                  LOG.info("Success subscribe {}", o);
+                }));
   }
 
   public void setHandler(String eventName, SubscriptionHandler1 handler) {
@@ -75,21 +69,26 @@ public class BittrexStreamingService {
     Long ts = date.getTime();
     UUID uuid = UUID.randomUUID();
     String randomContent = ts.toString() + uuid.toString();
+
     try {
-      String signedContent = EncryptionUtility.calculateHash(
+      String signedContent =
+          EncryptionUtils.calculateHash(
               this.exchangeSpecification.getSecretKey(), randomContent, "HmacSHA512");
-      _hubProxy.invoke(
+      _hubProxy
+          .invoke(
               Object.class,
               "Authenticate",
               this.exchangeSpecification.getApiKey(),
               ts,
               uuid,
               signedContent)
-              .onError(error -> {
+          .onError(
+              error -> {
                 LOG.error("Error during Authentication {}", error);
               })
-              .done(obj -> {
-                LOG.info("Authentication success");
+          .done(
+              obj -> {
+                LOG.info("Authentication success {}");
               });
     } catch (InvalidKeyException e) {
       e.printStackTrace();
@@ -100,10 +99,11 @@ public class BittrexStreamingService {
 
   /** Auto-reauthenticate */
   private void setupAutoReAuthentication() {
-    _hubProxy.on("authenticationExpiring",
-            () -> {
-              LOG.info("Authentication expiring, will reconnect ...");
-              this.authenticate();
-            });
+    _hubProxy.on(
+        "authenticationExpiring",
+        () -> {
+          LOG.info("Authentication expiring, will reconnect ...");
+          this.authenticate();
+        });
   }
 }
