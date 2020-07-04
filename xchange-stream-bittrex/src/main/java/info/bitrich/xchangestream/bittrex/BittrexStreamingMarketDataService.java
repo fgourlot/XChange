@@ -60,9 +60,9 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
     // create result Observable
     Observable<OrderBook> obs =
-        new Observable<>() {
+        new Observable<OrderBook>() {
           @Override
-          protected void subscribeActual(Observer<? super OrderBook> observer) {
+          protected void subscribeActual(Observer observer) {
             // create handler for `orderbook` messages
             SubscriptionHandler1<String> orderBookHandler =
                 message -> {

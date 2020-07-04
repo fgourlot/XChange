@@ -24,7 +24,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
 
     // create result Observable
     Observable<Balance> obs =
-        new Observable<>() {
+        new Observable<Balance>() {
           @Override
           protected void subscribeActual(Observer<? super Balance> observer) {
             // create handler for `balance` messages
