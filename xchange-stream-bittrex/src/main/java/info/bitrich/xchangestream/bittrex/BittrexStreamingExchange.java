@@ -53,7 +53,9 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
     return streamingAccountService;
   }
 
-  public StreamingTradeService getStreamingTradeService() { return streamingTradeService; }
+  public StreamingTradeService getStreamingTradeService() {
+    return streamingTradeService;
+  }
 
   public void useCompressedMessages(boolean compressedMessages) {}
 }

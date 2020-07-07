@@ -1,9 +1,8 @@
 package info.bitrich.xchangestream.bittrex.dto;
 
-import org.knowm.xchange.currency.Currency;
-
 import java.math.BigDecimal;
 import java.util.Date;
+import org.knowm.xchange.currency.Currency;
 
 public class BittrexBalanceDelta {
   private Currency currencySymbol;
@@ -14,7 +13,7 @@ public class BittrexBalanceDelta {
   public BittrexBalanceDelta() {}
 
   public BittrexBalanceDelta(
-          Currency currencySymbol, BigDecimal total, BigDecimal available, Date updatedAt) {
+      Currency currencySymbol, BigDecimal total, BigDecimal available, Date updatedAt) {
     this.currencySymbol = currencySymbol;
     this.total = total;
     this.available = available;

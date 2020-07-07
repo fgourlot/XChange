@@ -5,14 +5,13 @@ import com.github.signalr4j.client.hubs.HubProxy;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import io.reactivex.Completable;
 import io.reactivex.Observable;
-import org.knowm.xchange.ExchangeSpecification;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.UUID;
+import org.knowm.xchange.ExchangeSpecification;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BittrexStreamingService {
 

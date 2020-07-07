@@ -1,8 +1,12 @@
 package info.bitrich.xchangestream.bittrex;
 
 import io.reactivex.disposables.Disposable;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
+import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
@@ -15,10 +19,6 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.List;
 
 public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest {
   private static final Logger LOG =
@@ -34,9 +34,12 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
   public void balanceAfterOrderTest() {
 
     // init services
-    BittrexTradeService bittrexTradeService = new BittrexTradeService(this.exchange);
-    BittrexMarketDataService marketDataService = new BittrexMarketDataService(this.exchange);
-    BittrexAccountService accountService = new BittrexAccountService(this.exchange);
+    BittrexTradeService bittrexTradeService =
+        new BittrexTradeService((BittrexExchange) this.exchange);
+    BittrexMarketDataService marketDataService =
+        new BittrexMarketDataService((BittrexExchange) this.exchange);
+    BittrexAccountService accountService =
+        new BittrexAccountService((BittrexExchange) this.exchange);
 
     // test order params
     CurrencyPair currencyPair = CurrencyPair.ETH_BTC;

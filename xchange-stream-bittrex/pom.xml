@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>org.knowm.xchange</groupId>
-            <artifactId>xchange-bittrex</artifactId>
+            <artifactId>xchange-bittrexV3</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>

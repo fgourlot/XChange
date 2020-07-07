@@ -5,6 +5,10 @@ import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Stream;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
@@ -14,11 +18,6 @@ import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.dto.trade.UserTrade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Stream;
 
 /** Utility class for the bittrex streaming. */
 public final class BittrexStreamingUtils {
@@ -107,12 +106,12 @@ public final class BittrexStreamingUtils {
       String decompressedMessage = EncryptionUtils.decompress(bittrexOrderMessage);
       LOG.debug("Decompressed order message : {}", decompressedMessage);
       // parse JSON to Object
-      BittrexOrder bittrexOrder =
-              objectMapper.readValue(decompressedMessage, BittrexOrder.class);
+      BittrexOrder bittrexOrder = objectMapper.readValue(decompressedMessage, BittrexOrder.class);
       // build and return UserTrade
       return new UserTrade.Builder()
           .type(
-              BittrexStreamingUtils.orderDirectionToOrderType(bittrexOrder.getDelta().getDirection()))
+              BittrexStreamingUtils.orderDirectionToOrderType(
+                  bittrexOrder.getDelta().getDirection()))
           .currencyPair(BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
           .orderId(bittrexOrder.getDelta().getId())
           .price(bittrexOrder.getDelta().getLimit())
@@ -120,7 +119,7 @@ public final class BittrexStreamingUtils {
           .timestamp(bittrexOrder.getDelta().getCreatedAt())
           .feeAmount(bittrexOrder.getDelta().getCommission())
           .build();
-      } catch (IOException e) {
+    } catch (IOException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
@@ -140,14 +139,14 @@ public final class BittrexStreamingUtils {
       LOG.debug("Decompressed balance message : {}", decompressedMessage);
       // parse JSON to Object
       BittrexBalance bittrexBalance =
-              objectMapper.readValue(decompressedMessage, BittrexBalance.class);
+          objectMapper.readValue(decompressedMessage, BittrexBalance.class);
       return new Balance.Builder()
           .currency(bittrexBalance.getDelta().getCurrencySymbol())
           .total(bittrexBalance.getDelta().getTotal())
           .available(bittrexBalance.getDelta().getAvailable())
           .timestamp(bittrexBalance.getDelta().getUpdatedAt())
           .build();
-      } catch (IOException e) {
+    } catch (IOException e) {
       e.printStackTrace();
       throw new RuntimeException(e);
     }
