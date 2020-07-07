@@ -1,5 +1,8 @@
 package info.bitrich.xchangestream.bittrex;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
@@ -9,9 +12,6 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterOutputStream;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 
 class EncryptionUtils {
 

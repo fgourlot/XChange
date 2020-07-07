@@ -1,10 +1,10 @@
 {
-  "accountId":"4981d108-149a-46a7-b55e-765442f314ff",
-  "sequence":149,
-  "delta":{
-    "currencySymbol":"BTC",
-    "total":"0.00804302",
-    "available":"0.00596149",
-    "updatedAt":"2020-06-25T08:27:02.2Z"
+  "accountId": "4981d108-149a-46a7-b55e-765442f314ff",
+  "sequence": 149,
+  "delta": {
+    "currencySymbol": "BTC",
+    "total": "0.00804302",
+    "available": "0.00596149",
+    "updatedAt": "2020-06-25T08:27:02.2Z"
   }
 }

@@ -1,9 +1,6 @@
 package info.bitrich.xchangestream.bittrex;
 
 import io.reactivex.disposables.Disposable;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.List;
 import org.junit.Assert;
 import org.junit.Test;
 import org.knowm.xchange.bittrex.BittrexExchange;
@@ -17,6 +14,10 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.List;
 
 public class BittrexStreamingTradeServiceTest extends BittrexStreamingBaseTest {
 

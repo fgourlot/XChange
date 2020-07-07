@@ -1,11 +1,9 @@
 package info.bitrich.xchangestream.bittrex;
 
+import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 import junit.framework.TestCase;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
@@ -18,6 +16,11 @@ import org.knowm.xchange.dto.trade.LimitOrder;
 import org.knowm.xchange.dto.trade.UserTrade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BittrexStreamingUtilsTest extends TestCase {
 
@@ -124,7 +127,9 @@ public class BittrexStreamingUtilsTest extends TestCase {
       // read encoded order message (from mock)
       String orderMessage =
           IOUtils.toString(getClass().getResource("/orderMessage_encoded.txt"), "UTF8");
-      UserTrade userTrade = BittrexStreamingUtils.bittrexOrderMessageToUserTrade(orderMessage);
+      BittrexOrder bittrexOrder =
+          BittrexStreamingUtils.bittrexOrderMessageToBittrexOrder(orderMessage);
+      UserTrade userTrade = BittrexStreamingUtils.bittrexOrderToUserTrade(bittrexOrder);
       assertEquals(userTrade.getOrderId(), "738a6aed-9d09-4035-92af-1dcae3872e52");
       assertEquals(userTrade.getCurrencyPair(), CurrencyPair.ETH_BTC);
       assertEquals(userTrade.getPrice(), new BigDecimal("0.02070000"));
@@ -135,12 +140,14 @@ public class BittrexStreamingUtilsTest extends TestCase {
   }
 
   /** Test an encoded Bittrex balance message to Balance object conversion */
-  public void testBittrexBalanceToBalance() {
+  public void testBittrexBalanceMessageToBalance() {
     try {
       // read encoded balance message (from mock)
       String balanceMessage =
           IOUtils.toString(getClass().getResource("/balanceMessage_encoded.txt"), "UTF8");
-      Balance balance = BittrexStreamingUtils.bittrexBalanceMessageToBalance(balanceMessage);
+      BittrexBalance bittrexBalance =
+          BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(balanceMessage);
+      Balance balance = BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance);
       assertEquals(balance.getCurrency(), Currency.BTC);
       assertEquals(balance.getTotal(), new BigDecimal("0.00804302"));
       assertEquals(balance.getAvailable(), new BigDecimal("0.00596149"));

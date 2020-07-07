@@ -1,18 +1,19 @@
 {
-  "accountId":"4981d108-149a-46a7-b55e-765442f314ff",
-  "sequence":133,
-  "delta":{
-    "id":"738a6aed-9d09-4035-92af-1dcae3872e52",
-    "marketSymbol":"ETH-BTC",
-    "direction":"BUY",
-    "type":"LIMIT",
-    "quantity":"0.10000000",
-    "limit":"0.02070000",
-    "timeInForce":"GOOD_TIL_CANCELLED",
-    "fillQuantity":"0.00000000",
-    "commission":"0.00000000",
-    "proceeds":"0.00000000",
-    "status":"OPEN",
-    "createdAt":"2020-06-25T08:48:09.41Z",
-    "updatedAt":"2020-06-25T08:48:09.41Z"}
+  "accountId": "4981d108-149a-46a7-b55e-765442f314ff",
+  "sequence": 133,
+  "delta": {
+    "id": "738a6aed-9d09-4035-92af-1dcae3872e52",
+    "marketSymbol": "ETH-BTC",
+    "direction": "BUY",
+    "type": "LIMIT",
+    "quantity": "0.10000000",
+    "limit": "0.02070000",
+    "timeInForce": "GOOD_TIL_CANCELLED",
+    "fillQuantity": "0.00000000",
+    "commission": "0.00000000",
+    "proceeds": "0.00000000",
+    "status": "OPEN",
+    "createdAt": "2020-06-25T08:48:09.41Z",
+    "updatedAt": "2020-06-25T08:48:09.41Z"
+  }
 }

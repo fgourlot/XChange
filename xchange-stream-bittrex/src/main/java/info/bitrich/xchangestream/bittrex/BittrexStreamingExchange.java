@@ -3,7 +3,9 @@ package info.bitrich.xchangestream.bittrex;
 import info.bitrich.xchangestream.core.*;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
+import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
+import org.knowm.xchange.bittrex.service.BittrexTradeService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,33 +13,43 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingExchange.class);
 
+  // Bittrex WebSocket API endpoint
   private static final String API_BASE_URI = "https://socket-v3.bittrex.com/signalr";
 
-  private BittrexStreamingService streamingService;
-  private BittrexStreamingAccountService streamingAccountService;
-  private BittrexStreamingMarketDataService streamingMarketDataService;
-  private BittrexStreamingTradeService streamingTradeService;
+  /** xchange-stream-bittrex services */
+  private BittrexStreamingService bittrexStreamingService;
+  private BittrexStreamingAccountService bittrexStreamingAccountService;
+  private BittrexStreamingMarketDataService bittrexStreamingMarketDataService;
+  private BittrexStreamingTradeService bittrexStreamingTradeService;
+
+  /** xchange-bittrex services */
+  private BittrexAccountService bittrexAccountService;
   private BittrexMarketDataService bittrexMarketDataService;
+  private BittrexTradeService bittrexTradeService;
 
   public BittrexStreamingExchange() {}
 
   protected void initServices() {
     super.initServices();
     ExchangeSpecification exchangeSpecification = this.getExchangeSpecification();
-    streamingService = new BittrexStreamingService(API_BASE_URI, exchangeSpecification);
-    streamingAccountService = new BittrexStreamingAccountService(streamingService);
+    bittrexAccountService = new BittrexAccountService(this);
     bittrexMarketDataService = new BittrexMarketDataService(this);
-    streamingMarketDataService =
-        new BittrexStreamingMarketDataService(streamingService, bittrexMarketDataService);
-    streamingTradeService = new BittrexStreamingTradeService(streamingService);
+    bittrexTradeService = new BittrexTradeService(this);
+    bittrexStreamingService = new BittrexStreamingService(API_BASE_URI, exchangeSpecification);
+    bittrexStreamingAccountService =
+        new BittrexStreamingAccountService(bittrexStreamingService, bittrexAccountService);
+    bittrexStreamingMarketDataService =
+        new BittrexStreamingMarketDataService(bittrexStreamingService, bittrexMarketDataService);
+    bittrexStreamingTradeService =
+        new BittrexStreamingTradeService(bittrexStreamingService, bittrexTradeService);
   }
 
   public io.reactivex.Completable connect(ProductSubscription... args) {
-    return this.streamingService.connect();
+    return this.bittrexStreamingService.connect();
   }
 
   public io.reactivex.Completable disconnect() {
-    this.streamingService.disconnect();
+    this.bittrexStreamingService.disconnect();
     return null;
   }
 
@@ -46,15 +58,15 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
   }
 
   public StreamingMarketDataService getStreamingMarketDataService() {
-    return streamingMarketDataService;
+    return bittrexStreamingMarketDataService;
   }
 
   public StreamingAccountService getStreamingAccountService() {
-    return streamingAccountService;
+    return bittrexStreamingAccountService;
   }
 
   public StreamingTradeService getStreamingTradeService() {
-    return streamingTradeService;
+    return bittrexStreamingTradeService;
   }
 
   public void useCompressedMessages(boolean compressedMessages) {}
