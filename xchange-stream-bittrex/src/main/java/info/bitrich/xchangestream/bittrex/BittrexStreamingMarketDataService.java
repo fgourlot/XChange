@@ -7,6 +7,7 @@ import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import org.knowm.xchange.bittrex.BittrexUtils;
+import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -90,6 +91,13 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                               BittrexStreamingUtils.cloneOrders(orderBookReference.getAsks()),
                               BittrexStreamingUtils.cloneOrders(orderBookReference.getBids()));
                       observer.onNext(orderBookClone);
+                    } else {
+                      LOG.info(
+                              "OrderBook desynchronized ! (sequence number is greater than 1 from the last message), will perform synchronization again");
+                      firstSequenceNumberVerified = false;
+                      orderBookDeltasQueue.clear();
+                      orderBookDeltasQueue.add(orderBookDeltas);
+                      observer.onNext(null);
                     }
                   } catch (IOException e) {
                     LOG.error("Error while receiving and treating orderbook message", e);

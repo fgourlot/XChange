@@ -21,22 +21,22 @@ public class BittrexManualExample {
         StreamingExchangeFactory.INSTANCE.createExchange(exchangeSpecification);
     exchange.connect().blockingAwait();
     exchange
-        //        .getStreamingMarketDataService()
-        //        .getOrderBook(CurrencyPair.ETH_BTC)
-        //        .subscribe(
-        //            orderBook -> {
-        //              LOG.info("Received order book {}", orderBook);
-        //            });
+                .getStreamingMarketDataService()
+                .getOrderBook(CurrencyPair.ETH_BTC)
+                .subscribe(
+                    orderBook -> {
+                      LOG.info("Received order book {}", orderBook);
+                    });
 //            .getStreamingAccountService()
 //                    .getBalanceChanges(Currency.BTC)
 //                    .subscribe(balance -> {
 //                      LOG.info("Received balance : {}", balance);
 //                    });
-        .getStreamingTradeService()
-        .getUserTrades(CurrencyPair.ETH_BTC)
-        .subscribe(
-            userTrade -> {
-              LOG.info("Received user trade {}", userTrade);
-            });
+//        .getStreamingTradeService()
+//        .getUserTrades(CurrencyPair.ETH_BTC)
+//        .subscribe(
+//            userTrade -> {
+//              LOG.info("Received user trade {}", userTrade);
+//            });
   }
 }
