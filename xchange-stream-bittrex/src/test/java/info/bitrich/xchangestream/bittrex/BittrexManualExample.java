@@ -3,6 +3,7 @@ package info.bitrich.xchangestream.bittrex;
 import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
+import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,11 +27,11 @@ public class BittrexManualExample {
         //            orderBook -> {
         //              LOG.info("Received order book {}", orderBook);
         //            });
-        //    .getStreamingAccountService()
-        //            .getBalanceChanges(Currency.BTC)
-        //            .subscribe(balance -> {
-        //              LOG.info("Received balance : {}", balance);
-        //            });
+//            .getStreamingAccountService()
+//                    .getBalanceChanges(Currency.BTC)
+//                    .subscribe(balance -> {
+//                      LOG.info("Received balance : {}", balance);
+//                    });
         .getStreamingTradeService()
         .getUserTrades(CurrencyPair.ETH_BTC)
         .subscribe(

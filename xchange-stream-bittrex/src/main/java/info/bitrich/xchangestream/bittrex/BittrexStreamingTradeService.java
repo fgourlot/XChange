@@ -67,23 +67,10 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
                     if (!firstSequenceNumberVerified) {
                       // add to queue for further verifications
                       bittrexOrdersQueue.add(bittrexOrder);
-                      // get Bittrex Orders from V3 REST API
-                      BittrexTradeServiceRaw.SequencedOpenOrders sequencedOpenOrders =
-                          bittrexTradeService.getBittrexSequencedOpenOrders(null);
                       // get sequence number reference
-                      int ordersSequenceNumber =
-                          Integer.parseInt(sequencedOpenOrders.getSequence());
-
-                      LOG.debug("Sequence number from V3 {}", ordersSequenceNumber);
-
-                      // check sequence number reference vs first balance message sequence number
-                      if (ordersSequenceNumber > bittrexOrdersQueue.getFirst().getSequence()) {
-                        firstSequenceNumberVerified = true;
-                        currentSequenceNumber = ordersSequenceNumber;
-                        LOG.info(
-                            "Orders synchronized ! Start sequence number is : {}",
-                            currentSequenceNumber);
-                      }
+                      int ordersSequenceNumber = getSequenceNumberFromRestAPI();
+                      verifySequenceNumber(ordersSequenceNumber);
+                      observer.onNext(null);
                     } else if (bittrexOrder.getSequence() == (currentSequenceNumber + 1)) {
                       UserTrade userTrade =
                           BittrexStreamingUtils.bittrexOrderToUserTrade(bittrexOrder);
@@ -96,6 +83,13 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
                           userTrade.getOriginalAmount());
                       currentSequenceNumber = bittrexOrder.getSequence();
                       observer.onNext(userTrade);
+                    } else {
+                      LOG.info(
+                          "Orders desynchronized ! (sequence number is greater than 1 from the last message), will perform synchronization again");
+                      firstSequenceNumberVerified = false;
+                      bittrexOrdersQueue.clear();
+                      bittrexOrdersQueue.add(bittrexOrder);
+                      observer.onNext(null);
                     }
                   } catch (JsonProcessingException e) {
                     e.printStackTrace();
@@ -112,5 +106,34 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
     LOG.info("Subscribing to channel : {}", balanceChannel);
     this.bittrexStreamingService.subscribeToChannels(channels);
     return obs;
+  }
+
+  /**
+   * Returns current sequence number reference from Bittrex V3 REST API
+   *
+   * @return
+   * @throws IOException
+   */
+  private int getSequenceNumberFromRestAPI() throws IOException {
+    // get Bittrex Orders from V3 REST API
+    BittrexTradeServiceRaw.SequencedOpenOrders sequencedOpenOrders =
+        bittrexTradeService.getBittrexSequencedOpenOrders(null);
+    // get sequence number reference
+    int sequenceNumberReference = Integer.parseInt(sequencedOpenOrders.getSequence());
+    LOG.debug("Sequence number reference from V3 REST API (Orders) : {}", sequenceNumberReference);
+    return sequenceNumberReference;
+  }
+
+  /**
+   * Checks sequence number reference (from V3 REST API) against Bittrex order message in queue
+   *
+   * @param sequenceNumberReference
+   */
+  private void verifySequenceNumber(int sequenceNumberReference) {
+    if (sequenceNumberReference > bittrexOrdersQueue.getFirst().getSequence()) {
+      firstSequenceNumberVerified = true;
+      currentSequenceNumber = sequenceNumberReference;
+      LOG.info("Orders synchronized ! Start sequence number is : {}", currentSequenceNumber);
+    }
   }
 }
