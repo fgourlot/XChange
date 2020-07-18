@@ -18,44 +18,38 @@ public class BittrexStreamingService {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingService.class);
 
-  private ExchangeSpecification exchangeSpecification;
+  private final ExchangeSpecification exchangeSpecification;
 
-  private HubConnection _hubConnection;
-  private HubProxy _hubProxy;
+  private final HubConnection hubConnection;
+  private final HubProxy hubProxy;
 
   public BittrexStreamingService(String apiUrl, ExchangeSpecification exchangeSpecification) {
     this.exchangeSpecification = exchangeSpecification;
-    _hubConnection = new HubConnection(apiUrl);
-    _hubProxy = _hubConnection.createHubProxy("c3");
-    _hubConnection.connected(this::connectedToWebSocket);
+    hubConnection = new HubConnection(apiUrl);
+    hubProxy = hubConnection.createHubProxy("c3");
+    hubConnection.connected(this::connectedToWebSocket);
   }
 
   public io.reactivex.Completable connect() {
     LOG.info("Starting connection ...");
-    return Completable.fromFuture(this._hubConnection.start());
+    return Completable.fromFuture(this.hubConnection.start());
   }
 
   public void disconnect() {
     LOG.info("Disconnecting ...");
-    this._hubConnection.disconnect();
+    this.hubConnection.disconnect();
   }
 
   public Observable subscribeToChannels(String[] channels) {
     return Observable.fromFuture(
-        _hubProxy
+        hubProxy
             .invoke(Object.class, "Subscribe", (Object) channels)
-            .onError(
-                e -> {
-                  LOG.error("Error subscribe {}", e);
-                })
-            .done(
-                o -> {
-                  LOG.info("Success subscribe {}", o);
-                }));
+            .onError(e -> LOG.error("Error subscribe", e))
+            .done(o -> LOG.info("Success subscribe {}", o)));
   }
 
   public void setHandler(String eventName, SubscriptionHandler1 handler) {
-    _hubProxy.on(eventName, handler, String.class);
+    hubProxy.on(eventName, handler, String.class);
   }
 
   private void connectedToWebSocket() {
@@ -74,7 +68,7 @@ public class BittrexStreamingService {
       String signedContent =
           EncryptionUtils.calculateHash(
               this.exchangeSpecification.getSecretKey(), randomContent, "HmacSHA512");
-      _hubProxy
+      hubProxy
           .invoke(
               Object.class,
               "Authenticate",
@@ -83,23 +77,17 @@ public class BittrexStreamingService {
               uuid,
               signedContent)
           .onError(
-              error -> {
-                LOG.error("Error during Authentication {}", error);
-              })
+              error -> LOG.error("Error during Authentication", error))
           .done(
-              obj -> {
-                LOG.info("Authentication success {}");
-              });
-    } catch (InvalidKeyException e) {
-      e.printStackTrace();
-    } catch (NoSuchAlgorithmException e) {
-      e.printStackTrace();
+              obj -> LOG.info("Authentication success"));
+    } catch (InvalidKeyException | NoSuchAlgorithmException e) {
+     LOG.error("Could not authenticate", e);
     }
   }
 
   /** Auto-reauthenticate */
   private void setupAutoReAuthentication() {
-    _hubProxy.on(
+    hubProxy.on(
         "authenticationExpiring",
         () -> {
           LOG.info("Authentication expiring, will reconnect ...");

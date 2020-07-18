@@ -1,6 +1,5 @@
 package info.bitrich.xchangestream.bittrex;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.core.StreamingAccountService;
@@ -14,7 +13,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.LinkedList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 public class BittrexStreamingAccountService implements StreamingAccountService {
 
@@ -23,21 +24,19 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   private final BittrexStreamingService bittrexStreamingService;
   private final BittrexAccountService bittrexAccountService;
 
-  /** BittrexBalance queue before sequence number synchronisation */
-  private LinkedList<BittrexBalance> bittrexBalancesQueue;
-
-  /** First Sequence Number verification flag */
-  private boolean firstSequenceNumberVerified = false;
-
   /** Current sequence number (to be increased after each message) */
-  private int currentSequenceNumber = 0;
+  private Integer currentSequenceNumber;
+
+  private final Map<Currency, Balance> balances;
+
+  private final Object lock = new Object();
 
   public BittrexStreamingAccountService(
       BittrexStreamingService bittrexStreamingService,
       BittrexAccountService bittrexAccountService) {
     this.bittrexStreamingService = bittrexStreamingService;
     this.bittrexAccountService = bittrexAccountService;
-    this.bittrexBalancesQueue = new LinkedList<>();
+    this.balances = new HashMap<>();
   }
 
   @Override
@@ -45,48 +44,35 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
 
     // create result Observable
     Observable<Balance> obs =
-        new Observable<Balance>() {
+        new Observable<>() {
           @Override
           protected void subscribeActual(Observer<? super Balance> observer) {
             // create handler for `balance` messages
             SubscriptionHandler1<String> balanceHandler =
                 message -> {
-                  LOG.debug("Incoming balance message : {}", message);
-                  try {
+                  synchronized (lock) {
+                    LOG.debug("Incoming balance message : {}", message);
                     // parse message to BittrexBalance object
                     BittrexBalance bittrexBalance =
                         BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(message);
-
-                    // check sequence number
-                    if (!firstSequenceNumberVerified) {
-                      // add to queue for further verifications
-                      bittrexBalancesQueue.add(bittrexBalance);
-                      // get sequence number reference
-                      int balancesSequenceNumber = getSequenceNumberFromRestAPI();
-                      verifySequenceNumber(balancesSequenceNumber);
-                      observer.onNext(null);
-                    } else if (bittrexBalance.getSequence() == (currentSequenceNumber + 1)) {
+                    if (isStreamBalanceNotSynchronized(bittrexBalance)) {
+                      restFillBalances();
+                    } else if (bittrexBalance.getSequence() > currentSequenceNumber) {
+                      LOG.debug("Applying balance update");
                       Balance balance =
                           BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance);
-                      LOG.debug(
-                          "Emitting Balance on currency {} with {} available on {} total",
-                          balance.getCurrency(),
-                          balance.getAvailable(),
-                          balance.getTotal());
+                      Currency currency = bittrexBalance.getDelta().getCurrencySymbol();
+                      balances.put(currency, balance);
                       currentSequenceNumber = bittrexBalance.getSequence();
-                      observer.onNext(balance);
                     } else {
-                      LOG.info(
-                          "Balances desynchronized ! (sequence number is greater than 1 from the last message), will perform synchronization again");
-                      firstSequenceNumberVerified = false;
-                      bittrexBalancesQueue.clear();
-                      bittrexBalancesQueue.add(bittrexBalance);
-                      observer.onNext(null);
+                      LOG.debug(
+                          "Ignoring obsolete balance update of sequence {}, current sequence is {}",
+                          bittrexBalance.getSequence(),
+                          currentSequenceNumber);
                     }
-                  } catch (JsonProcessingException e) {
-                    e.printStackTrace();
-                  } catch (IOException e) {
-                    e.printStackTrace();
+                    Optional.ofNullable(balances.get(currency))
+                        .ifPresent(
+                            balance -> observer.onNext(Balance.Builder.from(balance).build()));
                   }
                 };
             bittrexStreamingService.setHandler("balance", balanceHandler);
@@ -101,33 +87,22 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
     return obs;
   }
 
-  /**
-   * Returns current sequence number reference from Bittrex V3 REST API
-   *
-   * @return
-   * @throws IOException
-   */
-  private int getSequenceNumberFromRestAPI() throws IOException {
-    // get Bittrex Balances from V3 REST API
-    BittrexAccountServiceRaw.SequencedBalances sequencedBalances =
-        bittrexAccountService.getBittrexSequencedBalances();
-    // get sequence number reference
-    int sequenceNumberReference = Integer.parseInt(sequencedBalances.getSequence());
-    LOG.debug(
-        "Sequence number reference from V3 REST API (Balances) : {}", sequenceNumberReference);
-    return sequenceNumberReference;
+  private boolean isStreamBalanceNotSynchronized(BittrexBalance bittrexBalance) {
+    return currentSequenceNumber == null
+        || bittrexBalance.getSequence() - currentSequenceNumber > 1;
   }
 
-  /**
-   * Checks sequence number reference (from V3 REST API) against Bittrex balance message in queue
-   *
-   * @param sequenceNumberReference
-   */
-  private void verifySequenceNumber(int sequenceNumberReference) {
-    if (sequenceNumberReference > bittrexBalancesQueue.getFirst().getSequence()) {
-      firstSequenceNumberVerified = true;
-      currentSequenceNumber = sequenceNumberReference;
-      LOG.info("Balances synchronized ! Start sequence number is : {}", currentSequenceNumber);
+  private void restFillBalances() {
+    LOG.debug("Synchronizing balances with rest call");
+    balances.clear();
+    try {
+      BittrexAccountServiceRaw.SequencedBalances sequencedBalances =
+          bittrexAccountService.getBittrexSequencedBalances();
+      balances.putAll(sequencedBalances.getBalances());
+      currentSequenceNumber = Integer.parseInt(sequencedBalances.getSequence());
+      LOG.debug("Fetched balances with rest call, sequence = {}", currentSequenceNumber);
+    } catch (IOException e) {
+      LOG.error("Error rest fetching balances", e);
     }
   }
 }

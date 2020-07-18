@@ -102,4 +102,18 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
       wsDisposable.dispose();
     }
   }
+
+  @Test
+  public void testBalances() throws InterruptedException {
+    Disposable wsDisposable =
+        exchange
+            .getStreamingAccountService()
+            .getBalanceChanges(Currency.BTC)
+            .subscribe(
+                balance -> {
+                  LOG.debug("Received balance : {}", balance);
+                  Assert.assertNotNull(balance);
+                });
+    Thread.sleep(10_000);
+  }
 }
