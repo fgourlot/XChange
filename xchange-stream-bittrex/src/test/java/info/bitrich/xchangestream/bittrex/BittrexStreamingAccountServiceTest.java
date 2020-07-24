@@ -12,6 +12,7 @@ import org.knowm.xchange.bittrex.service.BittrexTradeService;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
+import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.slf4j.Logger;
@@ -19,7 +20,16 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest {
   private static final Logger LOG =
@@ -104,16 +114,70 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
   }
 
   @Test
-  public void testBalances() throws InterruptedException {
-    Disposable wsDisposable =
-        exchange
-            .getStreamingAccountService()
-            .getBalanceChanges(Currency.BTC)
-            .subscribe(
-                balance -> {
-                  LOG.debug("Received balance : {}", balance);
-                  Assert.assertNotNull(balance);
-                });
-    Thread.sleep(10_000);
+  public void testBalances() throws InterruptedException, IOException {
+    BittrexAccountService accountService =
+        new BittrexAccountService((BittrexExchange) this.exchange);
+
+
+    List<Map<Currency, Balance>> balancesStreamList = new ArrayList<>();
+    ConcurrentMap<Currency, Balance> currentMapStream = new ConcurrentHashMap<>();
+
+    Map<Currency, Balance> balances = accountService.getAccountInfo().getWallet().getBalances();
+    List<Disposable> subs = new ArrayList<>();
+    final Object streamLock = new Object();
+    balances
+        .keySet()
+        .forEach(
+            currency -> {
+              Disposable wsDisposable =
+                  exchange
+                      .getStreamingAccountService()
+                      .getBalanceChanges(currency)
+                      .subscribe(
+                          balance -> {
+                            synchronized (streamLock) {
+                              currentMapStream.put(currency, balance);
+                              Map<Currency, Balance> clonedBalances = cloneMap(currentMapStream);
+                              balancesStreamList.add(clonedBalances);
+                            }
+                          });
+              subs.add(wsDisposable);
+            });
+
+    Thread.sleep(5_000);
+
+    List<Map<Currency, Balance>> balancesMapsRest = new ArrayList<>();
+    Timer timer = new Timer();
+    timer.scheduleAtFixedRate(
+        new TimerTask() {
+          public void run() {
+            try {
+              balancesMapsRest.add(accountService.getAccountInfo().getWallet().getBalances());
+            } catch (IOException e) {
+              e.printStackTrace();
+            }
+          }
+        },
+        0,
+        TimeUnit.SECONDS.toMillis(2));
+
+    Thread.sleep(20_000);
+    timer.cancel();
+    Thread.sleep(5_000);
+    subs.forEach(Disposable::dispose);
+
+    Thread.sleep(5_000);
+
+    balancesMapsRest.forEach(entry -> Assert.assertTrue(balancesStreamList.contains(entry)));
+  }
+
+  private Map<Currency, Balance> cloneMap(Map<Currency, Balance> balancesToClone) {
+    Map<Currency, Balance> clonedMap = new HashMap<>(balancesToClone.size());
+    balancesToClone
+        .forEach((key, value) -> {
+          Balance clonedBalance = Balance.Builder.from(value).build();
+          clonedMap.put(key, clonedBalance);
+        });
+    return clonedMap;
   }
 }

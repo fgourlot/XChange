@@ -78,12 +78,10 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
             bittrexStreamingService.setHandler("balance", balanceHandler);
           }
         };
-
     String balanceChannel = "balance";
     String[] channels = {balanceChannel};
     LOG.info("Subscribing to channel : {}", balanceChannel);
     this.bittrexStreamingService.subscribeToChannels(channels);
-
     return obs;
   }
 
