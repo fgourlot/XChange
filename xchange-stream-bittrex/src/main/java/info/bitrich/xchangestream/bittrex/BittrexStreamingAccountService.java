@@ -44,7 +44,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
 
     // create result Observable
     Observable<Balance> obs =
-        new Observable<>() {
+        new Observable<Balance>() {
           @Override
           protected void subscribeActual(Observer<? super Balance> observer) {
             // create handler for `balance` messages
@@ -78,12 +78,10 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
             bittrexStreamingService.setHandler("balance", balanceHandler);
           }
         };
-
     String balanceChannel = "balance";
     String[] channels = {balanceChannel};
     LOG.info("Subscribing to channel : {}", balanceChannel);
     this.bittrexStreamingService.subscribeToChannels(channels);
-
     return obs;
   }
 
