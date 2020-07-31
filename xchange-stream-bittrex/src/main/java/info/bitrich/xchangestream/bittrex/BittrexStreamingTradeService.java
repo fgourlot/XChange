@@ -97,14 +97,12 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
                     e.printStackTrace();
                   }
                 };
-            bittrexStreamingService.setHandler("order", orderHandler);
+            String orderChannel = "order";
+            LOG.info("Subscribing to channel : {}", orderChannel);
+            bittrexStreamingService.subscribeToChannelWithHandler(orderChannel, "order", orderHandler);
           }
         };
 
-    String balanceChannel = "order";
-    String[] channels = {balanceChannel};
-    LOG.info("Subscribing to channel : {}", balanceChannel);
-    this.bittrexStreamingService.subscribeToChannels(channels);
     return obs;
   }
 

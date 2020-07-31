@@ -7,7 +7,6 @@ import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 import org.knowm.xchange.bittrex.BittrexUtils;
-import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
 import org.knowm.xchange.currency.CurrencyPair;
@@ -93,7 +92,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                       observer.onNext(orderBookClone);
                     } else {
                       LOG.info(
-                              "OrderBook desynchronized ! (sequence number is greater than 1 from the last message), will perform synchronization again");
+                          "OrderBook desynchronized ! (sequence number is greater than 1 from the last message), will perform synchronization again");
                       firstSequenceNumberVerified = false;
                       orderBookDeltasQueue.clear();
                       orderBookDeltasQueue.add(orderBookDeltas);
@@ -104,19 +103,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                     throw new RuntimeException(e);
                   }
                 };
-            service.setHandler("orderbook", orderBookHandler);
+            String orderBookChannel =
+                "orderbook_"
+                    + currencyPair.base.toString()
+                    + "-"
+                    + currencyPair.counter.toString()
+                    + "_500";
+            LOG.info("Subscribing to channel : {}", orderBookChannel);
+            service.subscribeToChannelWithHandler(orderBookChannel, "orderbook", orderBookHandler);
           }
         };
-
-    String orderBookChannel =
-        "orderbook_"
-            + currencyPair.base.toString()
-            + "-"
-            + currencyPair.counter.toString()
-            + "_500";
-    String[] channels = {orderBookChannel};
-    LOG.info("Subscribing to channel : {}", orderBookChannel);
-    this.service.subscribeToChannels(channels);
 
     return obs;
   }

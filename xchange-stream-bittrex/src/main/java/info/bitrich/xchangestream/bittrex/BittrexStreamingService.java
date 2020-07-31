@@ -11,7 +11,9 @@ import org.slf4j.LoggerFactory;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.UUID;
 
 public class BittrexStreamingService {
@@ -23,11 +25,14 @@ public class BittrexStreamingService {
   private final HubConnection hubConnection;
   private final HubProxy hubProxy;
 
+  private final HashMap<String, Observable> subscriptions;
+
   public BittrexStreamingService(String apiUrl, ExchangeSpecification exchangeSpecification) {
     this.exchangeSpecification = exchangeSpecification;
     hubConnection = new HubConnection(apiUrl);
     hubProxy = hubConnection.createHubProxy("c3");
     hubConnection.connected(this::connectedToWebSocket);
+    subscriptions = new HashMap<>();
   }
 
   public io.reactivex.Completable connect() {
@@ -40,12 +45,21 @@ public class BittrexStreamingService {
     this.hubConnection.disconnect();
   }
 
-  public Observable subscribeToChannels(String[] channels) {
-    return Observable.fromFuture(
-        hubProxy
-            .invoke(Object.class, "Subscribe", (Object) channels)
-            .onError(e -> LOG.error("Error subscribe", e))
-            .done(o -> LOG.info("Success subscribe {}", o)));
+  public Observable subscribeToChannelWithHandler(
+      String channel, String eventName, SubscriptionHandler1<String> handler) {
+    if (!this.subscriptions.containsKey(channel)) {
+      this.setHandler(eventName, handler);
+      String[] channels = {channel};
+      Observable subscriptionObs =
+          Observable.fromFuture(
+              hubProxy
+                  .invoke(Object.class, "Subscribe", (Object) channels)
+                  .onError(e -> LOG.error("Error subscribe", e))
+                  .done(o -> LOG.info("Success subscribe {}", o)));
+
+      this.subscriptions.put(channel, subscriptionObs);
+    }
+    return this.subscriptions.get(channel);
   }
 
   public void setHandler(String eventName, SubscriptionHandler1 handler) {
@@ -76,12 +90,10 @@ public class BittrexStreamingService {
               ts,
               uuid,
               signedContent)
-          .onError(
-              error -> LOG.error("Error during Authentication", error))
-          .done(
-              obj -> LOG.info("Authentication success"));
+          .onError(error -> LOG.error("Error during Authentication", error))
+          .done(obj -> LOG.info("Authentication success"));
     } catch (InvalidKeyException | NoSuchAlgorithmException e) {
-     LOG.error("Could not authenticate", e);
+      LOG.error("Could not authenticate", e);
     }
   }
 
