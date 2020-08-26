@@ -167,8 +167,31 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
     subs.forEach(Disposable::dispose);
 
     Thread.sleep(5_000);
-
-    balancesMapsRest.forEach(entry -> Assert.assertTrue(balancesStreamList.contains(entry)));
+    if (balancesStreamList.size() > 0) {
+      LOG.debug("Found balance messages in stream list : {}", balancesStreamList);
+      balancesStreamList.forEach(
+          currencyBalanceMap -> {
+            Map<Currency, Balance> restEntry = balancesMapsRest.get(0);
+            currencyBalanceMap.forEach(
+                (currency, balance) -> {
+                  if (restEntry.containsKey(currency)) {
+                    LOG.error("Currency balance from stream found in REST API, success");
+                    Assert.assertTrue(restEntry.get(currency).equals(balance));
+                  } else {
+                    LOG.error("Currency balance from stream list not found in REST API");
+                    Assert.fail();
+                  }
+                });
+          });
+    } else {
+      LOG.error("no balance message in stream list");
+      Assert.fail();
+    }
+    /* this can't work
+    balancesMapsRest.forEach(entry -> {
+      currencyEntry = entry.get()
+      Assert.assertTrue(balancesStreamList.contains(entry));
+    });*/
   }
 
   private Map<Currency, Balance> cloneMap(Map<Currency, Balance> balancesToClone) {
