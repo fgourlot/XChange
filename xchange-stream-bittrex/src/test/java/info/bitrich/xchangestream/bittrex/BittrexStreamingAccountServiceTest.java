@@ -174,7 +174,7 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
             Map<Currency, Balance> restEntry = balancesMapsRest.get(0);
             currencyBalanceMap.forEach(
                 (currency, balance) -> {
-                  if (restEntry.containsKey(currency)) {
+                  if (restEntry.containsKey(currency) && restEntry.get(currency).equals(balance)) {
                     LOG.error("Currency balance from stream found in REST API");
                   } else {
                     LOG.error("Currency balance from stream list not found in REST API");
