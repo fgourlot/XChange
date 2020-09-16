@@ -80,10 +80,10 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
                 }
               }
             },
-            0,
+            TimeUnit.SECONDS.toMillis(5),
             TimeUnit.SECONDS.toMillis(3));
 
-    // Let it run for 20_000ms
+    // Let it run for 30_000ms
     try {
       Thread.sleep(30_000);
     } catch (InterruptedException e) {
