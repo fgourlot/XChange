@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
@@ -69,8 +68,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                 CurrencyPair market =
                     BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
                 synchronized (ORDER_BOOKS_LOCK) {
-                  addOrderBookDeltas(orderBookDeltas, market);
-                  applyOrderBooksUpdates(orderBookDeltas, market);
+                  queueOrderBookDeltas(orderBookDeltas, market);
+                  applyOrderBooksUpdates(market);
                   OrderBook orderBookClone =
                       new OrderBook(
                           null,
@@ -97,7 +96,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     };
   }
 
-  private void addOrderBookDeltas(BittrexOrderBookDeltas orderBookDeltas, CurrencyPair market) {
+  private void queueOrderBookDeltas(BittrexOrderBookDeltas orderBookDeltas, CurrencyPair market) {
     LinkedList<BittrexOrderBookDeltas> deltasQueue = orderBookDeltasQueue.get(market);
     if (deltasQueue.isEmpty()) {
       deltasQueue.add(orderBookDeltas);
@@ -112,7 +111,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     }
   }
 
-  private void applyOrderBooksUpdates(BittrexOrderBookDeltas orderBookDeltas, CurrencyPair market)
+  private void applyOrderBooksUpdates(CurrencyPair market)
       throws IOException {
     if (needOrderBookInit(market)) {
       initializeOrderbook(market);
@@ -127,8 +126,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         .forEach(
             deltas -> {
               OrderBook updatedOrderBook =
-                  BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), orderBookDeltas);
-              String sequence = String.valueOf(orderBookDeltas.getSequence());
+                  BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
+              String sequence = String.valueOf(deltas.getSequence());
               orderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
             });
     updatesToApply.clear();
