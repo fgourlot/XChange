@@ -30,34 +30,32 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private static final Logger LOG =
       LoggerFactory.getLogger(BittrexStreamingMarketDataService.class);
   public static final int ORDER_BOOKS_DEPTH = 500;
+  private static final Object ORDER_BOOKS_LOCK = new Object();
 
   private final BittrexStreamingService service;
   private final BittrexMarketDataService marketDataService;
 
   /** OrderBookV3 Cache (requested via Bittrex REST API) */
-  private Map<CurrencyPair, SequencedOrderBook> orderBooks;
+  private final Map<CurrencyPair, SequencedOrderBook> orderBooks;
 
   /** In memory book updates, to apply when we get the rest value of the books * */
-  private Map<CurrencyPair, LinkedList<BittrexOrderBookDeltas>> orderBookDeltasQueue;
+  private final Map<CurrencyPair, LinkedList<BittrexOrderBookDeltas>> orderBookDeltasQueue;
 
   /** Object mapper for JSON parsing */
-  private ObjectMapper objectMapper;
-
-  private static final Object ORDER_BOOKS_LOCK = new Object();
+  private final ObjectMapper objectMapper;
 
   public BittrexStreamingMarketDataService(
       BittrexStreamingService service, BittrexMarketDataService marketDataService) {
     this.service = service;
     this.marketDataService = marketDataService;
-    objectMapper = new ObjectMapper();
-    orderBookDeltasQueue = new HashMap<>();
-    orderBooks = new HashMap<>();
+    this.objectMapper = new ObjectMapper();
+    this.orderBookDeltasQueue = new HashMap<>();
+    this.orderBooks = new HashMap<>();
   }
 
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
     orderBookDeltasQueue.putIfAbsent(currencyPair, new LinkedList<>());
-    // create result Observable
     return new Observable<OrderBook>() {
       @Override
       protected void subscribeActual(Observer observer) {
@@ -65,7 +63,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         SubscriptionHandler1<String> orderBookHandler =
             message -> {
               try {
-                // Decompress and store message
                 BittrexOrderBookDeltas orderBookDeltas =
                     objectMapper.readValue(
                         EncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
