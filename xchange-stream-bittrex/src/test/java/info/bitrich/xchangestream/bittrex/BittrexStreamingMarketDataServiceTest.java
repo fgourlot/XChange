@@ -10,6 +10,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.Period;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,7 +21,7 @@ import java.util.stream.Collectors;
 public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseTest {
   private static final Logger LOG =
       LoggerFactory.getLogger(BittrexStreamingMarketDataServiceTest.class);
-  CurrencyPair market = CurrencyPair.ETH_BTC;
+  CurrencyPair market = CurrencyPair.BTC_USD;
   static Optional<Timer> timer;
 
   @Test
@@ -48,7 +51,10 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
   public void orderBookSynchroTest() {
     // Maps to compare
     ArrayList<OrderBook> booksWS = new ArrayList<>();
+    Map<OrderBook, LocalDateTime> timestampsWS = new HashMap<>();
+
     ArrayList<OrderBook> booksRest = new ArrayList<>();
+    Map<OrderBook, LocalDateTime> timestampsRest = new HashMap<>();
 
     // WS orderbook map filling
     AtomicBoolean canStartRestFilling = new AtomicBoolean();
@@ -60,6 +66,7 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
                 orderBook -> {
                   LOG.debug("Received order book {}", orderBook);
                   booksWS.add(orderBook);
+                  timestampsWS.put(orderBook, LocalDateTime.now());
                   canStartRestFilling.set(true);
                 });
 
@@ -74,6 +81,7 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
                   try {
                     OrderBook orderBook = exchange.getMarketDataService().getOrderBook(market);
                     booksRest.add(orderBook);
+                    timestampsRest.put(orderBook, LocalDateTime.now());
                   } catch (IOException e) {
                     LOG.error("Error rest-getting the orderbook", e);
                   }
@@ -101,6 +109,8 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
     // Try to find the rest books in ws books list
     Collection<Integer> indexes =
         booksRest.stream().map(book -> findBookInList(book, booksWS)).collect(Collectors.toList());
+
+    List<Duration> timeDiff = booksRest.stream().map(book -> Duration.between(timestampsRest.get(book), timestampsWS.get(book))).collect(Collectors.toList());
     // Check that all the rest books were found in ws books
     Assert.assertTrue(indexes.stream().allMatch(index -> index > 0));
     // Check that the books are chronologically found
