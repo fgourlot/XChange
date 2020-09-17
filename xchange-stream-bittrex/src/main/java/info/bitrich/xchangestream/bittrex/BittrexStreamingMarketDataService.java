@@ -121,7 +121,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private void updateOrderBook(CurrencyPair market) throws IOException {
     if (needOrderBookInit(market)) {
-      initializeOrderbook(market);
+      initializeOrderBook(market);
     }
     SequencedOrderBook orderBook = orderBooks.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
@@ -139,11 +139,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   }
 
   /**
-   * Fetches the frst snapshot of an order book.
+   * Fetches the first snapshot of an order book.
    * @param market the market
    * @throws IOException if the order book could not be initialized
    */
-  private void initializeOrderbook(CurrencyPair market) throws IOException {
+  private void initializeOrderBook(CurrencyPair market) throws IOException {
     BittrexMarketDataServiceRaw.SequencedOrderBook orderBook =
         marketDataService.getBittrexSequencedOrderBook(
             BittrexUtils.toPairString(market), ORDER_BOOKS_DEPTH);
