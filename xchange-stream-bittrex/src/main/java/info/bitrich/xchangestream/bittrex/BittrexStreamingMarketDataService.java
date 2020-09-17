@@ -24,9 +24,7 @@ import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.Observer;
 
-/**
- * See https://bittrex.github.io/api/v3#topic-Websocket-Overview
- */
+/** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
   private static final Logger LOG =
@@ -52,6 +50,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
+    try {
+      initializeOrderBook(currencyPair);
+    } catch (IOException e) {
+      LOG.error("Error while intializing order book", e);
+    }
     orderBookDeltasQueue.putIfAbsent(currencyPair, new LinkedList<>());
     return new Observable<OrderBook>() {
       @Override
@@ -64,21 +67,23 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                         EncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
                 CurrencyPair market =
                     BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
-                OrderBook orderBookClone;
-                synchronized (ORDER_BOOKS_LOCK) {
-                  queueOrderBookDeltas(orderBookDeltas, market);
-                  updateOrderBook(market);
-                  orderBookClone =
-                      new OrderBook(
-                          orderBooks.get(market).getOrderBook().getTimeStamp(),
-                          BittrexStreamingUtils.cloneOrders(
-                              orderBooks.get(market).getOrderBook().getAsks()),
-                          BittrexStreamingUtils.cloneOrders(
-                              orderBooks.get(market).getOrderBook().getBids()));
+                if (market.equals(currencyPair)) {
+                  OrderBook orderBookClone;
+                  synchronized (ORDER_BOOKS_LOCK) {
+                    queueOrderBookDeltas(orderBookDeltas, market);
+                    updateOrderBook(market);
+                    orderBookClone =
+                        new OrderBook(
+                            orderBooks.get(market).getOrderBook().getTimeStamp(),
+                            BittrexStreamingUtils.cloneOrders(
+                                orderBooks.get(market).getOrderBook().getAsks()),
+                            BittrexStreamingUtils.cloneOrders(
+                                orderBooks.get(market).getOrderBook().getBids()));
+                  }
+                  observer.onNext(orderBookClone);
                 }
-                observer.onNext(orderBookClone);
               } catch (IOException e) {
-                LOG.error("Error while decompressing order book message", e);
+                LOG.error("Error while decompressing and treating order book update", e);
               }
             };
         String orderBookChannel =
@@ -89,13 +94,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                 + "_"
                 + ORDER_BOOKS_DEPTH;
         LOG.info("Subscribing to channel : {}", orderBookChannel);
-        streamingService.subscribeToChannelWithHandler(orderBookChannel, "orderbook", orderBookHandler);
+        streamingService.subscribeToChannelWithHandler(
+            orderBookChannel, "orderbook", orderBookHandler);
       }
     };
   }
 
   /**
    * Queues the order book updates to apply.
+   *
    * @param orderBookDeltas the order book updates
    * @param market the market
    */
@@ -116,6 +123,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   /**
    * Apply the in memory updates to the order book.
+   *
    * @param market the market
    * @throws IOException if the order book could not be initialized
    */
@@ -140,6 +148,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   /**
    * Fetches the first snapshot of an order book.
+   *
    * @param market the market
    * @throws IOException if the order book could not be initialized
    */
