@@ -67,7 +67,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                         EncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
                 CurrencyPair market =
                     BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
-                if (market.equals(currencyPair)) {
+                //if (market.equals(currencyPair)) {
                   OrderBook orderBookClone;
                   synchronized (ORDER_BOOKS_LOCK) {
                     queueOrderBookDeltas(orderBookDeltas, market);
@@ -81,7 +81,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                                 orderBooks.get(market).getOrderBook().getBids()));
                   }
                   observer.onNext(orderBookClone);
-                }
+                //}
               } catch (IOException e) {
                 LOG.error("Error while decompressing and treating order book update", e);
               }
