@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
 import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingExchangeFactory;
@@ -39,30 +40,31 @@ public class BittrexManualExample {
     List<Disposable> disposables = new ArrayList<>();
     ConcurrentMap<CurrencyPair, OrderBook> books = new ConcurrentHashMap<>();
     ConcurrentMap<CurrencyPair, AtomicInteger> updatesCount = new ConcurrentHashMap<>();
-    Exchange exchange =
-        ExchangeFactory.INSTANCE.createExchange(BittrexExchange.class.getName());
+    Exchange exchange = ExchangeFactory.INSTANCE.createExchange(BittrexExchange.class.getName());
     exchange.getMarketDataService().getTickers(null).stream()
         .map(Ticker::getCurrencyPair)
-        .forEach(market -> {
-          try {
-            // we don't want http 429
-            Thread.sleep(1000);
-          } catch (InterruptedException e) {
-            e.printStackTrace();
-          }
-          Disposable disposable =
-              streamingExchange
-                  .getStreamingMarketDataService()
-                  .getOrderBook(market)
-                  .subscribe(
-                      orderBook -> {
-                        LOG.info("Received order book {}", market);
-                        books.put(market, orderBook);
-                        updatesCount.putIfAbsent(market, new AtomicInteger(0));
-                        updatesCount.get(market).incrementAndGet();
-                      });
-          disposables.add(disposable);
-        });
+        // Stream.of(CurrencyPair.BTC_USD)
+        .forEach(
+            market -> {
+              try {
+                // we don't want http 429
+                Thread.sleep(100);
+              } catch (InterruptedException e) {
+                e.printStackTrace();
+              }
+              Disposable disposable =
+                  streamingExchange
+                      .getStreamingMarketDataService()
+                      .getOrderBook(market)
+                      .subscribe(
+                          orderBook -> {
+                            LOG.info("Received order book {}", market);
+                            books.put(market, orderBook);
+                            updatesCount.putIfAbsent(market, new AtomicInteger(0));
+                            updatesCount.get(market).incrementAndGet();
+                          });
+              disposables.add(disposable);
+            });
     Thread.sleep(600_000);
     disposables.forEach(Disposable::dispose);
   }
