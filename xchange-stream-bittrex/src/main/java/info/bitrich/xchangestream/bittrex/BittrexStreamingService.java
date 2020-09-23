@@ -49,8 +49,8 @@ public class BittrexStreamingService {
     Observable.fromFuture(
         hubProxy
             .invoke(Object.class, "Subscribe", (Object) channels)
-            .onError(e -> LOG.error("Error subscribe", e))
-            .done(o -> LOG.info("Success subscribe {}", o)));
+            .onError(e -> LOG.error("Subscription error", e))
+            .done(o -> LOG.info("Subscription success {}", o)));
   }
 
   public void setHandler(String eventName, SubscriptionHandler1<String> handler) {
