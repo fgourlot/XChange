@@ -8,19 +8,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw.SequencedOrderBook;
 import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
-import org.knowm.xchange.dto.trade.LimitOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,9 +26,7 @@ import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
-import io.reactivex.ObservableOnSubscribe;
 import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
@@ -97,9 +91,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     return null;
   }
 
-  /**
-   * Subscribes to all of the order books channels available via getting ticker in one go.
-   */
+  /** Subscribes to all of the order books channels available via getting ticker in one go. */
   private void subscribeToOrderBookChannels() {
     List<Ticker> tickers = new ArrayList<>();
     try {
@@ -164,6 +156,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   /**
    * Clones an orderbook.
+   *
    * @param market the market of the order book
    * @return the cloned order book
    */
@@ -174,7 +167,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         BittrexStreamingUtils.cloneOrders(
             sequencedOrderBooks.get(market).getOrderBook().getBids()));
   }
-
 
   /**
    * Queues the order book updates to apply.
@@ -224,6 +216,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   /**
    * Checks if an initial value of an order book is in memory and ready to accept websocket updates
+   *
    * @param market the order book's market
    * @return true if the in memory value of the order book is valid
    */
@@ -238,5 +231,4 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     int currentBookSequence = Integer.parseInt(orderBook.getSequence());
     return orderBookDeltasQueue.get(market).getFirst().getSequence() > currentBookSequence + 1;
   }
-
 }

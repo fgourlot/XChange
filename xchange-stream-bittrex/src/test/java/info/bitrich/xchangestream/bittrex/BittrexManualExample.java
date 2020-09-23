@@ -65,7 +65,7 @@ public class BittrexManualExample {
                           });
               disposables.add(disposable);
             });
-    Thread.sleep(60_000);
+    Thread.sleep(30_000);
     disposables.forEach(Disposable::dispose);
   }
 }
