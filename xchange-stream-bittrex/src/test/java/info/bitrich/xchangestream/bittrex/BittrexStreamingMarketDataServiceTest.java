@@ -1,9 +1,14 @@
 package info.bitrich.xchangestream.bittrex;
 
+import info.bitrich.xchangestream.core.StreamingExchange;
+import info.bitrich.xchangestream.core.StreamingExchangeFactory;
 import io.reactivex.disposables.Disposable;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
+import org.knowm.xchange.Exchange;
+import org.knowm.xchange.ExchangeFactory;
+import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.slf4j.Logger;
@@ -58,13 +63,18 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
 
     // WS orderbook map filling
     AtomicBoolean canStartRestFilling = new AtomicBoolean();
+
     Disposable wsDisposable =
         exchange
             .getStreamingMarketDataService()
             .getOrderBook(market)
             .subscribe(
                 orderBook -> {
-                  LOG.debug("Received order book {}", orderBook);
+                  LOG.info(
+                      "Received order book {}, {} bids, {} asks",
+                      orderBook.getBids().get(0).getCurrencyPair(),
+                      orderBook.getBids().size(),
+                      orderBook.getAsks().size());
                   booksWS.add(orderBook);
                   timestampsWS.put(orderBook, LocalDateTime.now());
                   canStartRestFilling.set(true);
@@ -110,7 +120,10 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
     Collection<Integer> indexes =
         booksRest.stream().map(book -> findBookInList(book, booksWS)).collect(Collectors.toList());
 
-    List<Duration> timeDiff = booksRest.stream().map(book -> Duration.between(timestampsRest.get(book), timestampsWS.get(book))).collect(Collectors.toList());
+    List<Duration> timeDiff =
+        booksRest.stream()
+            .map(book -> Duration.between(timestampsRest.get(book), timestampsWS.get(book)))
+            .collect(Collectors.toList());
     // Check that all the rest books were found in ws books
     Assert.assertTrue(indexes.stream().allMatch(index -> index > 0));
     // Check that the books are chronologically found
@@ -119,20 +132,19 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
 
   private int findBookInList(OrderBook bookToFind, ArrayList<OrderBook> books) {
     return books.stream()
-         .filter(book -> bookToFind.getAsks().subList(0,100).equals(book.getAsks().subList(0,100)) && bookToFind.getBids().subList(0,100).equals(book.getBids().subList(0,100)))
-         .findFirst()
-         .map(books::indexOf)
-         .orElse(-1);
-
-
-
-
-
-    /*return books.stream()
-        .filter(bookToFind::ordersEqual)
+        .filter(
+            book ->
+                bookToFind.getAsks().subList(0, 100).equals(book.getAsks().subList(0, 100))
+                    && bookToFind.getBids().subList(0, 100).equals(book.getBids().subList(0, 100)))
         .findFirst()
         .map(books::indexOf)
-        .orElse(-1);*/
+        .orElse(-1);
+
+    /*return books.stream()
+    .filter(bookToFind::ordersEqual)
+    .findFirst()
+    .map(books::indexOf)
+    .orElse(-1);*/
   }
 
   @AfterClass

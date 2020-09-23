@@ -45,16 +45,11 @@ public class BittrexStreamingService {
   public void subscribeToChannelWithHandler(
       String[] channels, String eventName, SubscriptionHandler1<String> handler) {
     LOG.info("Subscribing ...");
-    this.setHandler(eventName, handler);
-    Observable.fromFuture(
-        hubProxy
-            .invoke(Object.class, "Subscribe", (Object) channels)
-            .onError(e -> LOG.error("Subscription error", e))
-            .done(o -> LOG.info("Subscription success {}", o)));
-  }
-
-  public void setHandler(String eventName, SubscriptionHandler1<String> handler) {
     hubProxy.on(eventName, handler, String.class);
+    hubProxy
+        .invoke(Object.class, "Subscribe", (Object) channels)
+        .onError(e -> LOG.error("Subscription error", e))
+        .done(o -> LOG.info("Subscription success {}", o));
   }
 
   private void connectedToWebSocket() {
