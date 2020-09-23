@@ -159,7 +159,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     synchronized (ORDER_BOOKS_LOCK) {
       orderBookClone = cloneOrderBook(market);
     }
-    orderBooks.put(market, BehaviorSubject.createDefault(orderBookClone));
+    orderBooks.putIfAbsent(market, BehaviorSubject.createDefault(orderBookClone));
   }
 
   /**
