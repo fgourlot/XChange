@@ -69,6 +69,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
+    orderBookDeltasQueue.putIfAbsent(currencyPair, new LinkedList<>());
     if (!isOrderbooksChannelSubscribed) {
       synchronized (SUBSCRIBE_LOCK) {
         if (!isOrderbooksChannelSubscribed) {
@@ -76,7 +77,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         }
       }
     }
-    orderBookDeltasQueue.putIfAbsent(currencyPair, new LinkedList<>());
     try {
       initializeOrderBook(currencyPair);
     } catch (IOException e) {
