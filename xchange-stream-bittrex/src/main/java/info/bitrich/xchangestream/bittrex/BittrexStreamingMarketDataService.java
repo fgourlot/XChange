@@ -41,8 +41,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final BittrexStreamingService streamingService;
   private final BittrexMarketDataService marketDataService;
 
-  private final Map<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
-  private final Map<CurrencyPair, LinkedList<BittrexOrderBookDeltas>> orderBookDeltasQueue;
+  private final ConcurrentMap<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
+  private final ConcurrentMap<CurrencyPair, LinkedList<BittrexOrderBookDeltas>> orderBookDeltasQueue;
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
   private final SubscriptionHandler1<String> orderBooksHandler;
   private final ObjectMapper objectMapper;
@@ -54,8 +54,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.streamingService = streamingService;
     this.marketDataService = marketDataService;
     this.objectMapper = new ObjectMapper();
-    this.orderBookDeltasQueue = new HashMap<>();
-    this.sequencedOrderBooks = new HashMap<>();
+    this.orderBookDeltasQueue = new ConcurrentHashMap<>();
+    this.sequencedOrderBooks = new ConcurrentHashMap<>();
     this.orderBooks = new ConcurrentHashMap<>();
     this.isOrderbooksChannelSubscribed = false;
     this.orderBooksHandler = createHandler();
