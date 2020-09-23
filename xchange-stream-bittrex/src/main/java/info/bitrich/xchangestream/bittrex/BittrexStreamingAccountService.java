@@ -77,7 +77,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
                 };
             String balanceChannel = "balance";
             LOG.info("Subscribing to channel : {}", balanceChannel);
-            bittrexStreamingService.subscribeToChannelWithHandler(balanceChannel, "balance", balanceHandler);
+            bittrexStreamingService.subscribeToChannelWithHandler(new String[]{balanceChannel}, "balance", balanceHandler);
           }
         };
 

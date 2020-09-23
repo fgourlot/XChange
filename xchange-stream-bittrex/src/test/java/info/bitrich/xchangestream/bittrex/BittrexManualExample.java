@@ -43,11 +43,11 @@ public class BittrexManualExample {
     Exchange exchange = ExchangeFactory.INSTANCE.createExchange(BittrexExchange.class.getName());
     exchange.getMarketDataService().getTickers(null).stream()
         .map(Ticker::getCurrencyPair)
-        // Stream.of(CurrencyPair.BTC_USD)
+        //Stream.of(CurrencyPair.BTC_USD)
         .forEach(
             market -> {
               try {
-                // we don't want http 429
+                // we don't want http 429, getOrderBook limit is 600/mn
                 Thread.sleep(100);
               } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -65,7 +65,7 @@ public class BittrexManualExample {
                           });
               disposables.add(disposable);
             });
-    Thread.sleep(600_000);
+    Thread.sleep(60_000);
     disposables.forEach(Disposable::dispose);
   }
 }

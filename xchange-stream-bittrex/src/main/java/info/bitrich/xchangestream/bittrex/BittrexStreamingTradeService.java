@@ -99,7 +99,7 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
                 };
             String orderChannel = "order";
             LOG.info("Subscribing to channel : {}", orderChannel);
-            bittrexStreamingService.subscribeToChannelWithHandler(orderChannel, "order", orderHandler);
+            bittrexStreamingService.subscribeToChannelWithHandler(new String[]{orderChannel}, "order", orderHandler);
           }
         };
 

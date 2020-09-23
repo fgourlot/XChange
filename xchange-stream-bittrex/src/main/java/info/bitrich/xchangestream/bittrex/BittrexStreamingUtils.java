@@ -56,8 +56,7 @@ public final class BittrexStreamingUtils {
 
   /**
    * Apply updates to an order book.
-   *
-   * @param orderBookToUpdate the order book to update
+   *  @param orderBookToUpdate the order book to update
    * @param updates the updates to apply
    * @param orderType the order book side to update (bids or asks)
    * @param market the market name

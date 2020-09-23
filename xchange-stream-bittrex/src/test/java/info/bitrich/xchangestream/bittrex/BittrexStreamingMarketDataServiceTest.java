@@ -119,10 +119,20 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
 
   private int findBookInList(OrderBook bookToFind, ArrayList<OrderBook> books) {
     return books.stream()
+         .filter(book -> bookToFind.getAsks().subList(0,100).equals(book.getAsks().subList(0,100)) && bookToFind.getBids().subList(0,100).equals(book.getBids().subList(0,100)))
+         .findFirst()
+         .map(books::indexOf)
+         .orElse(-1);
+
+
+
+
+
+    /*return books.stream()
         .filter(bookToFind::ordersEqual)
         .findFirst()
         .map(books::indexOf)
-        .orElse(-1);
+        .orElse(-1);*/
   }
 
   @AfterClass

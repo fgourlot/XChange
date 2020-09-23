@@ -11,9 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.UUID;
 
 public class BittrexStreamingService {
@@ -25,14 +23,13 @@ public class BittrexStreamingService {
   private final HubConnection hubConnection;
   private final HubProxy hubProxy;
 
-  private final HashMap<String, Observable> subscriptions;
-
   public BittrexStreamingService(String apiUrl, ExchangeSpecification exchangeSpecification) {
+    LOG.info("Initializing streaming service ...");
     this.exchangeSpecification = exchangeSpecification;
     hubConnection = new HubConnection(apiUrl);
     hubProxy = hubConnection.createHubProxy("c3");
     hubConnection.connected(this::connectedToWebSocket);
-    subscriptions = new HashMap<>();
+    LOG.info("Streaming service initialized...");
   }
 
   public io.reactivex.Completable connect() {
@@ -45,24 +42,18 @@ public class BittrexStreamingService {
     this.hubConnection.disconnect();
   }
 
-  public Observable subscribeToChannelWithHandler(
-      String channel, String eventName, SubscriptionHandler1<String> handler) {
-    if (!this.subscriptions.containsKey(channel)) {
-      this.setHandler(eventName, handler);
-      String[] channels = {channel};
-      Observable subscriptionObs =
-          Observable.fromFuture(
-              hubProxy
-                  .invoke(Object.class, "Subscribe", (Object) channels)
-                  .onError(e -> LOG.error("Error subscribe", e))
-                  .done(o -> LOG.info("Success subscribe {}", o)));
-
-      this.subscriptions.put(channel, subscriptionObs);
-    }
-    return this.subscriptions.get(channel);
+  public void subscribeToChannelWithHandler(
+      String[] channels, String eventName, SubscriptionHandler1<String> handler) {
+    LOG.info("Subscribing ...");
+    this.setHandler(eventName, handler);
+    Observable.fromFuture(
+        hubProxy
+            .invoke(Object.class, "Subscribe", (Object) channels)
+            .onError(e -> LOG.error("Error subscribe", e))
+            .done(o -> LOG.info("Success subscribe {}", o)));
   }
 
-  public void setHandler(String eventName, SubscriptionHandler1 handler) {
+  public void setHandler(String eventName, SubscriptionHandler1<String> handler) {
     hubProxy.on(eventName, handler, String.class);
   }
 
