@@ -46,7 +46,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final ConcurrentMap<CurrencyPair, LinkedList<BittrexOrderBookDeltas>>
       orderBookDeltasQueue;
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
-  private final SubscriptionHandler1<String> orderBooksHandler;
+  private final SubscriptionHandler1<String> socketMessageHandler;
   private final ObjectMapper objectMapper;
   private final List<CurrencyPair> allMarkets;
 
@@ -62,7 +62,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.sequencedOrderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.isOrderbooksChannelSubscribed = false;
-    this.orderBooksHandler = createHandler();
+    this.socketMessageHandler = createHandler();
   }
 
   @Override
@@ -103,7 +103,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             .map(marketName -> "orderbook_" + marketName + "_" + ORDER_BOOKS_DEPTH)
             .toArray(String[]::new);
     streamingService.subscribeToChannelWithHandler(
-        orderBooksChannel, "orderbook", this.orderBooksHandler);
+        orderBooksChannel, "orderbook", this.socketMessageHandler);
     isOrderbooksChannelSubscribed = true;
   }
 
