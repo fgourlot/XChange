@@ -42,7 +42,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final BittrexMarketDataService marketDataService;
 
   private final ConcurrentMap<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
-  private final ConcurrentMap<CurrencyPair, LinkedList<BittrexOrderBookDeltas>> orderBookDeltasQueue;
+  private final ConcurrentMap<CurrencyPair, LinkedList<BittrexOrderBookDeltas>>
+      orderBookDeltasQueue;
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
   private final SubscriptionHandler1<String> orderBooksHandler;
   private final ObjectMapper objectMapper;
@@ -151,7 +152,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     synchronized (ORDER_BOOKS_LOCK) {
       orderBookClone = cloneOrderBook(market);
     }
-    orderBooks.putIfAbsent(market, BehaviorSubject.createDefault(orderBookClone));
+    orderBooks.putIfAbsent(market, BehaviorSubject.createDefault(orderBookClone).toSerialized());
   }
 
   /**
