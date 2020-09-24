@@ -86,13 +86,13 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   @Override
   public Observable<Ticker> getTicker(CurrencyPair currencyPair, Object... args) {
     // TODO
-    return null;
+    return Observable.empty();
   }
 
   @Override
   public Observable<Trade> getTrades(CurrencyPair currencyPair, Object... args) {
     // TODO
-    return null;
+    return Observable.empty();
   }
 
   /** Subscribes to all of the order books channels available via getting ticker in one go. */
