@@ -38,7 +38,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private static final int ORDER_BOOKS_DEPTH = 500;
   private static final Object SUBSCRIBE_LOCK = new Object();
   private static final Object ORDER_BOOKS_LOCK = new Object();
-  public static final int MAX_DELTAS_IN_MEMORY = 10_000;
+  private static final int MAX_DELTAS_IN_MEMORY = 10_000;
 
   private final BittrexStreamingService streamingService;
   private final BittrexMarketDataService marketDataService;
