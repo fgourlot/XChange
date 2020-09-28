@@ -38,6 +38,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private static final int ORDER_BOOKS_DEPTH = 500;
   private static final Object SUBSCRIBE_LOCK = new Object();
   private static final Object ORDER_BOOKS_LOCK = new Object();
+  public static final int MAX_DELTAS_IN_MEMORY = 10_000;
 
   private final BittrexStreamingService streamingService;
   private final BittrexMarketDataService marketDataService;
@@ -161,9 +162,9 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private OrderBook cloneOrderBook(CurrencyPair market) {
     return new OrderBook(
         Optional.ofNullable(sequencedOrderBooks.get(market).getOrderBook().getTimeStamp())
-                .map(Date::getTime)
-                .map(Date::new)
-                .orElse(null),
+            .map(Date::getTime)
+            .map(Date::new)
+            .orElse(null),
         BittrexStreamingUtils.cloneOrders(sequencedOrderBooks.get(market).getOrderBook().getAsks()),
         BittrexStreamingUtils.cloneOrders(
             sequencedOrderBooks.get(market).getOrderBook().getBids()));
@@ -177,16 +178,20 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private void queueOrderBookDeltas(BittrexOrderBookDeltas orderBookDeltas, CurrencyPair market) {
     LinkedList<BittrexOrderBookDeltas> deltasQueue = orderBookDeltasQueue.get(market);
+    boolean added = false;
     if (deltasQueue.isEmpty()) {
-      deltasQueue.add(orderBookDeltas);
+      added = deltasQueue.add(orderBookDeltas);
     } else {
       int lastSequence = deltasQueue.getLast().getSequence();
       if (lastSequence + 1 == orderBookDeltas.getSequence()) {
-        deltasQueue.add(orderBookDeltas);
+        added = deltasQueue.add(orderBookDeltas);
       } else if (lastSequence + 1 < orderBookDeltas.getSequence()) {
         deltasQueue.clear();
-        deltasQueue.add(orderBookDeltas);
+        added = deltasQueue.add(orderBookDeltas);
       }
+    }
+    if (added && deltasQueue.size() > MAX_DELTAS_IN_MEMORY) {
+      deltasQueue.removeFirst();
     }
   }
 
@@ -235,13 +240,14 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   /**
    * Returns all the bittrex markets.
+   *
    * @return the markets
    */
   private List<CurrencyPair> getAllMarkets() {
     try {
       return this.marketDataService.getTickers(null).stream()
-                                   .map(Ticker::getCurrencyPair)
-                                   .collect(Collectors.toList());
+          .map(Ticker::getCurrencyPair)
+          .collect(Collectors.toList());
     } catch (IOException e) {
       LOG.error("Could not get the tickers.", e);
       return new ArrayList<>();
