@@ -30,7 +30,7 @@ public final class BittrexStreamingUtils {
   }
 
   /**
-   * Clone orders
+   * Clone orders.
    *
    * @param orders the orders to clone
    * @return the cloned orders
@@ -40,7 +40,7 @@ public final class BittrexStreamingUtils {
   }
 
   /**
-   * Update a given OrderBook with Bittrex deltas in a BittrexOrderBook message
+   * Update a given OrderBook with Bittrex deltas in a BittrexOrderBook message.
    *
    * @param orderBookToUpdate the order book to update
    * @param updates the updates to apply
@@ -56,7 +56,8 @@ public final class BittrexStreamingUtils {
 
   /**
    * Apply updates to an order book.
-   *  @param orderBookToUpdate the order book to update
+   *
+   * @param orderBookToUpdate the order book to update
    * @param updates the updates to apply
    * @param orderType the order book side to update (bids or asks)
    * @param market the market name
@@ -77,10 +78,10 @@ public final class BittrexStreamingUtils {
   }
 
   /**
-   * Creates an OrderType (ASK/BID) from an order direction String (`SELL`/`BUY`)
+   * Creates an OrderType (ASK/BID) from an order direction String (`SELL`/`BUY`).
    *
-   * @param orderDirection
-   * @return
+   * @param orderDirection the order direction in Bittrex format
+   * @return the converted order type
    */
   public static Order.OrderType orderDirectionToOrderType(String orderDirection) {
     switch (orderDirection.toUpperCase()) {
@@ -94,10 +95,10 @@ public final class BittrexStreamingUtils {
   }
 
   /**
-   * Creates an UserTrade object from a BittrexOrder object
+   * Creates an UserTrade object from a BittrexOrder object.
    *
-   * @param bittrexOrder
-   * @return
+   * @param bittrexOrder the order in Bittrex format
+   * @return the bittrex order converted to an UserTrade
    */
   public static UserTrade bittrexOrderToUserTrade(BittrexOrder bittrexOrder) {
     // build and return UserTrade
@@ -114,30 +115,29 @@ public final class BittrexStreamingUtils {
   }
 
   /**
-   * Creates a BittrexOrder object from a Bittrex `order` message
+   * Creates a BittrexOrder object from a Bittrex `order` message.
    *
-   * @param bittrexOrderMessage
-   * @return
+   * @param bittrexOrderMessage the Bittrex order message
+   * @return the converted BittrexOrder pojo
    */
   public static BittrexOrder bittrexOrderMessageToBittrexOrder(String bittrexOrderMessage) {
     ObjectMapper objectMapper = new ObjectMapper();
     try {
       // decompress message
-      String decompressedMessage = EncryptionUtils.decompress(bittrexOrderMessage);
-      LOG.debug("Decompressed order message : {}", decompressedMessage);
+      String decompressedMessage = BittrexEncryptionUtils.decompress(bittrexOrderMessage);
       // parse JSON to Object
       return objectMapper.readValue(decompressedMessage, BittrexOrder.class);
     } catch (IOException e) {
-      e.printStackTrace();
-      throw new RuntimeException(e);
+      LOG.error("Error converting Bittrex order message.", e);
     }
+    return null;
   }
 
   /**
-   * Creates a Balance object from a BittrexBalance object
+   * Creates a Balance object from a BittrexBalance object.
    *
-   * @param bittrexBalance
-   * @return
+   * @param bittrexBalance the BittrexBalance
+   * @return the converted Balance pojo
    */
   public static Balance bittrexBalanceToBalance(BittrexBalance bittrexBalance) {
     return new Balance.Builder()
@@ -149,22 +149,21 @@ public final class BittrexStreamingUtils {
   }
 
   /**
-   * Creates a BittrexBalance object from a Bittrex `balance` message
+   * Creates a BittrexBalance object from a Bittrex `balance` message.
    *
-   * @param bittrexBalanceMessage
-   * @return
+   * @param bittrexBalanceMessage the Bittrex balance message
+   * @return the converted BittrexBalance pojo
    */
   public static BittrexBalance bittrexBalanceMessageToBittrexBalance(String bittrexBalanceMessage) {
     ObjectMapper objectMapper = new ObjectMapper();
     try {
       // decompress message
-      String decompressedMessage = EncryptionUtils.decompress(bittrexBalanceMessage);
-      LOG.debug("Decompressed balance message : {}", decompressedMessage);
+      String decompressedMessage = BittrexEncryptionUtils.decompress(bittrexBalanceMessage);
       // parse JSON to Object
       return objectMapper.readValue(decompressedMessage, BittrexBalance.class);
     } catch (IOException e) {
-      e.printStackTrace();
-      throw new RuntimeException(e);
+      LOG.error("Error converting Bittrex balance message.", e);
     }
+    return null;
   }
 }

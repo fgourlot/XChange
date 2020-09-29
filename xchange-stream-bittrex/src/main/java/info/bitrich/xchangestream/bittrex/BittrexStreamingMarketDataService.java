@@ -118,7 +118,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       try {
         BittrexOrderBookDeltas orderBookDeltas =
             objectMapper.readValue(
-                EncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
+                BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
         CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
         if (orderBooks.containsKey(market)) {
           OrderBook orderBookClone;
