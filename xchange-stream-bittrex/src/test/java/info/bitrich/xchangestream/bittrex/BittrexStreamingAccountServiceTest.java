@@ -6,6 +6,7 @@ import org.junit.Test;
 import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
+import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
 import org.knowm.xchange.bittrex.service.BittrexTradeService;
@@ -30,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.stream.Collectors;
 
 public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest {
   private static final Logger LOG =
@@ -118,12 +120,11 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
     BittrexAccountService accountService =
         new BittrexAccountService((BittrexExchange) this.exchange);
 
-
     List<Map<Currency, Balance>> balancesStreamList = new ArrayList<>();
     ConcurrentMap<Currency, Balance> currentMapStream = new ConcurrentHashMap<>();
 
     Map<Currency, Balance> balances = accountService.getAccountInfo().getWallet().getBalances();
-    List<Disposable> subs = new ArrayList<>();
+    List<Disposable> disposables = new ArrayList<>();
     final Object streamLock = new Object();
     balances
         .keySet()
@@ -136,12 +137,13 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
                       .subscribe(
                           balance -> {
                             synchronized (streamLock) {
+                              LOG.debug("Received balance update {}", balance);
                               currentMapStream.put(currency, balance);
                               Map<Currency, Balance> clonedBalances = cloneMap(currentMapStream);
                               balancesStreamList.add(clonedBalances);
                             }
                           });
-              subs.add(wsDisposable);
+              disposables.add(wsDisposable);
             });
 
     Thread.sleep(5_000);
@@ -152,6 +154,8 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
         new TimerTask() {
           public void run() {
             try {
+              BittrexAccountServiceRaw.SequencedBalances sequencedBalances =
+                  accountService.getBittrexSequencedBalances();
               balancesMapsRest.add(accountService.getAccountInfo().getWallet().getBalances());
             } catch (IOException e) {
               e.printStackTrace();
@@ -164,41 +168,17 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
     Thread.sleep(20_000);
     timer.cancel();
     Thread.sleep(5_000);
-    subs.forEach(Disposable::dispose);
+    disposables.forEach(Disposable::dispose);
 
-    Thread.sleep(5_000);
-    if (balancesStreamList.size() > 0) {
-      LOG.debug("Found balance messages in stream list : {}", balancesStreamList);
-      balancesStreamList.forEach(
-          currencyBalanceMap -> {
-            Map<Currency, Balance> restEntry = balancesMapsRest.get(0);
-            currencyBalanceMap.forEach(
-                (currency, balance) -> {
-                  if (restEntry.containsKey(currency) && restEntry.get(currency).equals(balance)) {
-                    LOG.error("Currency balance from stream found in REST API");
-                  } else {
-                    LOG.error("Currency balance from stream list not found in REST API");
-                    Assert.fail();
-                  }
-                });
-          });
-        // at this point, no fail means success
-        Assert.assertTrue(true);
-    } else {
-      LOG.error("no balance message in stream list");
-      Assert.fail();
-    }
-    /* this can't work
-    balancesMapsRest.forEach(entry -> {
-      currencyEntry = entry.get()
-      Assert.assertTrue(balancesStreamList.contains(entry));
-    });*/
+    List<Integer> indexesFound =
+        balancesMapsRest.stream().map(balancesStreamList::indexOf).collect(Collectors.toList());
+    Assert.assertTrue(indexesFound.stream().allMatch(index -> index > 0));
   }
 
   private Map<Currency, Balance> cloneMap(Map<Currency, Balance> balancesToClone) {
     Map<Currency, Balance> clonedMap = new HashMap<>(balancesToClone.size());
-    balancesToClone
-        .forEach((key, value) -> {
+    balancesToClone.forEach(
+        (key, value) -> {
           Balance clonedBalance = Balance.Builder.from(value).build();
           clonedMap.put(key, clonedBalance);
         });

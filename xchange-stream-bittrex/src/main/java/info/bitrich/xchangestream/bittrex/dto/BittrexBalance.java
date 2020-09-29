@@ -1,6 +1,8 @@
 package info.bitrich.xchangestream.bittrex.dto;
 
-public class BittrexBalance {
+import java.util.Objects;
+
+public class BittrexBalance implements Comparable<BittrexBalance> {
   private String accountId;
   private int sequence;
   private BittrexBalanceDelta delta;
@@ -24,4 +26,10 @@ public class BittrexBalance {
   public BittrexBalanceDelta getDelta() {
     return delta;
   }
+
+  @Override
+  public int compareTo(BittrexBalance that) {
+    return Integer.compare(this.sequence, that.sequence);
+  }
+
 }

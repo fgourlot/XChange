@@ -1,10 +1,13 @@
 package info.bitrich.xchangestream.bittrex;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
-import io.reactivex.Observer;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
+
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.currency.Currency;
@@ -13,13 +16,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.stream.Collectors;
 
 public class BittrexStreamingAccountService implements StreamingAccountService {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingAccountService.class);
+
+  private static final int MAX_DELTAS_IN_MEMORY = 100_000;
 
   private final BittrexStreamingService bittrexStreamingService;
   private final BittrexAccountService bittrexAccountService;
@@ -27,79 +34,112 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   /** Current sequence number (to be increased after each message) */
   private Integer currentSequenceNumber;
 
-  private final Map<Currency, Balance> balances;
+  private final SubscriptionHandler1<String> balancesMessageHandler;
+  private final ObjectMapper objectMapper;
+  private boolean isBalancesChannelSubscribed;
 
-  private final Object lock = new Object();
+  private final ConcurrentMap<Currency, Subject<Balance>> balances;
+  private final SortedSet<BittrexBalance> balancesDeltaQueue;
+
+  private static final Object SUBSCRIBE_LOCK = new Object();
+  private static final Object BALANCES_LOCK = new Object();
 
   public BittrexStreamingAccountService(
       BittrexStreamingService bittrexStreamingService,
       BittrexAccountService bittrexAccountService) {
     this.bittrexStreamingService = bittrexStreamingService;
     this.bittrexAccountService = bittrexAccountService;
-    this.balances = new HashMap<>();
+    this.balances = new ConcurrentHashMap<>();
+    this.balancesDeltaQueue = new ConcurrentSkipListSet<>();
+    this.objectMapper = new ObjectMapper();
+    this.balancesMessageHandler = createBalancesMessageHandler();
+  }
+
+  /**
+   * Creates the handler which will work with the websocket incoming messages.
+   *
+   * @return the created handler
+   */
+  private SubscriptionHandler1<String> createBalancesMessageHandler() {
+    return message -> {
+      BittrexBalance bittrexBalance =
+          BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(message, objectMapper.reader());
+      if (bittrexBalance != null) {
+        queueBalanceDelta(bittrexBalance);
+        synchronized (BALANCES_LOCK) {
+          if (needBalancesInit(bittrexBalance)) {
+            restFillBalances();
+          }
+          applyBalancesDeltas();
+        }
+      }
+    };
+  }
+
+  private void applyBalancesDeltas() {
+    balancesDeltaQueue.stream()
+        .filter(bittrexBalance -> bittrexBalance.getSequence() > currentSequenceNumber)
+        .forEach(
+            bittrexBalance -> {
+              balances
+                  .get(bittrexBalance.getDelta().getCurrencySymbol())
+                  .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
+              currentSequenceNumber = bittrexBalance.getSequence();
+            });
+    balancesDeltaQueue.clear();
+  }
+
+  private void queueBalanceDelta(BittrexBalance bittrexBalance) {
+    balancesDeltaQueue.add(bittrexBalance);
+    if (balancesDeltaQueue.size() > MAX_DELTAS_IN_MEMORY) {
+      balancesDeltaQueue.remove(balancesDeltaQueue.first());
+    }
   }
 
   @Override
   public Observable<Balance> getBalanceChanges(Currency currency, Object... args) {
-
-    // create result Observable
-    Observable<Balance> obs =
-        new Observable<Balance>() {
-          @Override
-          protected void subscribeActual(Observer observer) {
-            // create handler for `balance` messages
-            SubscriptionHandler1<String> balanceHandler =
-                message -> {
-                  synchronized (lock) {
-                    LOG.debug("Incoming balance message : {}", message);
-                    // parse message to BittrexBalance object
-                    BittrexBalance bittrexBalance =
-                        BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(message);
-                    if (isStreamBalanceNotSynchronized(bittrexBalance)) {
-                      restFillBalances();
-                    } else if (bittrexBalance.getSequence() > currentSequenceNumber) {
-                      LOG.debug("Applying balance update");
-                      Balance balance =
-                          BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance);
-                      Currency currency = bittrexBalance.getDelta().getCurrencySymbol();
-                      balances.put(currency, balance);
-                      currentSequenceNumber = bittrexBalance.getSequence();
-                    } else {
-                      LOG.debug(
-                          "Ignoring obsolete balance update of sequence {}, current sequence is {}",
-                          bittrexBalance.getSequence(),
-                          currentSequenceNumber);
-                    }
-                    Optional.ofNullable(balances.get(currency))
-                        .ifPresent(
-                            balance -> observer.onNext(Balance.Builder.from(balance).build()));
-                  }
-                };
-            String balanceChannel = "balance";
-            LOG.info("Subscribing to channel : {}", balanceChannel);
-            bittrexStreamingService.subscribeToChannelWithHandler(new String[]{balanceChannel}, "balance", balanceHandler);
-          }
-        };
-
-    return obs;
+    if (!isBalancesChannelSubscribed) {
+      synchronized (SUBSCRIBE_LOCK) {
+        if (!isBalancesChannelSubscribed) {
+          subscribeToBalancesChannels();
+        }
+      }
+    }
+    if (!balances.containsKey(currency)) {
+      restFillBalances();
+    }
+    return balances.get(currency);
   }
 
-  private boolean isStreamBalanceNotSynchronized(BittrexBalance bittrexBalance) {
-    return currentSequenceNumber == null
-        || bittrexBalance.getSequence() - currentSequenceNumber > 1;
+  /** Subscribes to all of the order books channels available via getting ticker in one go. */
+  private void subscribeToBalancesChannels() {
+    String balanceChannel = "balance";
+    bittrexStreamingService.subscribeToChannelWithHandler(
+        new String[] {balanceChannel}, "balance", this.balancesMessageHandler);
+    isBalancesChannelSubscribed = true;
+  }
+
+  private boolean needBalancesInit(BittrexBalance bittrexBalance) {
+    return currentSequenceNumber + 1 < bittrexBalance.getSequence()
+        || currentSequenceNumber == null;
   }
 
   private void restFillBalances() {
-    LOG.debug("Synchronizing balances with rest call");
-    balances.clear();
-    try {
-      BittrexAccountServiceRaw.SequencedBalances sequencedBalances =
-          bittrexAccountService.getBittrexSequencedBalances();
-      balances.putAll(sequencedBalances.getBalances());
-      currentSequenceNumber = Integer.parseInt(sequencedBalances.getSequence());
-      LOG.debug("Fetched balances with rest call, sequence = {}", currentSequenceNumber);
-    } catch (IOException e) {
-      LOG.error("Error rest fetching balances", e);
+    synchronized (BALANCES_LOCK) {
+      try {
+        BittrexAccountServiceRaw.SequencedBalances sequencedBalances =
+            bittrexAccountService.getBittrexSequencedBalances();
+        balances.clear();
+        balances.putAll(
+            sequencedBalances.getBalances().values().stream()
+                .collect(
+                    Collectors.toMap(
+                        Balance::getCurrency,
+                        balance -> BehaviorSubject.createDefault(balance).toSerialized())));
+        currentSequenceNumber = Integer.parseInt(sequencedBalances.getSequence());
+      } catch (IOException e) {
+        LOG.error("Error rest fetching balances", e);
+      }
     }
   }
 }

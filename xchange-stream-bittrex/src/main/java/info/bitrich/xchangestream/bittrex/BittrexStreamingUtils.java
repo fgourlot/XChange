@@ -1,6 +1,8 @@
 package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
@@ -154,8 +156,7 @@ public final class BittrexStreamingUtils {
    * @param bittrexBalanceMessage the Bittrex balance message
    * @return the converted BittrexBalance pojo
    */
-  public static BittrexBalance bittrexBalanceMessageToBittrexBalance(String bittrexBalanceMessage) {
-    ObjectMapper objectMapper = new ObjectMapper();
+  public static BittrexBalance bittrexBalanceMessageToBittrexBalance(String bittrexBalanceMessage, ObjectReader objectMapper) {
     try {
       // decompress message
       String decompressedMessage = BittrexEncryptionUtils.decompress(bittrexBalanceMessage);

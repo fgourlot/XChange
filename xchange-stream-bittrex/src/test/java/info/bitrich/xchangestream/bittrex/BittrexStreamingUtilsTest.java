@@ -22,6 +22,8 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 public class BittrexStreamingUtilsTest extends TestCase {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingUtilsTest.class);
@@ -146,7 +148,7 @@ public class BittrexStreamingUtilsTest extends TestCase {
       String balanceMessage =
           IOUtils.toString(getClass().getResource("/balanceMessage_encoded.txt"), "UTF8");
       BittrexBalance bittrexBalance =
-          BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(balanceMessage);
+          BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(balanceMessage, new ObjectMapper().reader());
       Balance balance = BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance);
       assertEquals(balance.getCurrency(), Currency.BTC);
       assertEquals(balance.getTotal(), new BigDecimal("0.00804302"));
