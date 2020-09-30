@@ -1,11 +1,7 @@
 package info.bitrich.xchangestream.bittrex;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -13,6 +9,9 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterOutputStream;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 
 /** Utility class with tools for websocket message conversion. */
 public final class BittrexEncryptionUtils {

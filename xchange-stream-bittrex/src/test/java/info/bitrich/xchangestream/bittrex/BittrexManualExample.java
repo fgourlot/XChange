@@ -1,22 +1,18 @@
 package info.bitrich.xchangestream.bittrex;
 
+import info.bitrich.xchangestream.core.StreamingExchange;
+import info.bitrich.xchangestream.core.StreamingExchangeFactory;
+import io.reactivex.disposables.Disposable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Stream;
-
-import info.bitrich.xchangestream.core.StreamingExchange;
-import info.bitrich.xchangestream.core.StreamingExchangeFactory;
-import io.reactivex.disposables.Disposable;
-
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
-import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
@@ -43,7 +39,7 @@ public class BittrexManualExample {
     Exchange exchange = ExchangeFactory.INSTANCE.createExchange(BittrexExchange.class.getName());
     exchange.getMarketDataService().getTickers(null).stream()
         .map(Ticker::getCurrencyPair)
-        //Stream.of(CurrencyPair.BTC_USD)
+        // Stream.of(CurrencyPair.BTC_USD)
         .forEach(
             market -> {
               try {

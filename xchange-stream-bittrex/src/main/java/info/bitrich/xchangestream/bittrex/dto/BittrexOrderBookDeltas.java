@@ -1,6 +1,6 @@
 package info.bitrich.xchangestream.bittrex.dto;
 
-public class BittrexOrderBookDeltas  implements Comparable<BittrexOrderBookDeltas> {
+public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas> {
   private String marketSymbol;
   private int depth;
   private int sequence;
@@ -41,7 +41,6 @@ public class BittrexOrderBookDeltas  implements Comparable<BittrexOrderBookDelta
   public BittrexOrderBookEntry[] getBidDeltas() {
     return bidDeltas;
   }
-
 
   @Override
   public int compareTo(BittrexOrderBookDeltas that) {

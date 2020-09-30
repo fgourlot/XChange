@@ -2,25 +2,23 @@ package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.stream.Stream;
+import org.knowm.xchange.bittrex.BittrexConstants;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.dto.trade.UserTrade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.stream.Stream;
 
 /** Utility class for the bittrex streaming. */
 public final class BittrexStreamingUtils {
@@ -102,17 +100,21 @@ public final class BittrexStreamingUtils {
    * @param bittrexOrder the order in Bittrex format
    * @return the bittrex order converted to an UserTrade
    */
-  public static UserTrade bittrexOrderToUserTrade(BittrexOrder bittrexOrder) {
+  public static Order bittrexOrderToOrder(BittrexOrder bittrexOrder) {
     // build and return UserTrade
-    return new UserTrade.Builder()
-        .type(
-            BittrexStreamingUtils.orderDirectionToOrderType(bittrexOrder.getDelta().getDirection()))
-        .currencyPair(BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
-        .orderId(bittrexOrder.getDelta().getId())
-        .price(bittrexOrder.getDelta().getLimit())
+    return new LimitOrder.Builder(
+            BittrexStreamingUtils.orderDirectionToOrderType(bittrexOrder.getDelta().getDirection()),
+            BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
+        .id(bittrexOrder.getDelta().getId())
+        .averagePrice(bittrexOrder.getDelta().getLimit())
+        .limitPrice(bittrexOrder.getDelta().getLimit())
         .originalAmount(bittrexOrder.getDelta().getQuantity())
         .timestamp(bittrexOrder.getDelta().getCreatedAt())
-        .feeAmount(bittrexOrder.getDelta().getCommission())
+        .fee(bittrexOrder.getDelta().getCommission())
+        .orderStatus(
+            BittrexConstants.CLOSED.equals(bittrexOrder.getDelta().getStatus())
+                ? Order.OrderStatus.CANCELED
+                : Order.OrderStatus.NEW)
         .build();
   }
 
@@ -122,13 +124,13 @@ public final class BittrexStreamingUtils {
    * @param bittrexOrderMessage the Bittrex order message
    * @return the converted BittrexOrder pojo
    */
-  public static BittrexOrder bittrexOrderMessageToBittrexOrder(String bittrexOrderMessage) {
-    ObjectMapper objectMapper = new ObjectMapper();
+  public static BittrexOrder bittrexOrderMessageToBittrexOrder(
+      String bittrexOrderMessage, ObjectMapper objectMapper) {
     try {
       // decompress message
       String decompressedMessage = BittrexEncryptionUtils.decompress(bittrexOrderMessage);
       // parse JSON to Object
-      return objectMapper.readValue(decompressedMessage, BittrexOrder.class);
+      return objectMapper.reader().readValue(decompressedMessage, BittrexOrder.class);
     } catch (IOException e) {
       LOG.error("Error converting Bittrex order message.", e);
     }
@@ -156,7 +158,8 @@ public final class BittrexStreamingUtils {
    * @param bittrexBalanceMessage the Bittrex balance message
    * @return the converted BittrexBalance pojo
    */
-  public static BittrexBalance bittrexBalanceMessageToBittrexBalance(String bittrexBalanceMessage, ObjectReader objectMapper) {
+  public static BittrexBalance bittrexBalanceMessageToBittrexBalance(
+      String bittrexBalanceMessage, ObjectReader objectMapper) {
     try {
       // decompress message
       String decompressedMessage = BittrexEncryptionUtils.decompress(bittrexBalanceMessage);

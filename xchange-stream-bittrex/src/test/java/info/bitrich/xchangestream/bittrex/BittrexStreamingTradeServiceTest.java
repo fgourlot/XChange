@@ -1,86 +1,46 @@
 package info.bitrich.xchangestream.bittrex;
 
 import io.reactivex.disposables.Disposable;
-import org.junit.Assert;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.Test;
-import org.knowm.xchange.bittrex.BittrexExchange;
-import org.knowm.xchange.bittrex.BittrexUtils;
-import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
-import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
-import org.knowm.xchange.bittrex.service.BittrexTradeService;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
-import org.knowm.xchange.dto.marketdata.OrderBook;
-import org.knowm.xchange.dto.trade.LimitOrder;
+import org.knowm.xchange.dto.marketdata.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.List;
 
 public class BittrexStreamingTradeServiceTest extends BittrexStreamingBaseTest {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingTradeServiceTest.class);
 
-  /** Test order id for assertion */
-  String limitOrderId;
-
   @Test
-  public void openOrdersAfterOrderTest() {
-
-    // init services
-    BittrexTradeService bittrexTradeService = new BittrexTradeService((BittrexExchange) exchange);
-    BittrexMarketDataService marketDataService =
-        new BittrexMarketDataService((BittrexExchange) this.exchange);
-
-    // test order params
-    CurrencyPair currencyPair = CurrencyPair.ETH_BTC;
-    Order.OrderType orderType = Order.OrderType.BID;
-    BigDecimal tradeAmount = new BigDecimal(0.1);
-    BigDecimal tradePrice = new BigDecimal(0);
-
-    // get last bid order price from REST OrderBook
-    try {
-      BittrexMarketDataServiceRaw.SequencedOrderBook sequencedOrderBook =
-          marketDataService.getBittrexSequencedOrderBook(
-              BittrexUtils.toPairString(currencyPair), 500);
-      OrderBook orderBook = sequencedOrderBook.getOrderBook();
-      List<LimitOrder> bidOrders = orderBook.getBids();
-      LimitOrder lastBidOrder = bidOrders.get(bidOrders.size() - 1);
-      tradePrice = lastBidOrder.getLimitPrice();
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-
-    Disposable wsDisposable =
-        exchange
-            .getStreamingTradeService()
-            .getUserTrades(CurrencyPair.ETH_BTC)
-            .subscribe(
-                order -> {
-                  LOG.debug("Received order : {}", order);
-                  Assert.assertTrue(order.getOrderId() == limitOrderId);
-                });
-    try {
-      // forge and execute test order
-      LimitOrder limitOrder =
-          new LimitOrder.Builder(orderType, currencyPair)
-              .limitPrice(tradePrice)
-              .originalAmount(tradeAmount)
-              .build();
-      limitOrderId = bittrexTradeService.placeLimitOrder(limitOrder);
-      LOG.info("Performed order with id : {}", limitOrderId);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    try {
-      Thread.sleep(7000);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
-    } finally {
-      // Stopping everyone
-      wsDisposable.dispose();
-    }
+  public void testOrders() throws InterruptedException, IOException {
+    Map<CurrencyPair, List<Order>> ordersChanges = new HashMap<>();
+    List<Disposable> disposables = new ArrayList<>();
+    final Object streamLock = new Object();
+    exchange.getMarketDataService().getTickers(null).stream()
+        .map(Ticker::getCurrencyPair)
+        .forEach(
+            market -> {
+              Disposable wsDisposable =
+                  exchange
+                      .getStreamingTradeService()
+                      .getOrderChanges(market)
+                      .subscribe(
+                          order -> {
+                            synchronized (streamLock) {
+                              LOG.debug("Received order update {}", order);
+                              ordersChanges.putIfAbsent(market, new ArrayList<>());
+                              ordersChanges.get(market).add(order);
+                            }
+                          });
+              disposables.add(wsDisposable);
+            });
+    Thread.sleep(300_000);
+    disposables.forEach(Disposable::dispose);
   }
 }

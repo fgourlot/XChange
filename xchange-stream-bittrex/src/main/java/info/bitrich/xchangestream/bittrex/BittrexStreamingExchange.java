@@ -18,12 +18,14 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
 
   /** xchange-stream-bittrex services */
   private BittrexStreamingService bittrexStreamingService;
+
   private BittrexStreamingAccountService bittrexStreamingAccountService;
   private BittrexStreamingMarketDataService bittrexStreamingMarketDataService;
   private BittrexStreamingTradeService bittrexStreamingTradeService;
 
   /** xchange-bittrex services */
   private BittrexAccountService bittrexAccountService;
+
   private BittrexMarketDataService bittrexMarketDataService;
   private BittrexTradeService bittrexTradeService;
 
@@ -53,8 +55,9 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
     return null;
   }
 
+  @Override
   public boolean isAlive() {
-    return false;
+    return bittrexStreamingService.isAlive();
   }
 
   public StreamingMarketDataService getStreamingMarketDataService() {

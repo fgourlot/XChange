@@ -1,6 +1,6 @@
 package info.bitrich.xchangestream.bittrex.dto;
 
-public class BittrexOrder {
+public class BittrexOrder implements Comparable<BittrexOrder> {
   private String accountId;
   private int sequence;
   private BittrexOrderDelta delta;
@@ -23,5 +23,10 @@ public class BittrexOrder {
 
   public BittrexOrderDelta getDelta() {
     return delta;
+  }
+
+  @Override
+  public int compareTo(BittrexOrder that) {
+    return Integer.compare(this.sequence, that.sequence);
   }
 }

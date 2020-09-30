@@ -1,9 +1,14 @@
 package info.bitrich.xchangestream.bittrex;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 import junit.framework.TestCase;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
@@ -13,16 +18,8 @@ import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
-import org.knowm.xchange.dto.trade.UserTrade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class BittrexStreamingUtilsTest extends TestCase {
 
@@ -130,12 +127,12 @@ public class BittrexStreamingUtilsTest extends TestCase {
       String orderMessage =
           IOUtils.toString(getClass().getResource("/orderMessage_encoded.txt"), "UTF8");
       BittrexOrder bittrexOrder =
-          BittrexStreamingUtils.bittrexOrderMessageToBittrexOrder(orderMessage);
-      UserTrade userTrade = BittrexStreamingUtils.bittrexOrderToUserTrade(bittrexOrder);
-      assertEquals(userTrade.getOrderId(), "738a6aed-9d09-4035-92af-1dcae3872e52");
-      assertEquals(userTrade.getCurrencyPair(), CurrencyPair.ETH_BTC);
-      assertEquals(userTrade.getPrice(), new BigDecimal("0.02070000"));
-      assertEquals(userTrade.getOriginalAmount(), new BigDecimal("0.10000000"));
+          BittrexStreamingUtils.bittrexOrderMessageToBittrexOrder(orderMessage, new ObjectMapper());
+      Order order = BittrexStreamingUtils.bittrexOrderToOrder(bittrexOrder);
+      assertEquals(order.getId(), "738a6aed-9d09-4035-92af-1dcae3872e52");
+      assertEquals(order.getCurrencyPair(), CurrencyPair.ETH_BTC);
+      assertEquals(order.getAveragePrice(), new BigDecimal("0.02070000"));
+      assertEquals(order.getOriginalAmount(), new BigDecimal("0.10000000"));
     } catch (IOException e) {
       e.printStackTrace();
     }
@@ -148,7 +145,8 @@ public class BittrexStreamingUtilsTest extends TestCase {
       String balanceMessage =
           IOUtils.toString(getClass().getResource("/balanceMessage_encoded.txt"), "UTF8");
       BittrexBalance bittrexBalance =
-          BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(balanceMessage, new ObjectMapper().reader());
+          BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
+              balanceMessage, new ObjectMapper().reader());
       Balance balance = BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance);
       assertEquals(balance.getCurrency(), Currency.BTC);
       assertEquals(balance.getTotal(), new BigDecimal("0.00804302"));

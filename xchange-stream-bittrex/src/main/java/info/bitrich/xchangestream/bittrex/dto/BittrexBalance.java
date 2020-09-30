@@ -1,7 +1,5 @@
 package info.bitrich.xchangestream.bittrex.dto;
 
-import java.util.Objects;
-
 public class BittrexBalance implements Comparable<BittrexBalance> {
   private String accountId;
   private int sequence;
@@ -31,5 +29,4 @@ public class BittrexBalance implements Comparable<BittrexBalance> {
   public int compareTo(BittrexBalance that) {
     return Integer.compare(this.sequence, that.sequence);
   }
-
 }

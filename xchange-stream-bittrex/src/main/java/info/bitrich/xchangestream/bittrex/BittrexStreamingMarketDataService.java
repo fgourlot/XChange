@@ -1,9 +1,15 @@
 package info.bitrich.xchangestream.bittrex;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
@@ -11,7 +17,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
-
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
@@ -22,15 +27,6 @@ import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.core.StreamingMarketDataService;
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.Subject;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
@@ -44,8 +40,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final BittrexMarketDataService marketDataService;
 
   private final ConcurrentMap<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
-  private final ConcurrentMap<CurrencyPair, SortedSet<BittrexOrderBookDeltas>>
-      orderBookDeltasQueue;
+  private final ConcurrentMap<CurrencyPair, SortedSet<BittrexOrderBookDeltas>> orderBookDeltasQueue;
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
   private final SubscriptionHandler1<String> orderBookMessageHandler;
   private final ObjectMapper objectMapper;
@@ -118,8 +113,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private SubscriptionHandler1<String> createOrderBookMessageHandler() {
     return message -> {
       try {
-        BittrexOrderBookDeltas orderBookDeltas = objectMapper.reader().readValue(
-            BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
+        BittrexOrderBookDeltas orderBookDeltas =
+            objectMapper
+                .reader()
+                .readValue(
+                    BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
         CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
         if (orderBooks.containsKey(market)) {
           OrderBook orderBookClone;

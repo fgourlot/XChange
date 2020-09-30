@@ -1,19 +1,17 @@
 package info.bitrich.xchangestream.bittrex;
 
+import com.github.signalr4j.client.ConnectionState;
+import com.github.signalr4j.client.hubs.HubConnection;
+import com.github.signalr4j.client.hubs.HubProxy;
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+import io.reactivex.Completable;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.UUID;
-
 import org.knowm.xchange.ExchangeSpecification;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.signalr4j.client.hubs.HubConnection;
-import com.github.signalr4j.client.hubs.HubProxy;
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-
-import io.reactivex.Completable;
 
 public class BittrexStreamingService {
 
@@ -41,6 +39,10 @@ public class BittrexStreamingService {
   public void disconnect() {
     LOG.info("Disconnecting ...");
     this.hubConnection.disconnect();
+  }
+
+  public boolean isAlive() {
+    return !hubConnection.getState().equals(ConnectionState.Disconnected);
   }
 
   public void subscribeToChannelWithHandler(
