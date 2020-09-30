@@ -165,7 +165,7 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
         0,
         TimeUnit.SECONDS.toMillis(2));
 
-    Thread.sleep(20_000);
+    Thread.sleep(30_000);
     timer.cancel();
     Thread.sleep(5_000);
     disposables.forEach(Disposable::dispose);

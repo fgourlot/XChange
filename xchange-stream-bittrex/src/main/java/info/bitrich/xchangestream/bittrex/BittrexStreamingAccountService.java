@@ -16,6 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -38,7 +41,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   private final ObjectMapper objectMapper;
   private boolean isBalancesChannelSubscribed;
 
-  private final ConcurrentMap<Currency, Subject<Balance>> balances;
+  private final Map<Currency, Subject<Balance>> balances;
   private final SortedSet<BittrexBalance> balancesDeltaQueue;
 
   private static final Object SUBSCRIBE_LOCK = new Object();
@@ -63,7 +66,8 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   private SubscriptionHandler1<String> createBalancesMessageHandler() {
     return message -> {
       BittrexBalance bittrexBalance =
-          BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(message, objectMapper.reader());
+          BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
+              message, objectMapper.reader());
       if (bittrexBalance != null) {
         queueBalanceDelta(bittrexBalance);
         synchronized (BALANCES_LOCK) {
