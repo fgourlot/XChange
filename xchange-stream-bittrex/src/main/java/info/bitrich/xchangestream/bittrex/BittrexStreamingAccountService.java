@@ -16,12 +16,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.stream.Collectors;
 
@@ -40,12 +37,10 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   private final SubscriptionHandler1<String> balancesMessageHandler;
   private final ObjectMapper objectMapper;
   private boolean isBalancesChannelSubscribed;
-
   private final Map<Currency, Subject<Balance>> balances;
   private final SortedSet<BittrexBalance> balancesDeltaQueue;
-
-  private static final Object SUBSCRIBE_LOCK = new Object();
-  private static final Object BALANCES_LOCK = new Object();
+  private final Object subscribeLock = new Object();
+  private final Object balancesLock = new Object();
 
   public BittrexStreamingAccountService(
       BittrexStreamingService bittrexStreamingService,
@@ -70,7 +65,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
               message, objectMapper.reader());
       if (bittrexBalance != null) {
         queueBalanceDelta(bittrexBalance);
-        synchronized (BALANCES_LOCK) {
+        synchronized (balancesLock) {
           if (needBalancesInit(bittrexBalance)) {
             restFillBalances();
           }
@@ -103,7 +98,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   @Override
   public Observable<Balance> getBalanceChanges(Currency currency, Object... args) {
     if (!isBalancesChannelSubscribed) {
-      synchronized (SUBSCRIBE_LOCK) {
+      synchronized (subscribeLock) {
         if (!isBalancesChannelSubscribed) {
           subscribeToBalancesChannels();
         }
@@ -129,7 +124,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   }
 
   private void restFillBalances() {
-    synchronized (BALANCES_LOCK) {
+    synchronized (balancesLock) {
       try {
         BittrexAccountServiceRaw.SequencedBalances sequencedBalances =
             bittrexAccountService.getBittrexSequencedBalances();

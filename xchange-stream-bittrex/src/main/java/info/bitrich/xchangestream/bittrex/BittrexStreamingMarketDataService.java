@@ -36,8 +36,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private static final Logger LOG =
       LoggerFactory.getLogger(BittrexStreamingMarketDataService.class);
   private static final int ORDER_BOOKS_DEPTH = 500;
-  private static final Object SUBSCRIBE_LOCK = new Object();
-  private static final Object ORDER_BOOKS_LOCK = new Object();
   private static final int MAX_DELTAS_IN_MEMORY = 1_000;
 
   private final BittrexStreamingService streamingService;
@@ -50,6 +48,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final SubscriptionHandler1<String> orderBookMessageHandler;
   private final ObjectMapper objectMapper;
   private final List<CurrencyPair> allMarkets;
+  private final Object subscribeLock = new Object();
+  private final Object orderBooksLock = new Object();
 
   private boolean isOrderbooksChannelSubscribed;
 
@@ -70,7 +70,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
     orderBookDeltasQueue.putIfAbsent(currencyPair, new LinkedList<>());
     if (!isOrderbooksChannelSubscribed) {
-      synchronized (SUBSCRIBE_LOCK) {
+      synchronized (subscribeLock) {
         if (!isOrderbooksChannelSubscribed) {
           subscribeToOrderBookChannels();
         }
@@ -121,7 +121,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
         if (orderBooks.containsKey(market)) {
           OrderBook orderBookClone;
-          synchronized (ORDER_BOOKS_LOCK) {
+          synchronized (orderBooksLock) {
             queueOrderBookDeltas(orderBookDeltas, market);
             updateOrderBook(market);
             orderBookClone = cloneOrderBook(market);
@@ -146,7 +146,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             BittrexUtils.toPairString(market), ORDER_BOOKS_DEPTH);
     sequencedOrderBooks.put(market, orderBook);
     OrderBook orderBookClone;
-    synchronized (ORDER_BOOKS_LOCK) {
+    synchronized (orderBooksLock) {
       orderBookClone = cloneOrderBook(market);
     }
     orderBooks.putIfAbsent(market, BehaviorSubject.createDefault(orderBookClone).toSerialized());
