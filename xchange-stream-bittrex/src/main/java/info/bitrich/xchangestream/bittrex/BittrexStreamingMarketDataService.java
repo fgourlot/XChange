@@ -6,6 +6,8 @@ import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -42,7 +44,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final BittrexMarketDataService marketDataService;
 
   private final ConcurrentMap<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
-  private final ConcurrentMap<CurrencyPair, LinkedList<BittrexOrderBookDeltas>>
+  private final ConcurrentMap<CurrencyPair, SortedSet<BittrexOrderBookDeltas>>
       orderBookDeltasQueue;
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
   private final SubscriptionHandler1<String> orderBookMessageHandler;
@@ -68,7 +70,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
-    orderBookDeltasQueue.putIfAbsent(currencyPair, new LinkedList<>());
+    orderBookDeltasQueue.putIfAbsent(currencyPair, new TreeSet<>());
     if (!isOrderbooksChannelSubscribed) {
       synchronized (subscribeLock) {
         if (!isOrderbooksChannelSubscribed) {
@@ -176,12 +178,12 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @param market the market
    */
   private void queueOrderBookDeltas(BittrexOrderBookDeltas orderBookDeltas, CurrencyPair market) {
-    LinkedList<BittrexOrderBookDeltas> deltasQueue = orderBookDeltasQueue.get(market);
+    SortedSet<BittrexOrderBookDeltas> deltasQueue = orderBookDeltasQueue.get(market);
     boolean added = false;
     if (deltasQueue.isEmpty()) {
       added = deltasQueue.add(orderBookDeltas);
     } else {
-      int lastSequence = deltasQueue.getLast().getSequence();
+      int lastSequence = deltasQueue.last().getSequence();
       if (lastSequence + 1 == orderBookDeltas.getSequence()) {
         added = deltasQueue.add(orderBookDeltas);
       } else if (lastSequence + 1 < orderBookDeltas.getSequence()) {
@@ -190,7 +192,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       }
     }
     if (added && deltasQueue.size() > MAX_DELTAS_IN_MEMORY) {
-      deltasQueue.removeFirst();
+      deltasQueue.remove(deltasQueue.first());
     }
   }
 
@@ -206,7 +208,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     }
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
-    LinkedList<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
+    SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
     updatesToApply.stream()
         .filter(deltas -> deltas.getSequence() > lastSequence)
         .forEach(
@@ -234,7 +236,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       return false;
     }
     int currentBookSequence = Integer.parseInt(orderBook.getSequence());
-    return orderBookDeltasQueue.get(market).getFirst().getSequence() > currentBookSequence + 1;
+    return orderBookDeltasQueue.get(market).first().getSequence() > currentBookSequence + 1;
   }
 
   /**
