@@ -6,8 +6,6 @@ import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexTradeService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BittrexStreamingExchange extends BittrexExchange implements StreamingExchange {
 

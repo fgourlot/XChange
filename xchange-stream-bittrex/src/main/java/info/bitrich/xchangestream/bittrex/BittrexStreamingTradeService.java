@@ -1,22 +1,19 @@
 package info.bitrich.xchangestream.bittrex;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import org.knowm.xchange.bittrex.BittrexUtils;
-import org.knowm.xchange.bittrex.service.BittrexTradeService;
-import org.knowm.xchange.currency.CurrencyPair;
-import org.knowm.xchange.dto.Order;
-import org.knowm.xchange.dto.trade.UserTrade;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
 import info.bitrich.xchangestream.core.StreamingTradeService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.knowm.xchange.bittrex.BittrexUtils;
+import org.knowm.xchange.bittrex.service.BittrexTradeService;
+import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.Order;
+import org.knowm.xchange.dto.trade.UserTrade;
 
 public class BittrexStreamingTradeService implements StreamingTradeService {
 
