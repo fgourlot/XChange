@@ -95,4 +95,8 @@ public class BittrexStreamingService {
           this.authenticate();
         });
   }
+
+  public void useCompressedMessages(boolean compressedMessages) {
+    throw new UnsupportedOperationException();
+  }
 }

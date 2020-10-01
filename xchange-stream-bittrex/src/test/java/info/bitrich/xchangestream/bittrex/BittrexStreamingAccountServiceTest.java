@@ -14,7 +14,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
-import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.currency.Currency;
@@ -29,7 +28,7 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
   @Test
   public void testBalances() throws InterruptedException, IOException {
     BittrexAccountService accountService =
-        new BittrexAccountService((BittrexExchange) this.exchange);
+        (BittrexAccountService) this.exchange.getAccountService();
 
     List<Map<Currency, Balance>> balancesStreamList = new ArrayList<>();
     ConcurrentMap<Currency, Balance> currentMapStream = new ConcurrentHashMap<>();

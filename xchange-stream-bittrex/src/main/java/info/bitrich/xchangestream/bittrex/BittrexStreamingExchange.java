@@ -11,8 +11,6 @@ import org.slf4j.LoggerFactory;
 
 public class BittrexStreamingExchange extends BittrexExchange implements StreamingExchange {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingExchange.class);
-
   // Bittrex WebSocket API endpoint
   private static final String API_BASE_URI = "https://socket-v3.bittrex.com/signalr";
 
@@ -23,20 +21,15 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
   private BittrexStreamingMarketDataService bittrexStreamingMarketDataService;
   private BittrexStreamingTradeService bittrexStreamingTradeService;
 
-  /** xchange-bittrex services */
-  private BittrexAccountService bittrexAccountService;
-
-  private BittrexMarketDataService bittrexMarketDataService;
-  private BittrexTradeService bittrexTradeService;
-
-  public BittrexStreamingExchange() {}
-
+  @Override
   protected void initServices() {
     super.initServices();
     ExchangeSpecification exchangeSpecification = this.getExchangeSpecification();
-    bittrexAccountService = new BittrexAccountService(this);
-    bittrexMarketDataService = new BittrexMarketDataService(this);
-    bittrexTradeService = new BittrexTradeService(this);
+
+    BittrexAccountService bittrexAccountService = (BittrexAccountService) this.getAccountService();
+    BittrexMarketDataService bittrexMarketDataService =
+        (BittrexMarketDataService) this.getMarketDataService();
+    BittrexTradeService bittrexTradeService = (BittrexTradeService) this.getTradeService();
     bittrexStreamingService = new BittrexStreamingService(API_BASE_URI, exchangeSpecification);
     bittrexStreamingAccountService =
         new BittrexStreamingAccountService(bittrexStreamingService, bittrexAccountService);
@@ -64,13 +57,17 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
     return bittrexStreamingMarketDataService;
   }
 
+  @Override
   public StreamingAccountService getStreamingAccountService() {
     return bittrexStreamingAccountService;
   }
 
+  @Override
   public StreamingTradeService getStreamingTradeService() {
     return bittrexStreamingTradeService;
   }
 
-  public void useCompressedMessages(boolean compressedMessages) {}
+  public void useCompressedMessages(boolean compressedMessages) {
+    bittrexStreamingService.useCompressedMessages(compressedMessages);
+  }
 }
