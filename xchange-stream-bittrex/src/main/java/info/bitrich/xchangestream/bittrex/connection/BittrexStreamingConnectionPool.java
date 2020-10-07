@@ -14,7 +14,7 @@ public class BittrexStreamingConnectionPool {
   public BittrexStreamingConnectionPool(String url, int poolSize, String apiKey, String secretKey) {
     bittrexStreamingConnections =
         IntStream.range(0, poolSize)
-            .mapToObj(i -> new BittrexStreamingConnection(url, apiKey, secretKey))
+            .mapToObj(i -> new BittrexStreamingConnection(url, apiKey, secretKey, i))
             .collect(Collectors.toList());
   }
 
