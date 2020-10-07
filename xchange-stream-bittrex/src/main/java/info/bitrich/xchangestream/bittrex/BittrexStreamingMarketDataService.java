@@ -151,6 +151,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private Map<String, AtomicInteger> repeatMessageCount = new HashMap<>();
   private Map<String, AtomicInteger> repeatMessageCountFiltered = new HashMap<>();
   private final Object LOCKDEBUG = new Object();
+  private final Object LOCKER = new Object();
   /**
    * Creates the handler which will work with the websocket incoming messages.
    *
@@ -159,11 +160,13 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private SubscriptionHandler1<String> createOrderBookMessageHandler() {
     return message -> {
       // TODO remove
+
       synchronized (LOCKDEBUG) {
         repeatMessageCount.putIfAbsent(message, new AtomicInteger(0));
         repeatMessageCount.get(message).incrementAndGet();
       }
       if (!alreadyReceived(message)) {
+
         // TODO remove
         synchronized (LOCKDEBUG) {
           repeatMessageCountFiltered.putIfAbsent(message, new AtomicInteger(0));
@@ -176,16 +179,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                   .readValue(
                       BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
           CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
-          if (orderBooks.containsKey(market)) {
-            Optional<OrderBook> orderBookClone = Optional.empty();
-            synchronized (orderBooksLock) {
+          synchronized (orderBooksLock) {
+            if (orderBooks.containsKey(market)) {
+              Optional<OrderBook> orderBookClone = Optional.empty();
               queueOrderBookDeltas(orderBookDeltas, market);
               boolean updated = updateOrderBook(market);
               if (updated) {
                 orderBookClone = Optional.of(cloneOrderBook(market));
               }
+              orderBookClone.ifPresent(orderBook -> orderBooks.get(market).onNext(orderBook));
             }
-            orderBookClone.ifPresent(orderbook -> orderBooks.get(market).onNext(orderbook));
           }
         } catch (Exception e) {
           LOG.error("Error while decompressing and treating order book update", e);
