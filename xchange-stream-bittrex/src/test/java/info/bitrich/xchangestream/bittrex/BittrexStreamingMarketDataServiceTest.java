@@ -115,7 +115,7 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
 
     // Let it run for 30_000ms
     try {
-      Thread.sleep(7200_000);
+      Thread.sleep(60_000);
     } catch (InterruptedException e) {
       e.printStackTrace();
     } finally {

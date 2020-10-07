@@ -2,6 +2,8 @@ package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
 import info.bitrich.xchangestream.core.StreamingTradeService;
 import io.reactivex.Observable;
@@ -73,8 +75,8 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
   /** Subscribes to all of the order books channels available via getting ticker in one go. */
   private void subscribeToOrdersChannels() {
     String orderChannel = "order";
-    BittrexStreamingService.Subscription subscription =
-        new BittrexStreamingService.Subscription(
+    BittrexStreamingSubscription subscription =
+        new BittrexStreamingSubscription(
             "order", new String[] {orderChannel}, this.orderChangesMessageHandler);
     bittrexStreamingService.subscribeToChannelWithHandler(subscription, true);
     isOrdersChannelSubscribed = true;

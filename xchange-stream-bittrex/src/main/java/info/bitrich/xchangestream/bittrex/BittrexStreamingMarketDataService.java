@@ -2,6 +2,8 @@ package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
@@ -10,7 +12,9 @@ import io.reactivex.subjects.Subject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.Timer;
@@ -18,6 +22,7 @@ import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
@@ -63,16 +68,23 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.sequencedOrderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.isOrderbooksChannelSubscribed = false;
+    this.orderBookMessageHandler = createOrderBookMessageHandler();
     new Timer()
         .scheduleAtFixedRate(
             new TimerTask() {
               public void run() {
-                LOG.info("messageCount: " + msgCounter);
+                synchronized (LOCKDEBUG) {
+                  Integer duplicateCount =
+                      repeatMessageCount.values().stream()
+                          .map(AtomicInteger::get)
+                          .filter(value -> value > 1)
+                          .reduce(0, Integer::sum);
+                  LOG.info("duplicate message count: {}", duplicateCount);
+                }
               }
             },
             0,
             3_000);
-    this.orderBookMessageHandler = createOrderBookMessageHandler();
   }
 
   @Override
@@ -113,15 +125,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             .map(marketName -> "orderbook_" + marketName + "_" + ORDER_BOOKS_DEPTH)
             .toArray(String[]::new);
 
-    BittrexStreamingService.Subscription subscription =
-        new BittrexStreamingService.Subscription(
+    BittrexStreamingSubscription subscription =
+        new BittrexStreamingSubscription(
             "orderbook", orderBooksChannel, this.orderBookMessageHandler);
     streamingService.subscribeToChannelWithHandler(subscription, true);
     isOrderbooksChannelSubscribed = true;
   }
 
-  static AtomicInteger msgCounter = new AtomicInteger(0);
-
+  // TODO remove
+  private Map<String, AtomicInteger> repeatMessageCount = new HashMap<>();
+  private final Object LOCKDEBUG = new Object();
   /**
    * Creates the handler which will work with the websocket incoming messages.
    *
@@ -129,8 +142,12 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private SubscriptionHandler1<String> createOrderBookMessageHandler() {
     return message -> {
-      msgCounter.incrementAndGet();
       try {
+        // TODO remove
+        synchronized (LOCKDEBUG) {
+          repeatMessageCount.putIfAbsent(message, new AtomicInteger(0));
+          repeatMessageCount.get(message).incrementAndGet();
+        }
         BittrexOrderBookDeltas orderBookDeltas =
             objectMapper
                 .reader()
@@ -139,12 +156,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
         if (orderBooks.containsKey(market)) {
           OrderBook orderBookClone;
+          boolean updated;
           synchronized (orderBooksLock) {
             queueOrderBookDeltas(orderBookDeltas, market);
-            updateOrderBook(market);
+            updated = updateOrderBook(market);
             orderBookClone = cloneOrderBook(market);
           }
-          orderBooks.get(market).onNext(orderBookClone);
+          if (updated) {
+            orderBooks.get(market).onNext(orderBookClone);
+          }
         }
       } catch (Exception e) {
         LOG.error("Error while decompressing and treating order book update", e);
@@ -218,9 +238,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @param market the order book's market
    * @throws IOException if the order book could not be initialized
    */
-  private void updateOrderBook(CurrencyPair market) throws IOException {
+  private boolean updateOrderBook(CurrencyPair market) throws IOException {
+    AtomicBoolean updated = new AtomicBoolean(false);
     if (needOrderBookInit(market)) {
       initializeOrderBook(market);
+      updated.set(true);
     }
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
@@ -233,8 +255,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                   BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
               String sequence = String.valueOf(deltas.getSequence());
               sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
+              updated.set(true);
             });
     updatesToApply.clear();
+    return updated.get();
   }
 
   /**

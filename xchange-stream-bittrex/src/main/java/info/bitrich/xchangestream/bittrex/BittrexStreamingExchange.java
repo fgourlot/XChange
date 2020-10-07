@@ -1,6 +1,8 @@
 package info.bitrich.xchangestream.bittrex;
 
 import info.bitrich.xchangestream.core.*;
+import io.reactivex.Completable;
+
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
@@ -10,7 +12,7 @@ import org.knowm.xchange.bittrex.service.BittrexTradeService;
 public class BittrexStreamingExchange extends BittrexExchange implements StreamingExchange {
 
   // Bittrex WebSocket API endpoint
-  private static final String API_BASE_URI = "https://socket-v3.bittrex.com/signalr";
+  private static final String API_BASE_URL = "https://socket-v3.bittrex.com/signalr";
 
   /** xchange-stream-bittrex services */
   private BittrexStreamingService bittrexStreamingService;
@@ -28,7 +30,7 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
     BittrexMarketDataService bittrexMarketDataService =
         (BittrexMarketDataService) this.getMarketDataService();
     BittrexTradeService bittrexTradeService = (BittrexTradeService) this.getTradeService();
-    bittrexStreamingService = new BittrexStreamingService(API_BASE_URI, exchangeSpecification);
+    bittrexStreamingService = new BittrexStreamingService(API_BASE_URL, exchangeSpecification);
     bittrexStreamingAccountService =
         new BittrexStreamingAccountService(bittrexStreamingService, bittrexAccountService);
     bittrexStreamingMarketDataService =
@@ -43,7 +45,7 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
 
   public io.reactivex.Completable disconnect() {
     this.bittrexStreamingService.disconnect();
-    return null;
+    return Completable.complete();
   }
 
   @Override
