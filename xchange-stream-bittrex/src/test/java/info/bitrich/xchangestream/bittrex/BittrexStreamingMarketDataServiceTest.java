@@ -49,7 +49,6 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
   public void orderBookSynchroTest() {
     // Maps to compare
     ArrayList<OrderBook> booksWS = new ArrayList<>();
-    Map<OrderBook, LocalDateTime> timestampsWS = new HashMap<>();
 
     ArrayList<OrderBook> booksRest = new ArrayList<>();
     Map<OrderBook, LocalDateTime> timestampsRest = new HashMap<>();
@@ -69,7 +68,27 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
                       orderBook.getBids().size(),
                       orderBook.getAsks().size());
                   booksWS.add(orderBook);
-                  timestampsWS.put(orderBook, LocalDateTime.now());
+                  if (booksWS.size() > 10000) {
+                    booksWS.remove(booksWS.get(0));
+                  }
+                  canStartRestFilling.set(true);
+                });
+
+    Disposable wsDisposable2 =
+        exchange
+            .getStreamingMarketDataService()
+            .getOrderBook(CurrencyPair.ETH_BTC)
+            .subscribe(
+                orderBook -> {
+                  LOG.info(
+                      "Received order book {}, {} bids, {} asks",
+                      orderBook.getBids().get(0).getCurrencyPair(),
+                      orderBook.getBids().size(),
+                      orderBook.getAsks().size());
+                  booksWS.add(orderBook);
+                  if (booksWS.size() > 10000) {
+                    booksWS.remove(booksWS.get(0));
+                  }
                   canStartRestFilling.set(true);
                 });
 
@@ -96,7 +115,7 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
 
     // Let it run for 30_000ms
     try {
-      Thread.sleep(30_000);
+      Thread.sleep(7200_000);
     } catch (InterruptedException e) {
       e.printStackTrace();
     } finally {
@@ -113,10 +132,6 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
     Collection<Integer> indexes =
         booksRest.stream().map(book -> findBookInList(book, booksWS)).collect(Collectors.toList());
 
-    List<Duration> timeDiff =
-        booksRest.stream()
-            .map(book -> Duration.between(timestampsRest.get(book), timestampsWS.get(book)))
-            .collect(Collectors.toList());
     // Check that all the rest books were found in ws books
     Assert.assertTrue(indexes.stream().allMatch(index -> index > 0));
     // Check that the books are chronologically found

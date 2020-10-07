@@ -111,8 +111,11 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   /** Subscribes to all of the order books channels available via getting ticker in one go. */
   private void subscribeToBalancesChannels() {
     String balanceChannel = "balance";
-    bittrexStreamingService.subscribeToChannelWithHandler(
-        new String[] {balanceChannel}, "balance", this.balancesMessageHandler);
+
+    BittrexStreamingService.Subscription subscription =
+        new BittrexStreamingService.Subscription(
+            "balance", new String[] {balanceChannel} , this.balancesMessageHandler);
+    bittrexStreamingService.subscribeToChannelWithHandler(subscription, true);
     isBalancesChannelSubscribed = true;
   }
 

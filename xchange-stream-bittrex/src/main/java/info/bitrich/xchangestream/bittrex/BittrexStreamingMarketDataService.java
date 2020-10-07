@@ -13,9 +13,12 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.SortedSet;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
@@ -60,6 +63,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.sequencedOrderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.isOrderbooksChannelSubscribed = false;
+    new Timer()
+        .scheduleAtFixedRate(
+            new TimerTask() {
+              public void run() {
+                LOG.info("messageCount: " + msgCounter);
+              }
+            },
+            0,
+            3_000);
     this.orderBookMessageHandler = createOrderBookMessageHandler();
   }
 
@@ -100,10 +112,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             .map(BittrexUtils::toPairString)
             .map(marketName -> "orderbook_" + marketName + "_" + ORDER_BOOKS_DEPTH)
             .toArray(String[]::new);
-    streamingService.subscribeToChannelWithHandler(
-        orderBooksChannel, "orderbook", this.orderBookMessageHandler);
+
+    BittrexStreamingService.Subscription subscription =
+        new BittrexStreamingService.Subscription(
+            "orderbook", orderBooksChannel, this.orderBookMessageHandler);
+    streamingService.subscribeToChannelWithHandler(subscription, true);
     isOrderbooksChannelSubscribed = true;
   }
+
+  static AtomicInteger msgCounter = new AtomicInteger(0);
 
   /**
    * Creates the handler which will work with the websocket incoming messages.
@@ -112,6 +129,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private SubscriptionHandler1<String> createOrderBookMessageHandler() {
     return message -> {
+      msgCounter.incrementAndGet();
       try {
         BittrexOrderBookDeltas orderBookDeltas =
             objectMapper
@@ -128,7 +146,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
           }
           orderBooks.get(market).onNext(orderBookClone);
         }
-      } catch (IOException e) {
+      } catch (Exception e) {
         LOG.error("Error while decompressing and treating order book update", e);
       }
     };

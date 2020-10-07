@@ -23,9 +23,10 @@ import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 
 import io.reactivex.Completable;
 
-public class BittrexStreamingService {
+public class BittrexStreamingConnection {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingConnection.class);
+  public static final String COULD_NOT_AUTHENTICATE_ERROR_MESSAGE = "Could not authenticate";
 
   private final ExchangeSpecification exchangeSpecification;
 
@@ -35,7 +36,7 @@ public class BittrexStreamingService {
   private final Set<Subscription> subscriptions;
   private Timer reconnecterTimer;
 
-  public BittrexStreamingService(String apiUrl, ExchangeSpecification exchangeSpecification) {
+  public BittrexStreamingConnection(String apiUrl, ExchangeSpecification exchangeSpecification) {
     LOG.info("Initializing streaming service ...");
     this.exchangeSpecification = exchangeSpecification;
     this.apiUrl = apiUrl;
@@ -67,7 +68,7 @@ public class BittrexStreamingService {
           .onError(error -> LOG.error("Error during Authentication", error))
           .done(response -> LOG.info("Authentication success {}", response));
     } catch (Exception e) {
-      LOG.error("Could not authenticate", e);
+      LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, e);
     }
     return null;
   }
@@ -81,7 +82,7 @@ public class BittrexStreamingService {
     hubConnection.connected(this::setupAutoReAuthentication);
   }
 
-  public io.reactivex.Completable connect() {
+  private Completable connect() {
     LOG.info("Starting connection ...");
     return Completable.fromFuture(this.hubConnection.start());
   }

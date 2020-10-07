@@ -73,8 +73,10 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
   /** Subscribes to all of the order books channels available via getting ticker in one go. */
   private void subscribeToOrdersChannels() {
     String orderChannel = "order";
-    bittrexStreamingService.subscribeToChannelWithHandler(
-        new String[] {orderChannel}, "order", this.orderChangesMessageHandler);
+    BittrexStreamingService.Subscription subscription =
+        new BittrexStreamingService.Subscription(
+            "order", new String[] {orderChannel}, this.orderChangesMessageHandler);
+    bittrexStreamingService.subscribeToChannelWithHandler(subscription, true);
     isOrdersChannelSubscribed = true;
   }
 }
