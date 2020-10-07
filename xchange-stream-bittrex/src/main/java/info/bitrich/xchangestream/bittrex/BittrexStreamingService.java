@@ -10,7 +10,6 @@ import io.reactivex.Completable;
 
 public class BittrexStreamingService {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingService.class);
   private static final int POOL_SIZE = 10;
 
   private final BittrexStreamingConnectionPool connectionPool;

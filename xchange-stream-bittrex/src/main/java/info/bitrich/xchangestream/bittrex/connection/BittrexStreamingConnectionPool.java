@@ -18,7 +18,7 @@ public class BittrexStreamingConnectionPool {
             .collect(Collectors.toList());
   }
 
-  public io.reactivex.Completable connect(ProductSubscription... args) {
+  public io.reactivex.Completable connect() {
     return Completable.mergeArray(
         bittrexStreamingConnections.stream()
             .map(BittrexStreamingConnection::connect)

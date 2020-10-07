@@ -9,10 +9,12 @@ import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -43,6 +45,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       LoggerFactory.getLogger(BittrexStreamingMarketDataService.class);
   private static final int ORDER_BOOKS_DEPTH = 500;
   private static final int MAX_DELTAS_IN_MEMORY = 1_000;
+  private static final int MESSAGE_SET_CAPACITY = 10_000;
 
   private final BittrexStreamingService streamingService;
   private final BittrexMarketDataService marketDataService;
@@ -53,15 +56,19 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final SubscriptionHandler1<String> orderBookMessageHandler;
   private final ObjectMapper objectMapper;
   private final List<CurrencyPair> allMarkets;
-  private final Object subscribeLock = new Object();
-  private final Object orderBooksLock = new Object();
+  private final Object subscribeLock;
+  private final Object orderBooksLock;
+  private final MessageSet messageDuplicatesSet;
 
   private boolean isOrderbooksChannelSubscribed;
 
   public BittrexStreamingMarketDataService(
       BittrexStreamingService streamingService, BittrexMarketDataService marketDataService) {
+    this.subscribeLock = new Object();
+    this.orderBooksLock = new Object();
     this.streamingService = streamingService;
     this.marketDataService = marketDataService;
+    this.messageDuplicatesSet = new MessageSet();
     this.objectMapper = new ObjectMapper();
     this.allMarkets = getAllMarkets();
     this.orderBookDeltasQueue = new ConcurrentHashMap<>(this.allMarkets.size());
@@ -80,6 +87,13 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                           .filter(value -> value > 1)
                           .reduce(0, Integer::sum);
                   LOG.info("duplicate message count: {}", duplicateCount);
+
+                  Integer duplicateCountFiltered =
+                      repeatMessageCountFiltered.values().stream()
+                          .map(AtomicInteger::get)
+                          .filter(value -> value > 1)
+                          .reduce(0, Integer::sum);
+                  LOG.info("duplicate message count: {}", duplicateCountFiltered);
                 }
               }
             },
@@ -134,6 +148,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   // TODO remove
   private Map<String, AtomicInteger> repeatMessageCount = new HashMap<>();
+  private Map<String, AtomicInteger> repeatMessageCountFiltered = new HashMap<>();
   private final Object LOCKDEBUG = new Object();
   /**
    * Creates the handler which will work with the websocket incoming messages.
@@ -142,34 +157,46 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private SubscriptionHandler1<String> createOrderBookMessageHandler() {
     return message -> {
-      try {
+      // TODO remove
+      synchronized (LOCKDEBUG) {
+        repeatMessageCount.putIfAbsent(message, new AtomicInteger(0));
+        repeatMessageCount.get(message).incrementAndGet();
+      }
+      if (!alreadyReceived(message)) {
         // TODO remove
         synchronized (LOCKDEBUG) {
-          repeatMessageCount.putIfAbsent(message, new AtomicInteger(0));
-          repeatMessageCount.get(message).incrementAndGet();
+          repeatMessageCountFiltered.putIfAbsent(message, new AtomicInteger(0));
+          repeatMessageCountFiltered.get(message).incrementAndGet();
         }
-        BittrexOrderBookDeltas orderBookDeltas =
-            objectMapper
-                .reader()
-                .readValue(
-                    BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
-        CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
-        if (orderBooks.containsKey(market)) {
-          OrderBook orderBookClone;
-          boolean updated;
-          synchronized (orderBooksLock) {
-            queueOrderBookDeltas(orderBookDeltas, market);
-            updated = updateOrderBook(market);
-            orderBookClone = cloneOrderBook(market);
+        try {
+          BittrexOrderBookDeltas orderBookDeltas =
+              objectMapper
+                  .reader()
+                  .readValue(
+                      BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
+          CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
+          if (orderBooks.containsKey(market)) {
+            OrderBook orderBookClone = null;
+            synchronized (orderBooksLock) {
+              queueOrderBookDeltas(orderBookDeltas, market);
+              boolean updated = updateOrderBook(market);
+              if (updated) {
+                orderBookClone = cloneOrderBook(market);
+              }
+            }
+            if (orderBookClone != null) {
+              orderBooks.get(market).onNext(orderBookClone);
+            }
           }
-          if (updated) {
-            orderBooks.get(market).onNext(orderBookClone);
-          }
+        } catch (Exception e) {
+          LOG.error("Error while decompressing and treating order book update", e);
         }
-      } catch (Exception e) {
-        LOG.error("Error while decompressing and treating order book update", e);
       }
     };
+  }
+
+  private boolean alreadyReceived(String message) {
+    return messageDuplicatesSet.isDuplicateMessage(message);
   }
 
   /**
@@ -292,6 +319,25 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     } catch (IOException e) {
       LOG.error("Could not get the tickers.", e);
       return new ArrayList<>();
+    }
+  }
+
+  static class MessageSet {
+
+    private final LinkedHashMap<String, Boolean> messagesCollection;
+
+    MessageSet() {
+      messagesCollection =
+          new LinkedHashMap<String, Boolean>() {
+            @Override
+            protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
+              return size() > MESSAGE_SET_CAPACITY;
+            }
+          };
+    }
+
+    synchronized boolean isDuplicateMessage(String message) {
+      return Boolean.TRUE.equals(messagesCollection.put(message, Boolean.TRUE));
     }
   }
 }
