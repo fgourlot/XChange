@@ -89,6 +89,7 @@ public class BittrexStreamingConnection {
 
   public Completable disconnect() {
     LOG.info("Disconnecting ...");
+    this.reconnecterTimer.cancel();
     this.hubConnection.disconnect();
     return Completable.complete();
   }
