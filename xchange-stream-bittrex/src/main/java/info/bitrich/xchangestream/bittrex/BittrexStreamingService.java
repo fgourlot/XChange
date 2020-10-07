@@ -10,7 +10,7 @@ import io.reactivex.Completable;
 
 public class BittrexStreamingService {
 
-  private static final int POOL_SIZE = 10;
+  public static final int POOL_SIZE = 10;
 
   private final BittrexStreamingConnectionPool connectionPool;
 

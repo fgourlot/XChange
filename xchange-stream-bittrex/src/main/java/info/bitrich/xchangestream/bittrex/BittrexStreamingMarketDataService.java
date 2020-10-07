@@ -1,15 +1,5 @@
 package info.bitrich.xchangestream.bittrex;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.core.StreamingMarketDataService;
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.Subject;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -27,6 +17,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
@@ -38,6 +29,16 @@ import org.knowm.xchange.dto.marketdata.Trade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
+
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
@@ -45,7 +46,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       LoggerFactory.getLogger(BittrexStreamingMarketDataService.class);
   private static final int ORDER_BOOKS_DEPTH = 500;
   private static final int MAX_DELTAS_IN_MEMORY = 1_000;
-  private static final int MESSAGE_SET_CAPACITY = 10_000;
+  private static final int MESSAGE_SET_CAPACITY = 1_000 * BittrexStreamingService.POOL_SIZE;
 
   private final BittrexStreamingService streamingService;
   private final BittrexMarketDataService marketDataService;
@@ -93,7 +94,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                           .map(AtomicInteger::get)
                           .filter(value -> value > 1)
                           .reduce(0, Integer::sum);
-                  LOG.info("duplicate message count: {}", duplicateCountFiltered);
+                  LOG.info("duplicate message count filtered: {}", duplicateCountFiltered);
                 }
               }
             },
