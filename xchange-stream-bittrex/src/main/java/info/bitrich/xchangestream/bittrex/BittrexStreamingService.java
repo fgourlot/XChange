@@ -29,8 +29,8 @@ public class BittrexStreamingService {
     return this.connectionPool.connect();
   }
 
-  public void disconnect() {
-    this.connectionPool.disconnect();
+  public Completable disconnect() {
+    return this.connectionPool.disconnect();
   }
 
   public boolean isAlive() {

@@ -26,8 +26,10 @@ public class BittrexStreamingConnectionPool {
   }
 
   public io.reactivex.Completable disconnect() {
-    bittrexStreamingConnections.forEach(BittrexStreamingConnection::disconnect);
-    return Completable.complete();
+    return Completable.mergeArray(
+        bittrexStreamingConnections.stream()
+                                   .map(BittrexStreamingConnection::disconnect)
+                                   .toArray(Completable[]::new));
   }
 
   public void subscribeToChannelWithHandler(BittrexStreamingSubscription subscription, boolean needAuthentication) {

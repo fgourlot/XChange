@@ -87,9 +87,10 @@ public class BittrexStreamingConnection {
     return Completable.fromFuture(this.hubConnection.start());
   }
 
-  public void disconnect() {
+  public Completable disconnect() {
     LOG.info("Disconnecting ...");
     this.hubConnection.disconnect();
+    return Completable.complete();
   }
 
   public boolean isAlive() {
@@ -123,10 +124,10 @@ public class BittrexStreamingConnection {
           authenticateFuture.get();
         }
       } catch (InterruptedException ie) {
-        LOG.error("Could not authenticate", ie);
+        LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ie);
         Thread.currentThread().interrupt();
       } catch (ExecutionException ee) {
-        LOG.error("Could not authenticate", ee);
+        LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ee);
       }
     }
     LOG.info("Subscribing to {}", subscription);

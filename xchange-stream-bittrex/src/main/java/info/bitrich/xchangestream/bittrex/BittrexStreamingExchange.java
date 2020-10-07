@@ -44,8 +44,7 @@ public class BittrexStreamingExchange extends BittrexExchange implements Streami
   }
 
   public io.reactivex.Completable disconnect() {
-    this.bittrexStreamingService.disconnect();
-    return Completable.complete();
+    return this.bittrexStreamingService.disconnect();
   }
 
   @Override
