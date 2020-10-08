@@ -1,6 +1,9 @@
 package info.bitrich.xchangestream.bittrex;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -331,20 +334,24 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   static class MessageSet {
 
-    private final LinkedHashMap<String, Boolean> messagesCollection;
+    private final LinkedHashMap<String, LocalDateTime> messagesCollection;
 
     MessageSet() {
       messagesCollection =
-          new LinkedHashMap<String, Boolean>() {
+          new LinkedHashMap<String, LocalDateTime>() {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<String, Boolean> eldest) {
-              return size() > MESSAGE_SET_CAPACITY;
+            protected boolean removeEldestEntry(Map.Entry<String, LocalDateTime> eldest) {
+              boolean dismissOldMessage =
+                  Duration.between(eldest.getValue(), LocalDateTime.now())
+                          .compareTo(Duration.ofSeconds(2))
+                      > 0;
+              return dismissOldMessage || size() > MESSAGE_SET_CAPACITY;
             }
           };
     }
 
     synchronized boolean isDuplicateMessage(String message) {
-      return Boolean.TRUE.equals(messagesCollection.put(message, Boolean.TRUE));
+      return messagesCollection.put(message, LocalDateTime.now()) != null;
     }
   }
 }
