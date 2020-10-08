@@ -4,8 +4,8 @@ public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas
   private String marketSymbol;
   private int depth;
   private int sequence;
-  private BittrexOrderBookEntry askDeltas[];
-  private BittrexOrderBookEntry bidDeltas[];
+  private BittrexOrderBookEntry[] askDeltas;
+  private BittrexOrderBookEntry[] bidDeltas;
 
   public BittrexOrderBookDeltas() {}
 
