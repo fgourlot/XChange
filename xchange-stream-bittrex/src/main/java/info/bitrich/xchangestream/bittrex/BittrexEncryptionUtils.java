@@ -49,9 +49,9 @@ public final class BittrexEncryptionUtils {
    * @param encodedMessage the message to decode and decompress
    * @return the decompressed and decoded message
    */
-  public static String decompress(String encodedMessage) throws IOException {
+  public static byte[] decompress(String encodedMessage) throws IOException {
     byte[] decodedData = Base64.getDecoder().decode(encodedMessage);
-    return new String(deflate(decodedData));
+    return deflate(decodedData);
   }
 
   /**

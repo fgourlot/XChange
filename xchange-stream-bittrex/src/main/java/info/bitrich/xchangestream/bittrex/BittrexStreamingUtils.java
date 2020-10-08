@@ -128,7 +128,7 @@ public final class BittrexStreamingUtils {
       String bittrexOrderMessage, ObjectMapper objectMapper) {
     try {
       // decompress message
-      String decompressedMessage = BittrexEncryptionUtils.decompress(bittrexOrderMessage);
+      byte[] decompressedMessage = BittrexEncryptionUtils.decompress(bittrexOrderMessage);
       // parse JSON to Object
       return objectMapper.reader().readValue(decompressedMessage, BittrexOrder.class);
     } catch (IOException e) {
@@ -162,7 +162,7 @@ public final class BittrexStreamingUtils {
       String bittrexBalanceMessage, ObjectReader objectMapper) {
     try {
       // decompress message
-      String decompressedMessage = BittrexEncryptionUtils.decompress(bittrexBalanceMessage);
+      byte[] decompressedMessage = BittrexEncryptionUtils.decompress(bittrexBalanceMessage);
       // parse JSON to Object
       return objectMapper.readValue(decompressedMessage, BittrexBalance.class);
     } catch (IOException e) {
