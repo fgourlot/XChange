@@ -62,11 +62,13 @@ public final class BittrexEncryptionUtils {
    * @throws IOException in case the data could not be decompressed
    */
   public static byte[] deflate(byte[] decodedData) throws IOException {
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    Inflater decompressor = new Inflater(true);
-    InflaterOutputStream zos = new InflaterOutputStream(bos, decompressor);
-    zos.write(decodedData);
-    zos.close();
-    return bos.toByteArray();
+    byte[] deflated;
+    try (ByteArrayOutputStream bos = new ByteArrayOutputStream()) {
+      try (InflaterOutputStream zos = new InflaterOutputStream(bos, new Inflater(true))) {
+        zos.write(decodedData);
+      }
+      deflated = bos.toByteArray();
+    }
+    return deflated;
   }
 }
