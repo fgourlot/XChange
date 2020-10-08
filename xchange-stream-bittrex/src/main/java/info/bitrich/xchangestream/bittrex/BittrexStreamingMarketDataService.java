@@ -341,11 +341,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
           new LinkedHashMap<String, LocalDateTime>() {
             @Override
             protected boolean removeEldestEntry(Map.Entry<String, LocalDateTime> eldest) {
-              boolean dismissOldMessage =
-                  Duration.between(eldest.getValue(), LocalDateTime.now())
-                          .compareTo(Duration.ofSeconds(2))
-                      > 0;
-              return dismissOldMessage || size() > MESSAGE_SET_CAPACITY;
+              return eldest.getValue().isBefore(LocalDateTime.now().minusSeconds(2))
+                  || size() > MESSAGE_SET_CAPACITY;
             }
           };
     }
