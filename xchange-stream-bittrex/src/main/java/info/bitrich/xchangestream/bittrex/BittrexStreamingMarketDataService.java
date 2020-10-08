@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,9 +57,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
   private final SubscriptionHandler1<String> orderBookMessageHandler;
   private final ObjectMapper objectMapper;
-  private final List<CurrencyPair> allMarkets;
+  private final ConcurrentMap<CurrencyPair, Object> allMarkets;
   private final Object subscribeLock;
-  private final Object orderBooksLock;
   private final MessageSet messageDuplicatesSet;
 
   private boolean isOrderbooksChannelSubscribed;
@@ -66,12 +66,15 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   public BittrexStreamingMarketDataService(
       BittrexStreamingService streamingService, BittrexMarketDataService marketDataService) {
     this.subscribeLock = new Object();
-    this.orderBooksLock = new Object();
     this.streamingService = streamingService;
     this.marketDataService = marketDataService;
     this.messageDuplicatesSet = new MessageSet();
     this.objectMapper = new ObjectMapper();
-    this.allMarkets = getAllMarkets();
+    this.allMarkets =
+        getAllMarkets().stream()
+            .collect(
+                Collectors.toMap(
+                    market -> market, market -> new Object(), (a, b) -> a, ConcurrentHashMap::new));
     this.orderBookDeltasQueue = new ConcurrentHashMap<>(this.allMarkets.size());
     this.sequencedOrderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
@@ -135,7 +138,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   /** Subscribes to all of the order books channels available via getting ticker in one go. */
   private void subscribeToOrderBookChannels() {
     String[] orderBooksChannel =
-        allMarkets.stream()
+        allMarkets.keySet().stream()
             .map(BittrexUtils::toPairString)
             .map(marketName -> "orderbook_" + marketName + "_" + ORDER_BOOKS_DEPTH)
             .toArray(String[]::new);
@@ -151,7 +154,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private Map<String, AtomicInteger> repeatMessageCount = new HashMap<>();
   private Map<String, AtomicInteger> repeatMessageCountFiltered = new HashMap<>();
   private final Object LOCKDEBUG = new Object();
-  private final Object LOCKER = new Object();
+  private final List<Long> times = new ArrayList<>();
   /**
    * Creates the handler which will work with the websocket incoming messages.
    *
@@ -178,16 +181,17 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                   .reader()
                   .readValue(
                       BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
+
           CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
-          synchronized (orderBooksLock) {
-            if (orderBooks.containsKey(market)) {
-              Optional<OrderBook> orderBookClone = Optional.empty();
+
+          long time = System.currentTimeMillis();
+          if (orderBooks.containsKey(market)) {
+            synchronized (allMarkets.get(market)) {
+              times.add(System.currentTimeMillis() - time);
               queueOrderBookDeltas(orderBookDeltas, market);
-              boolean updated = updateOrderBook(market);
-              if (updated) {
-                orderBookClone = Optional.of(cloneOrderBook(market));
+              if (updateOrderBook(market)) {
+                orderBooks.get(market).onNext(cloneOrderBook(market));
               }
-              orderBookClone.ifPresent(orderBook -> orderBooks.get(market).onNext(orderBook));
             }
           }
         } catch (Exception e) {
@@ -213,7 +217,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             BittrexUtils.toPairString(market), ORDER_BOOKS_DEPTH);
     sequencedOrderBooks.put(market, orderBook);
     OrderBook orderBookClone;
-    synchronized (orderBooksLock) {
+    synchronized (allMarkets.get(market)) {
       orderBookClone = cloneOrderBook(market);
     }
     orderBooks.putIfAbsent(market, BehaviorSubject.createDefault(orderBookClone).toSerialized());
@@ -265,6 +269,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * Apply the in memory updates to the order book.
    *
    * @param market the order book's market
+   * @return true if the update has changed the book
    * @throws IOException if the order book could not be initialized
    */
   private boolean updateOrderBook(CurrencyPair market) throws IOException {

@@ -116,7 +116,7 @@ public class BittrexStreamingConnection {
           }
         },
         60_000,
-        10_000);
+        1_000);
   }
 
   public void subscribeToChannelWithHandler(BittrexStreamingSubscription subscription, boolean needAuthentication) {
