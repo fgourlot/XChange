@@ -143,8 +143,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
               }
             }
           }
-        } catch (Exception e) {
-          LOG.error("Error while decompressing and treating order book update", e);
+        } catch (IOException e) {
+          LOG.error("Error while decompressing order book update", e);
         }
       }
     };
