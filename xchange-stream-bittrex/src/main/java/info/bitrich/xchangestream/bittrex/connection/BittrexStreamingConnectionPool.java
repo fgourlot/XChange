@@ -1,11 +1,9 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
+import io.reactivex.Completable;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-
-import info.bitrich.xchangestream.core.ProductSubscription;
-import io.reactivex.Completable;
 
 public class BittrexStreamingConnectionPool {
 
@@ -28,17 +26,17 @@ public class BittrexStreamingConnectionPool {
   public io.reactivex.Completable disconnect() {
     return Completable.mergeArray(
         bittrexStreamingConnections.stream()
-                                   .map(BittrexStreamingConnection::disconnect)
-                                   .toArray(Completable[]::new));
+            .map(BittrexStreamingConnection::disconnect)
+            .toArray(Completable[]::new));
   }
 
-  public void subscribeToChannelWithHandler(BittrexStreamingSubscription subscription, boolean needAuthentication) {
-    bittrexStreamingConnections.forEach(connection -> connection.subscribeToChannelWithHandler(subscription, needAuthentication));
-
+  public void subscribeToChannelWithHandler(
+      BittrexStreamingSubscription subscription, boolean needAuthentication) {
+    bittrexStreamingConnections.forEach(
+        connection -> connection.subscribeToChannelWithHandler(subscription, needAuthentication));
   }
 
   public boolean isAlive() {
     return bittrexStreamingConnections.stream().anyMatch(BittrexStreamingConnection::isAlive);
   }
-
 }

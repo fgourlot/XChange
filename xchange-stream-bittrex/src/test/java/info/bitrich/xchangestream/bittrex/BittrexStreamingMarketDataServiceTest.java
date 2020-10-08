@@ -2,7 +2,6 @@ package info.bitrich.xchangestream.bittrex;
 
 import io.reactivex.disposables.Disposable;
 import java.io.IOException;
-import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.TimeUnit;

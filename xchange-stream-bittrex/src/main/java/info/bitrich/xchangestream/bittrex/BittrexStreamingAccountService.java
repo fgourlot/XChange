@@ -2,7 +2,6 @@ package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.core.StreamingAccountService;
@@ -116,7 +115,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
 
     BittrexStreamingSubscription subscription =
         new BittrexStreamingSubscription(
-            "balance", new String[] {balanceChannel} , this.balancesMessageHandler);
+            "balance", new String[] {balanceChannel}, this.balancesMessageHandler);
     bittrexStreamingService.subscribeToChannelWithHandler(subscription, true);
     isBalancesChannelSubscribed = true;
   }

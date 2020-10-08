@@ -3,7 +3,6 @@ package info.bitrich.xchangestream.bittrex;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingExchangeFactory;
-
 import org.junit.After;
 import org.junit.Before;
 import org.knowm.xchange.ExchangeSpecification;
@@ -27,7 +26,7 @@ public class BittrexStreamingBaseTest {
   }
 
   @After
-  public void tearDown(){
+  public void tearDown() {
     exchange.disconnect();
   }
 }

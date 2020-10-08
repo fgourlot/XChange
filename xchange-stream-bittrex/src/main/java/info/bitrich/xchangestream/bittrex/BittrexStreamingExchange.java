@@ -1,8 +1,6 @@
 package info.bitrich.xchangestream.bittrex;
 
 import info.bitrich.xchangestream.core.*;
-import io.reactivex.Completable;
-
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;

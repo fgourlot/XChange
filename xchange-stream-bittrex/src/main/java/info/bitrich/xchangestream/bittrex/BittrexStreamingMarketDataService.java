@@ -1,27 +1,27 @@
 package info.bitrich.xchangestream.bittrex;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.SortedSet;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
@@ -32,16 +32,6 @@ import org.knowm.xchange.dto.marketdata.Ticker;
 import org.knowm.xchange.dto.marketdata.Trade;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.core.StreamingMarketDataService;
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.Subject;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
@@ -83,29 +73,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.isOrderbooksChannelSubscribed = false;
     this.orderBookMessageHandler = createOrderBookMessageHandler();
-    new Timer()
-        .scheduleAtFixedRate(
-            new TimerTask() {
-              public void run() {
-                synchronized (LOCKDEBUG) {
-                  Integer duplicateCount =
-                      repeatMessageCount.values().stream()
-                          .map(AtomicInteger::get)
-                          .filter(value -> value > 1)
-                          .reduce(0, Integer::sum);
-                  LOG.info("duplicate message count: {}", duplicateCount);
-
-                  Integer duplicateCountFiltered =
-                      repeatMessageCountFiltered.values().stream()
-                          .map(AtomicInteger::get)
-                          .filter(value -> value > 1)
-                          .reduce(0, Integer::sum);
-                  LOG.info("duplicate message count filtered: {}", duplicateCountFiltered);
-                }
-              }
-            },
-            0,
-            3_000);
   }
 
   @Override
@@ -153,11 +120,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     isOrderbooksChannelSubscribed = true;
   }
 
-  // TODO remove
-  private Map<String, AtomicInteger> repeatMessageCount = new HashMap<>();
-  private Map<String, AtomicInteger> repeatMessageCountFiltered = new HashMap<>();
-  private final Object LOCKDEBUG = new Object();
-  private final List<Long> times = new ArrayList<>();
   /**
    * Creates the handler which will work with the websocket incoming messages.
    *
@@ -165,32 +127,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private SubscriptionHandler1<String> createOrderBookMessageHandler() {
     return message -> {
-      // TODO remove
-
-      synchronized (LOCKDEBUG) {
-        repeatMessageCount.putIfAbsent(message, new AtomicInteger(0));
-        repeatMessageCount.get(message).incrementAndGet();
-      }
       if (!alreadyReceived(message)) {
-
-        // TODO remove
-        synchronized (LOCKDEBUG) {
-          repeatMessageCountFiltered.putIfAbsent(message, new AtomicInteger(0));
-          repeatMessageCountFiltered.get(message).incrementAndGet();
-        }
         try {
           BittrexOrderBookDeltas orderBookDeltas =
               objectMapper
                   .reader()
                   .readValue(
                       BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
-
           CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
-
-          long time = System.currentTimeMillis();
           if (orderBooks.containsKey(market)) {
             synchronized (allMarkets.get(market)) {
-              times.add(System.currentTimeMillis() - time);
               queueOrderBookDeltas(orderBookDeltas, market);
               if (updateOrderBook(market)) {
                 orderBooks.get(market).onNext(cloneOrderBook(market));

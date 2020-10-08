@@ -1,12 +1,9 @@
 package info.bitrich.xchangestream.bittrex;
 
-import org.knowm.xchange.ExchangeSpecification;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingConnectionPool;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import io.reactivex.Completable;
+import org.knowm.xchange.ExchangeSpecification;
 
 public class BittrexStreamingService {
 

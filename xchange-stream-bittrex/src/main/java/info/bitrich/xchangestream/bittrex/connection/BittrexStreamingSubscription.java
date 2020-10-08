@@ -1,9 +1,8 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import java.util.Arrays;
 import java.util.Objects;
-
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 
 public class BittrexStreamingSubscription {
 
@@ -11,7 +10,8 @@ public class BittrexStreamingSubscription {
   private final String[] channels;
   private final SubscriptionHandler1<String> handler;
 
-  public BittrexStreamingSubscription(String eventName, String[] channels, SubscriptionHandler1<String> handler) {
+  public BittrexStreamingSubscription(
+      String eventName, String[] channels, SubscriptionHandler1<String> handler) {
     this.eventName = eventName;
     this.channels = channels;
     this.handler = handler;

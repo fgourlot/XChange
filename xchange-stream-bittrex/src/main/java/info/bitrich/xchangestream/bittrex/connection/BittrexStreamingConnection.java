@@ -1,5 +1,11 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
+import com.github.signalr4j.client.ConnectionState;
+import com.github.signalr4j.client.SignalRFuture;
+import com.github.signalr4j.client.hubs.HubConnection;
+import com.github.signalr4j.client.hubs.HubProxy;
+import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
+import io.reactivex.Completable;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -9,17 +15,8 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.signalr4j.client.ConnectionState;
-import com.github.signalr4j.client.SignalRFuture;
-import com.github.signalr4j.client.hubs.HubConnection;
-import com.github.signalr4j.client.hubs.HubProxy;
-
-import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
-import io.reactivex.Completable;
 
 public class BittrexStreamingConnection {
 
@@ -57,8 +54,7 @@ public class BittrexStreamingConnection {
     String randomContent = ts.toString() + uuid.toString();
     try {
       String signedContent =
-          BittrexEncryptionUtils.calculateHash(
-              this.secretKey, randomContent, "HmacSHA512");
+          BittrexEncryptionUtils.calculateHash(this.secretKey, randomContent, "HmacSHA512");
       return hubProxy
           .invoke(
               BittrexStreamingSocketResponse.class,
@@ -97,7 +93,8 @@ public class BittrexStreamingConnection {
   }
 
   public boolean isAlive() {
-    return ConnectionState.Connected.equals(hubConnection.getState()) || ConnectionState.Connecting.equals(hubConnection.getState());
+    return ConnectionState.Connected.equals(hubConnection.getState())
+        || ConnectionState.Connecting.equals(hubConnection.getState());
   }
 
   private void startReconnecter() {
@@ -111,7 +108,8 @@ public class BittrexStreamingConnection {
               init();
               connect().blockingAwait();
               LOG.info("Reconnected! id={}", id);
-              subscriptions.forEach(subscription -> subscribeToChannelWithHandler(subscription, true));
+              subscriptions.forEach(
+                  subscription -> subscribeToChannelWithHandler(subscription, true));
             }
           }
         },
@@ -119,7 +117,8 @@ public class BittrexStreamingConnection {
         1_000);
   }
 
-  public void subscribeToChannelWithHandler(BittrexStreamingSubscription subscription, boolean needAuthentication) {
+  public void subscribeToChannelWithHandler(
+      BittrexStreamingSubscription subscription, boolean needAuthentication) {
     if (needAuthentication) {
       try {
         SignalRFuture<BittrexStreamingSocketResponse> authenticateFuture = this.authenticate();
@@ -136,7 +135,10 @@ public class BittrexStreamingConnection {
     LOG.info("Subscribing to {}", subscription);
     hubProxy.on(subscription.getEventName(), subscription.getHandler(), String.class);
     hubProxy
-        .invoke(BittrexStreamingSocketResponse[].class, "Subscribe", (Object) subscription.getChannels())
+        .invoke(
+            BittrexStreamingSocketResponse[].class,
+            "Subscribe",
+            (Object) subscription.getChannels())
         .onError(e -> LOG.error("Subscription error", e))
         .done(
             response -> {
@@ -158,5 +160,4 @@ public class BittrexStreamingConnection {
           this.authenticate();
         });
   }
-
 }
