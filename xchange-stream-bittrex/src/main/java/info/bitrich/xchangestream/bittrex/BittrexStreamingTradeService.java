@@ -1,20 +1,25 @@
 package info.bitrich.xchangestream.bittrex;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
-import info.bitrich.xchangestream.core.StreamingTradeService;
-import io.reactivex.Observable;
-import io.reactivex.subjects.PublishSubject;
-import io.reactivex.subjects.Subject;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexTradeService;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.trade.UserTrade;
+import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
+import info.bitrich.xchangestream.core.StreamingTradeService;
+import io.reactivex.Observable;
+import io.reactivex.subjects.PublishSubject;
+import io.reactivex.subjects.Subject;
 
 public class BittrexStreamingTradeService implements StreamingTradeService {
 
@@ -53,22 +58,22 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
 
   @Override
   public Observable<UserTrade> getUserTrades(CurrencyPair currencyPair, Object... args) {
-    // TODO
-    return null;
+    throw new NotYetImplementedForExchangeException();
   }
 
-  private SubscriptionHandler1<String> createOrderChangesMessageHandler() {
-    return message -> {
-      BittrexOrder bittrexOrder =
-          BittrexStreamingUtils.bittrexOrderMessageToBittrexOrder(message, objectMapper);
-      if (bittrexOrder != null) {
-        synchronized (ordersLock) {
-          orders
-              .get(BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
-              .onNext(BittrexStreamingUtils.bittrexOrderToOrder(bittrexOrder));
-        }
-      }
-    };
+  private BittrexStreamingSubscriptionHandler createOrderChangesMessageHandler() {
+    return new BittrexStreamingSubscriptionHandler(
+        message -> {
+          BittrexOrder bittrexOrder =
+              BittrexStreamingUtils.bittrexOrderMessageToBittrexOrder(message, objectMapper);
+          if (bittrexOrder != null) {
+            synchronized (ordersLock) {
+              orders
+                  .get(BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
+                  .onNext(BittrexStreamingUtils.bittrexOrderToOrder(bittrexOrder));
+            }
+          }
+        });
   }
 
   /** Subscribes to all of the order books channels available via getting ticker in one go. */

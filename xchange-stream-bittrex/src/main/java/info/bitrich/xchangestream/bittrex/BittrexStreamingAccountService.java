@@ -3,6 +3,7 @@ package info.bitrich.xchangestream.bittrex;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
@@ -33,7 +34,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   /** Current sequence number (to be increased after each message) */
   private Integer currentSequenceNumber;
 
-  private final SubscriptionHandler1<String> balancesMessageHandler;
+  private final BittrexStreamingSubscriptionHandler balancesMessageHandler;
   private final ObjectMapper objectMapper;
   private boolean isBalancesChannelSubscribed;
   private final Map<Currency, Subject<Balance>> balances;
@@ -57,21 +58,22 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
    *
    * @return the created handler
    */
-  private SubscriptionHandler1<String> createBalancesMessageHandler() {
-    return message -> {
-      BittrexBalance bittrexBalance =
-          BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
-              message, objectMapper.reader());
-      if (bittrexBalance != null) {
-        queueBalanceDelta(bittrexBalance);
-        synchronized (balancesLock) {
-          if (needBalancesInit(bittrexBalance)) {
-            restFillBalances();
+  private BittrexStreamingSubscriptionHandler createBalancesMessageHandler() {
+    return new BittrexStreamingSubscriptionHandler(
+        message -> {
+          BittrexBalance bittrexBalance =
+              BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
+                  message, objectMapper.reader());
+          if (bittrexBalance != null) {
+            queueBalanceDelta(bittrexBalance);
+            synchronized (balancesLock) {
+              if (needBalancesInit(bittrexBalance)) {
+                restFillBalances();
+              }
+              applyBalancesDeltas();
+            }
           }
-          applyBalancesDeltas();
-        }
-      }
-    };
+        });
   }
 
   private void applyBalancesDeltas() {

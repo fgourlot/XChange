@@ -1,20 +1,9 @@
 package info.bitrich.xchangestream.bittrex;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.core.StreamingMarketDataService;
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.Subject;
 import java.io.IOException;
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -22,6 +11,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
@@ -34,6 +24,16 @@ import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
+
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
@@ -41,7 +41,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       LoggerFactory.getLogger(BittrexStreamingMarketDataService.class);
   private static final int ORDER_BOOKS_DEPTH = 500;
   private static final int MAX_DELTAS_IN_MEMORY = 1_000;
-  private static final int MESSAGE_SET_CAPACITY = 1_000 * BittrexStreamingService.POOL_SIZE;
 
   private final BittrexStreamingService streamingService;
   private final BittrexMarketDataService marketDataService;
@@ -49,11 +48,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final ConcurrentMap<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
   private final ConcurrentMap<CurrencyPair, SortedSet<BittrexOrderBookDeltas>> orderBookDeltasQueue;
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
-  private final SubscriptionHandler1<String> orderBookMessageHandler;
+  private final BittrexStreamingSubscriptionHandler orderBookMessageHandler;
   private final ObjectMapper objectMapper;
   private final ConcurrentMap<CurrencyPair, Object> allMarkets;
   private final Object subscribeLock;
-  private final MessageSet messageDuplicatesSet;
 
   private boolean isOrderbooksChannelSubscribed;
 
@@ -62,7 +60,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.subscribeLock = new Object();
     this.streamingService = streamingService;
     this.marketDataService = marketDataService;
-    this.messageDuplicatesSet = new MessageSet();
     this.objectMapper = new ObjectMapper();
     this.allMarkets =
         getAllMarkets().stream()
@@ -124,33 +121,28 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    *
    * @return the created handler
    */
-  private SubscriptionHandler1<String> createOrderBookMessageHandler() {
-    return message -> {
-      if (!alreadyReceived(message)) {
-        try {
-          BittrexOrderBookDeltas orderBookDeltas =
-              objectMapper
-                  .reader()
-                  .readValue(
-                      BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
-          CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
-          if (orderBooks.containsKey(market)) {
-            synchronized (allMarkets.get(market)) {
-              queueOrderBookDeltas(orderBookDeltas, market);
-              if (updateOrderBook(market)) {
-                orderBooks.get(market).onNext(cloneOrderBook(market));
+  private BittrexStreamingSubscriptionHandler createOrderBookMessageHandler() {
+    return new BittrexStreamingSubscriptionHandler(
+        message -> {
+          try {
+            BittrexOrderBookDeltas orderBookDeltas =
+                objectMapper
+                    .reader()
+                    .readValue(
+                        BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
+            CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
+            if (orderBooks.containsKey(market)) {
+              synchronized (allMarkets.get(market)) {
+                queueOrderBookDeltas(orderBookDeltas, market);
+                if (updateOrderBook(market)) {
+                  orderBooks.get(market).onNext(cloneOrderBook(market));
+                }
               }
             }
+          } catch (IOException e) {
+            LOG.error("Error while decompressing order book update", e);
           }
-        } catch (IOException e) {
-          LOG.error("Error while decompressing order book update", e);
-        }
-      }
-    };
-  }
-
-  private boolean alreadyReceived(String message) {
-    return messageDuplicatesSet.isDuplicateMessage(message);
+        });
   }
 
   /**
@@ -274,26 +266,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     } catch (IOException e) {
       LOG.error("Could not get the tickers.", e);
       return new ArrayList<>();
-    }
-  }
-
-  static class MessageSet {
-
-    private final LinkedHashMap<String, LocalDateTime> messagesCollection;
-
-    MessageSet() {
-      messagesCollection =
-          new LinkedHashMap<String, LocalDateTime>() {
-            @Override
-            protected boolean removeEldestEntry(Map.Entry<String, LocalDateTime> eldest) {
-              return eldest.getValue().isBefore(LocalDateTime.now().minusSeconds(2))
-                  || size() > MESSAGE_SET_CAPACITY;
-            }
-          };
-    }
-
-    synchronized boolean isDuplicateMessage(String message) {
-      return messagesCollection.put(message, LocalDateTime.now()) != null;
     }
   }
 }
