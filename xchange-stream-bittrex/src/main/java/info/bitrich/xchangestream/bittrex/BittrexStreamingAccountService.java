@@ -1,11 +1,9 @@
 package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
@@ -49,6 +47,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
       BittrexAccountService bittrexAccountService) {
     this.bittrexStreamingService = bittrexStreamingService;
     this.bittrexAccountService = bittrexAccountService;
+    this.currentSequenceNumber = new AtomicInteger(-1);
     this.balances = new ConcurrentHashMap<>();
     this.balancesDeltaQueue = new ConcurrentSkipListSet<>();
     this.objectMapper = new ObjectMapper();
@@ -78,16 +77,16 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   private BittrexStreamingSubscriptionHandler createBalancesMessageHandler() {
     return new BittrexStreamingSubscriptionHandler(
         message -> {
-            BittrexBalance bittrexBalance =
-                BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
-                    message, objectMapper.reader());
-            if (bittrexBalance != null) {
-                queueBalanceDelta(bittrexBalance);
-                if (needBalancesInit()) {
-                  initializeBalances();
-                }
-                applyBalancesDeltas();
-              }
+          BittrexBalance bittrexBalance =
+              BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
+                  message, objectMapper.reader());
+          if (bittrexBalance != null) {
+            queueBalanceDelta(bittrexBalance);
+            if (needBalancesInit()) {
+              initializeBalances();
+            }
+            applyBalancesDeltas();
+          }
         });
   }
 
@@ -134,8 +133,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   }
 
   private boolean needBalancesInit() {
-    return currentSequenceNumber.get() + 1 < balancesDeltaQueue.first().getSequence()
-        || currentSequenceNumber == null;
+    return currentSequenceNumber.get() + 1 < balancesDeltaQueue.first().getSequence();
   }
 
   private void initializeBalances() {

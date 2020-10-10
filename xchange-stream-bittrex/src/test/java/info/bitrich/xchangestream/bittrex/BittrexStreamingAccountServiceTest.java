@@ -12,8 +12,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
@@ -40,8 +38,8 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
     final Object streamLock = new Object();
     balances
         .keySet()
-    //Stream.of(Currency.BTC)
-          .forEach(
+        // Stream.of(Currency.BTC)
+        .forEach(
             currency -> {
               Disposable wsDisposable =
                   exchange
@@ -50,9 +48,9 @@ public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest
                       .subscribe(
                           balance -> {
                             synchronized (streamLock) {
-                              //if (balance.getCurrency().equals(Currency.USDT)) {
-                                LOG.debug("Received balance update {}", balance);
-                              //}
+                              // if (balance.getCurrency().equals(Currency.USDT)) {
+                              LOG.debug("Received balance update {}", balance);
+                              // }
                               currentMapStream.put(currency, balance);
                               Map<Currency, Balance> clonedBalances = cloneMap(currentMapStream);
                               balancesStreamList.add(clonedBalances);

@@ -1,13 +1,10 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
-import java.time.Duration;
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-
-import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 
 public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1<String> {
 
