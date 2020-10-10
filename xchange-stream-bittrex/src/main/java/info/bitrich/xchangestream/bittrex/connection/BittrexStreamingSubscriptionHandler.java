@@ -3,6 +3,7 @@ package info.bitrich.xchangestream.bittrex.connection;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 
@@ -11,7 +12,7 @@ import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1<String> {
 
   private static final int MESSAGE_SET_CAPACITY = 1_000 * BittrexStreamingService.POOL_SIZE;
-  private static final Duration HISTORICAL_PERIOD = Duration.ofSeconds(10);
+  private static final long HISTORICAL_PERIOD = TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
 
   private final SubscriptionHandler1<String> handler;
   private final MessageSet messageDuplicatesSet;
@@ -22,7 +23,7 @@ public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1
   }
 
   @Override
-  public synchronized void run(String message) {
+  public void run(String message) {
     synchronized (this) {
       boolean alreadyReceived = messageDuplicatesSet.isDuplicateMessage(message);
       if (!alreadyReceived) {
@@ -32,15 +33,14 @@ public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1
   }
 
   static class MessageSet {
-    private final LinkedHashMap<String, Duration> messagesCollection;
+    private final LinkedHashMap<String, Long> messagesCollection;
 
     MessageSet() {
       messagesCollection =
-          new LinkedHashMap<String, Duration>() {
+          new LinkedHashMap<String, Long>() {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<String, Duration> eldest) {
-              return now().minus(HISTORICAL_PERIOD).compareTo(eldest.getValue()) > 0
-                  || size() > MESSAGE_SET_CAPACITY;
+            protected boolean removeEldestEntry(Map.Entry<String, Long> eldest) {
+              return now() - eldest.getValue() > HISTORICAL_PERIOD || size() > MESSAGE_SET_CAPACITY;
             }
           };
     }
@@ -49,8 +49,8 @@ public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1
       return messagesCollection.put(message, now()) != null;
     }
 
-    private static Duration now() {
-      return Duration.ofNanos(System.nanoTime());
+    private static long now() {
+      return System.nanoTime();
     }
   }
 }
