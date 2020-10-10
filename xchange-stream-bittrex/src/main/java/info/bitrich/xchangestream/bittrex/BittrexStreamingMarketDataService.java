@@ -3,12 +3,12 @@ package info.bitrich.xchangestream.bittrex;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -45,30 +45,31 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final BittrexStreamingService streamingService;
   private final BittrexMarketDataService marketDataService;
 
-  private final ConcurrentMap<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
-  private final ConcurrentMap<CurrencyPair, SortedSet<BittrexOrderBookDeltas>> orderBookDeltasQueue;
-  private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
+  private final Map<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
+  private final Map<CurrencyPair, SortedSet<BittrexOrderBookDeltas>> orderBookDeltasQueue;
+  private final Map<CurrencyPair, Subject<OrderBook>> orderBooks;
   private final BittrexStreamingSubscriptionHandler orderBookMessageHandler;
   private final ObjectMapper objectMapper;
-  private final ConcurrentMap<CurrencyPair, Object> allMarkets;
+  private final Map<CurrencyPair, Object> allMarkets;
   private final Object subscribeLock;
+
+  private final Object orderBooksLock;
 
   private boolean isOrderbooksChannelSubscribed;
 
   public BittrexStreamingMarketDataService(
       BittrexStreamingService streamingService, BittrexMarketDataService marketDataService) {
     this.subscribeLock = new Object();
+    this.orderBooksLock = new Object();
     this.streamingService = streamingService;
     this.marketDataService = marketDataService;
     this.objectMapper = new ObjectMapper();
     this.allMarkets =
         getAllMarkets().stream()
-            .collect(
-                Collectors.toMap(
-                    market -> market, market -> new Object(), (a, b) -> a, ConcurrentHashMap::new));
-    this.orderBookDeltasQueue = new ConcurrentHashMap<>(this.allMarkets.size());
-    this.sequencedOrderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
-    this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
+            .collect(Collectors.toMap(market -> market, market -> new Object()));
+    this.orderBookDeltasQueue = new HashMap<>(this.allMarkets.size());
+    this.sequencedOrderBooks = new HashMap<>(this.allMarkets.size());
+    this.orderBooks = new HashMap<>(this.allMarkets.size());
     this.isOrderbooksChannelSubscribed = false;
     this.orderBookMessageHandler = createOrderBookMessageHandler();
   }
@@ -132,11 +133,9 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                         BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
             CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
             if (orderBooks.containsKey(market)) {
-              synchronized (allMarkets.get(market)) {
-                queueOrderBookDeltas(orderBookDeltas, market);
-                if (updateOrderBook(market)) {
-                  orderBooks.get(market).onNext(cloneOrderBook(market));
-                }
+              queueOrderBookDeltas(orderBookDeltas, market);
+              if (updateOrderBook(market)) {
+                orderBooks.get(market).onNext(cloneOrderBook(market));
               }
             }
           } catch (IOException e) {
@@ -155,12 +154,12 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     BittrexMarketDataServiceRaw.SequencedOrderBook orderBook =
         marketDataService.getBittrexSequencedOrderBook(
             BittrexUtils.toPairString(market), ORDER_BOOKS_DEPTH);
-    sequencedOrderBooks.put(market, orderBook);
-    OrderBook orderBookClone;
-    synchronized (allMarkets.get(market)) {
+    synchronized (orderBooksLock) {
+      sequencedOrderBooks.put(market, orderBook);
+      OrderBook orderBookClone;
       orderBookClone = cloneOrderBook(market);
+      orderBooks.putIfAbsent(market, BehaviorSubject.createDefault(orderBookClone).toSerialized());
     }
-    orderBooks.putIfAbsent(market, BehaviorSubject.createDefault(orderBookClone).toSerialized());
   }
 
   /**

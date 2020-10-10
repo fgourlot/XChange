@@ -13,7 +13,7 @@ import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1<String> {
 
   private static final int MESSAGE_SET_CAPACITY = 1_000 * BittrexStreamingService.POOL_SIZE;
-  private static final TemporalAmount HISTORY_EXPIRE_TIME = Duration.ofSeconds(2);
+  private static final TemporalAmount HISTORY_EXPIRE_TIME = Duration.ofSeconds(3);
 
   private final SubscriptionHandler1<String> handler;
   private final MessageSet messageDuplicatesSet;
@@ -24,14 +24,13 @@ public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1
   }
 
   @Override
-  public void run(String message) {
-    if (!alreadyReceived(message)) {
-      handler.run(message);
+  public synchronized void run(String message) {
+    synchronized (this) {
+      boolean alreadyReceived = messageDuplicatesSet.isDuplicateMessage(message);
+      if (!alreadyReceived) {
+        handler.run(message);
+      }
     }
-  }
-
-  private boolean alreadyReceived(String message) {
-    return messageDuplicatesSet.isDuplicateMessage(message);
   }
 
   static class MessageSet {
@@ -48,7 +47,7 @@ public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1
           };
     }
 
-    synchronized boolean isDuplicateMessage(String message) {
+    boolean isDuplicateMessage(String message) {
       return messagesCollection.put(message, LocalDateTime.now()) != null;
     }
   }

@@ -1,19 +1,21 @@
 package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
 import java.io.IOException;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
@@ -32,12 +34,12 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   private final BittrexAccountService bittrexAccountService;
 
   /** Current sequence number (to be increased after each message) */
-  private Integer currentSequenceNumber;
+  private AtomicInteger currentSequenceNumber;
 
   private final BittrexStreamingSubscriptionHandler balancesMessageHandler;
   private final ObjectMapper objectMapper;
   private boolean isBalancesChannelSubscribed;
-  private final Map<Currency, Subject<Balance>> balances;
+  private final ConcurrentMap<Currency, Subject<Balance>> balances;
   private final SortedSet<BittrexBalance> balancesDeltaQueue;
   private final Object subscribeLock = new Object();
   private final Object balancesLock = new Object();
@@ -53,49 +55,6 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
     this.balancesMessageHandler = createBalancesMessageHandler();
   }
 
-  /**
-   * Creates the handler which will work with the websocket incoming messages.
-   *
-   * @return the created handler
-   */
-  private BittrexStreamingSubscriptionHandler createBalancesMessageHandler() {
-    return new BittrexStreamingSubscriptionHandler(
-        message -> {
-          BittrexBalance bittrexBalance =
-              BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
-                  message, objectMapper.reader());
-          if (bittrexBalance != null) {
-            queueBalanceDelta(bittrexBalance);
-            synchronized (balancesLock) {
-              if (needBalancesInit(bittrexBalance)) {
-                restFillBalances();
-              }
-              applyBalancesDeltas();
-            }
-          }
-        });
-  }
-
-  private void applyBalancesDeltas() {
-    balancesDeltaQueue.stream()
-        .filter(bittrexBalance -> bittrexBalance.getSequence() > currentSequenceNumber)
-        .forEach(
-            bittrexBalance -> {
-              balances
-                  .get(bittrexBalance.getDelta().getCurrencySymbol())
-                  .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
-              currentSequenceNumber = bittrexBalance.getSequence();
-            });
-    balancesDeltaQueue.clear();
-  }
-
-  private void queueBalanceDelta(BittrexBalance bittrexBalance) {
-    balancesDeltaQueue.add(bittrexBalance);
-    if (balancesDeltaQueue.size() > MAX_DELTAS_IN_MEMORY) {
-      balancesDeltaQueue.remove(balancesDeltaQueue.first());
-    }
-  }
-
   @Override
   public Observable<Balance> getBalanceChanges(Currency currency, Object... args) {
     if (!isBalancesChannelSubscribed) {
@@ -106,9 +65,61 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
       }
     }
     if (!balances.containsKey(currency)) {
-      restFillBalances();
+      initializeBalances();
     }
     return balances.get(currency);
+  }
+
+  /**
+   * Creates the handler which will work with the websocket incoming messages.
+   *
+   * @return the created handler
+   */
+  private BittrexStreamingSubscriptionHandler createBalancesMessageHandler() {
+    return new BittrexStreamingSubscriptionHandler(
+        message -> {
+            BittrexBalance bittrexBalance =
+                BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
+                    message, objectMapper.reader());
+            if (bittrexBalance != null) {
+                queueBalanceDelta(bittrexBalance);
+                if (needBalancesInit()) {
+                  initializeBalances();
+                }
+                applyBalancesDeltas();
+              }
+        });
+  }
+
+  private void applyBalancesDeltas() {
+    balancesDeltaQueue.stream()
+        .filter(bittrexBalance -> bittrexBalance.getSequence() > currentSequenceNumber.get())
+        .forEach(
+            bittrexBalance -> {
+              balances
+                  .get(bittrexBalance.getDelta().getCurrencySymbol())
+                  .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
+              currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
+            });
+    balancesDeltaQueue.clear();
+  }
+
+  private void queueBalanceDelta(BittrexBalance bittrexBalance) {
+    boolean added = false;
+    if (balancesDeltaQueue.isEmpty()) {
+      added = balancesDeltaQueue.add(bittrexBalance);
+    } else {
+      int lastSequence = balancesDeltaQueue.last().getSequence();
+      if (lastSequence + 1 == bittrexBalance.getSequence()) {
+        added = balancesDeltaQueue.add(bittrexBalance);
+      } else if (lastSequence + 1 < bittrexBalance.getSequence()) {
+        balancesDeltaQueue.clear();
+        added = balancesDeltaQueue.add(bittrexBalance);
+      }
+    }
+    if (added && balancesDeltaQueue.size() > MAX_DELTAS_IN_MEMORY) {
+      balancesDeltaQueue.remove(balancesDeltaQueue.first());
+    }
   }
 
   /** Subscribes to all of the order books channels available via getting ticker in one go. */
@@ -122,12 +133,12 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
     isBalancesChannelSubscribed = true;
   }
 
-  private boolean needBalancesInit(BittrexBalance bittrexBalance) {
-    return currentSequenceNumber + 1 < bittrexBalance.getSequence()
+  private boolean needBalancesInit() {
+    return currentSequenceNumber.get() + 1 < balancesDeltaQueue.first().getSequence()
         || currentSequenceNumber == null;
   }
 
-  private void restFillBalances() {
+  private void initializeBalances() {
     synchronized (balancesLock) {
       try {
         BittrexAccountServiceRaw.SequencedBalances sequencedBalances =
@@ -139,7 +150,8 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
                     Collectors.toMap(
                         Balance::getCurrency,
                         balance -> BehaviorSubject.createDefault(balance).toSerialized())));
-        currentSequenceNumber = Integer.parseInt(sequencedBalances.getSequence());
+        currentSequenceNumber =
+            new AtomicInteger(Integer.parseInt(sequencedBalances.getSequence()));
       } catch (IOException e) {
         LOG.error("Error rest fetching balances", e);
       }
