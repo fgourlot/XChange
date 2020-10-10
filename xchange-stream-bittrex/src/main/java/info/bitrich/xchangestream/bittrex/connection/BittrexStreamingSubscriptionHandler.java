@@ -1,8 +1,6 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
-import java.time.temporal.TemporalAmount;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -13,7 +11,7 @@ import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1<String> {
 
   private static final int MESSAGE_SET_CAPACITY = 1_000 * BittrexStreamingService.POOL_SIZE;
-  private static final TemporalAmount HISTORY_EXPIRE_TIME = Duration.ofSeconds(3);
+  private static final Duration HISTORICAL_PERIOD = Duration.ofSeconds(10);
 
   private final SubscriptionHandler1<String> handler;
   private final MessageSet messageDuplicatesSet;
@@ -34,21 +32,25 @@ public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1
   }
 
   static class MessageSet {
-    private final LinkedHashMap<String, LocalDateTime> messagesCollection;
+    private final LinkedHashMap<String, Duration> messagesCollection;
 
     MessageSet() {
       messagesCollection =
-          new LinkedHashMap<String, LocalDateTime>() {
+          new LinkedHashMap<String, Duration>() {
             @Override
-            protected boolean removeEldestEntry(Map.Entry<String, LocalDateTime> eldest) {
-              return eldest.getValue().isBefore(LocalDateTime.now().minus(HISTORY_EXPIRE_TIME))
+            protected boolean removeEldestEntry(Map.Entry<String, Duration> eldest) {
+              return now().minus(HISTORICAL_PERIOD).compareTo(eldest.getValue()) > 0
                   || size() > MESSAGE_SET_CAPACITY;
             }
           };
     }
 
     boolean isDuplicateMessage(String message) {
-      return messagesCollection.put(message, LocalDateTime.now()) != null;
+      return messagesCollection.put(message, now()) != null;
+    }
+
+    private static Duration now() {
+      return Duration.ofNanos(System.nanoTime());
     }
   }
 }
