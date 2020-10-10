@@ -17,6 +17,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
@@ -44,7 +46,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   private final Map<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
   private final Map<CurrencyPair, SortedSet<BittrexOrderBookDeltas>> orderBookDeltasQueue;
-  private final Map<CurrencyPair, Subject<OrderBook>> orderBooks;
+  private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
   private final BittrexStreamingSubscriptionHandler orderBookMessageHandler;
   private final ObjectMapper objectMapper;
   private final Map<CurrencyPair, Object> allMarkets;
@@ -66,7 +68,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             .collect(Collectors.toMap(market -> market, market -> new Object()));
     this.orderBookDeltasQueue = new HashMap<>(this.allMarkets.size());
     this.sequencedOrderBooks = new HashMap<>(this.allMarkets.size());
-    this.orderBooks = new HashMap<>(this.allMarkets.size());
+    this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.isOrderbooksChannelSubscribed = false;
     this.orderBookMessageHandler = createOrderBookMessageHandler();
   }
