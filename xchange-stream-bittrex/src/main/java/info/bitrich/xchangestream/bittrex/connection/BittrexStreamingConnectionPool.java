@@ -30,8 +30,7 @@ public class BittrexStreamingConnectionPool {
             .toArray(Completable[]::new));
   }
 
-  public void subscribeToChannelWithHandler(
-      BittrexStreamingSubscription subscription) {
+  public void subscribeToChannelWithHandler(BittrexStreamingSubscription subscription) {
     bittrexStreamingConnections.forEach(
         connection -> connection.subscribeToChannelWithHandler(subscription));
   }

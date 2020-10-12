@@ -17,8 +17,7 @@ public class BittrexStreamingService {
             apiUrl, POOL_SIZE, spec.getApiKey(), spec.getSecretKey());
   }
 
-  public void subscribeToChannelWithHandler(
-      BittrexStreamingSubscription subscription) {
+  public void subscribeToChannelWithHandler(BittrexStreamingSubscription subscription) {
     this.connectionPool.subscribeToChannelWithHandler(subscription);
   }
 

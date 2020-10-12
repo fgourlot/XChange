@@ -11,7 +11,11 @@ public class BittrexStreamingSubscription {
   private final boolean needAuthentication;
   private final SubscriptionHandler1<String> handler;
 
-  public BittrexStreamingSubscription(String eventName, String[] channels, boolean needAuthentication, SubscriptionHandler1<String> handler) {
+  public BittrexStreamingSubscription(
+      String eventName,
+      String[] channels,
+      boolean needAuthentication,
+      SubscriptionHandler1<String> handler) {
     this.eventName = eventName;
     this.channels = channels;
     this.needAuthentication = needAuthentication;
