@@ -49,6 +49,9 @@ public class BittrexStreamingConnection {
   }
 
   private SignalRFuture<BittrexStreamingSocketResponse> authenticate() {
+    if (this.secretKey == null || this.apiKey == null) {
+      return null;
+    }
     LOG.info("[ConnId={}] Authenticating...", id);
     this.authenticating = true;
     Date date = new Date();
