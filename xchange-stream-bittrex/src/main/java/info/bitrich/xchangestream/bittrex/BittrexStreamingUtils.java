@@ -106,9 +106,13 @@ public final class BittrexStreamingUtils {
             BittrexStreamingUtils.orderDirectionToOrderType(bittrexOrder.getDelta().getDirection()),
             BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
         .id(bittrexOrder.getDelta().getId())
-        .averagePrice(bittrexOrder.getDelta().getLimit())
         .limitPrice(bittrexOrder.getDelta().getLimit())
         .originalAmount(bittrexOrder.getDelta().getQuantity())
+        .remainingAmount(
+            bittrexOrder
+                .getDelta()
+                .getQuantity()
+                .subtract(bittrexOrder.getDelta().getFillQuantity()))
         .timestamp(bittrexOrder.getDelta().getCreatedAt())
         .fee(bittrexOrder.getDelta().getCommission())
         .orderStatus(

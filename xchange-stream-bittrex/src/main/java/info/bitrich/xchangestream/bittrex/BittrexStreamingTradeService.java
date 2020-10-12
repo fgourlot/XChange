@@ -64,11 +64,9 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
           BittrexOrder bittrexOrder =
               BittrexStreamingUtils.bittrexOrderMessageToBittrexOrder(message, objectMapper);
           if (bittrexOrder != null) {
-            synchronized (ordersLock) {
-              orders
-                  .get(BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
-                  .onNext(BittrexStreamingUtils.bittrexOrderToOrder(bittrexOrder));
-            }
+            CurrencyPair market =
+                BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol());
+            orders.get(market).onNext(BittrexStreamingUtils.bittrexOrderToOrder(bittrexOrder));
           }
         });
   }
