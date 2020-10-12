@@ -1,13 +1,5 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
-import com.github.signalr4j.client.ConnectionState;
-import com.github.signalr4j.client.SignalRFuture;
-import com.github.signalr4j.client.hubs.HubConnection;
-import com.github.signalr4j.client.hubs.HubProxy;
-import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
-import io.reactivex.Completable;
-
-import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -18,8 +10,17 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.signalr4j.client.ConnectionState;
+import com.github.signalr4j.client.SignalRFuture;
+import com.github.signalr4j.client.hubs.HubConnection;
+import com.github.signalr4j.client.hubs.HubProxy;
+
+import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
+import io.reactivex.Completable;
 
 public class BittrexStreamingConnection {
 
