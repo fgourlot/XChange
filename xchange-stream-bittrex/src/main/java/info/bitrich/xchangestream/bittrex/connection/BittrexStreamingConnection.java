@@ -126,8 +126,8 @@ public class BittrexStreamingConnection {
             }
           }
         },
-        0,
-        1_000);
+        5_000,
+        10_000);
   }
 
   private void reconnectAndSubscribe(Collection<BittrexStreamingSubscription> subscriptions) {
