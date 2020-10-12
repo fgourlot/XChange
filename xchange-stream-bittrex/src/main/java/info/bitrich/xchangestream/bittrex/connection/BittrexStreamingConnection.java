@@ -121,7 +121,7 @@ public class BittrexStreamingConnection {
                 reconnectAndSubscribe(subscriptions);
               }
             } catch (Exception e) {
-              LOG.error("Reconnection error: {}", e.getMessage());
+              LOG.error("[ConnId={}] Reconnection error: {}", id,  e.getMessage());
             }
           }
         },
