@@ -7,7 +7,7 @@ import org.knowm.xchange.ExchangeSpecification;
 
 public class BittrexStreamingService {
 
-  public static final int POOL_SIZE = 1;
+  public static final int POOL_SIZE = 10;
 
   private final BittrexStreamingConnectionPool connectionPool;
 
