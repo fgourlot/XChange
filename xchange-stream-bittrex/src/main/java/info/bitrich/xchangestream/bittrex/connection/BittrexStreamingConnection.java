@@ -6,6 +6,8 @@ import com.github.signalr4j.client.hubs.HubConnection;
 import com.github.signalr4j.client.hubs.HubProxy;
 import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
 import io.reactivex.Completable;
+
+import java.net.SocketException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Date;
@@ -85,8 +87,7 @@ public class BittrexStreamingConnection {
     }
     this.hubConnection = new HubConnection(this.apiUrl);
     this.hubProxy = hubConnection.createHubProxy("c3");
-    this.hubConnection.connected(this::setupAutoReAuthentication);
-    startReconnecter();
+    this.hubConnection.connected(this::onConnection);
   }
 
   public Completable connect() {
@@ -112,15 +113,19 @@ public class BittrexStreamingConnection {
       this.reconnecterTimer.cancel();
     }
     this.reconnecterTimer = new Timer();
-    this.reconnecterTimer.scheduleAtFixedRate(
+    this.reconnecterTimer.schedule(
         new TimerTask() {
           public void run() {
-            if (!ConnectionState.Connected.equals(hubConnection.getState())) {
-              reconnectAndSubscribe(subscriptions);
+            try {
+              if (!ConnectionState.Connected.equals(hubConnection.getState())) {
+                reconnectAndSubscribe(subscriptions);
+              }
+            } catch (Exception e) {
+              LOG.error("Reconnection error", e.getMessage());
             }
           }
         },
-        60_000,
+        0,
         1_000);
   }
 
@@ -171,6 +176,12 @@ public class BittrexStreamingConnection {
                       .collect(Collectors.joining(";")));
               subscriptions.add(subscription);
             });
+  }
+
+  /** Auto-reauthenticate */
+  private void onConnection() {
+    setupAutoReAuthentication();
+    startReconnecter();
   }
 
   /** Auto-reauthenticate */
