@@ -19,7 +19,6 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
@@ -134,9 +133,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
             if (orderBooks.containsKey(market)) {
               queueOrderBookDeltas(orderBookDeltas, market);
-              if (updateOrderBook(market)) {
-                orderBooks.get(market).onNext(cloneOrderBook(market));
-              }
+              applyUpdates(market);
             }
           } catch (IOException e) {
             LOG.error("Error while decompressing order book update", e);
@@ -151,14 +148,18 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @throws IOException if the order book could not be initialized
    */
   private void initializeOrderBook(CurrencyPair market) throws IOException {
+    LOG.info("Initializing order book {} with a rest call", market);
     BittrexMarketDataServiceRaw.SequencedOrderBook orderBook =
         marketDataService.getBittrexSequencedOrderBook(
             BittrexUtils.toPairString(market), ORDER_BOOKS_DEPTH);
     synchronized (orderBooksLock) {
       sequencedOrderBooks.put(market, orderBook);
-      OrderBook orderBookClone;
-      orderBookClone = cloneOrderBook(market);
-      orderBooks.putIfAbsent(market, BehaviorSubject.createDefault(orderBookClone).toSerialized());
+      OrderBook orderBookClone = cloneOrderBook(market);
+      if (orderBooks.containsKey(market)) {
+        orderBooks.get(market).onNext(orderBookClone);
+      } else {
+        orderBooks.put(market, BehaviorSubject.createDefault(orderBookClone).toSerialized());
+      }
     }
   }
 
@@ -210,11 +211,9 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @return true if the update has changed the book
    * @throws IOException if the order book could not be initialized
    */
-  private boolean updateOrderBook(CurrencyPair market) throws IOException {
-    AtomicBoolean updated = new AtomicBoolean(false);
+  private void applyUpdates(CurrencyPair market) throws IOException {
     if (needOrderBookInit(market)) {
       initializeOrderBook(market);
-      updated.set(true);
     }
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
@@ -227,10 +226,9 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                   BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
               String sequence = String.valueOf(deltas.getSequence());
               sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
-              updated.set(true);
+              orderBooks.get(market).onNext(cloneOrderBook(market));
             });
     updatesToApply.clear();
-    return updated.get();
   }
 
   /**
