@@ -1,16 +1,19 @@
 package info.bitrich.xchangestream.bittrex;
 
+import static org.knowm.xchange.bittrex.BittrexConstants.CLOSED;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderDelta;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.stream.Stream;
-import org.knowm.xchange.bittrex.BittrexConstants;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
@@ -102,23 +105,38 @@ public final class BittrexStreamingUtils {
    */
   public static Order bittrexOrderToOrder(BittrexOrder bittrexOrder) {
     // build and return UserTrade
+
+    BittrexOrderDelta btxOrder = bittrexOrder.getDelta();
+
+    Order.OrderStatus orderStatus;
+    if (btxOrder.getQuantity().compareTo(btxOrder.getFillQuantity()) == 0) {
+      orderStatus = Order.OrderStatus.FILLED;
+    } else if (BigDecimal.ZERO.compareTo(btxOrder.getFillQuantity()) < 0) {
+      if (CLOSED.equals(btxOrder.getStatus())) {
+        orderStatus = Order.OrderStatus.CANCELED;
+      } else {
+        orderStatus = Order.OrderStatus.PARTIALLY_FILLED;
+      }
+    } else if (BigDecimal.ZERO.compareTo(btxOrder.getFillQuantity()) == 0) {
+      if (CLOSED.equals(btxOrder.getStatus())) {
+        orderStatus = Order.OrderStatus.CANCELED;
+      } else {
+        orderStatus = Order.OrderStatus.NEW;
+      }
+    } else {
+      orderStatus = Order.OrderStatus.UNKNOWN;
+    }
+
     return new LimitOrder.Builder(
-            BittrexStreamingUtils.orderDirectionToOrderType(bittrexOrder.getDelta().getDirection()),
-            BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol()))
-        .id(bittrexOrder.getDelta().getId())
-        .limitPrice(bittrexOrder.getDelta().getLimit())
-        .originalAmount(bittrexOrder.getDelta().getQuantity())
-        .remainingAmount(
-            bittrexOrder
-                .getDelta()
-                .getQuantity()
-                .subtract(bittrexOrder.getDelta().getFillQuantity()))
-        .timestamp(bittrexOrder.getDelta().getCreatedAt())
-        .fee(bittrexOrder.getDelta().getCommission())
-        .orderStatus(
-            BittrexConstants.CLOSED.equals(bittrexOrder.getDelta().getStatus())
-                ? Order.OrderStatus.CANCELED
-                : Order.OrderStatus.NEW)
+            BittrexStreamingUtils.orderDirectionToOrderType(btxOrder.getDirection()),
+            BittrexUtils.toCurrencyPair(btxOrder.getMarketSymbol()))
+        .id(btxOrder.getId())
+        .limitPrice(btxOrder.getLimit())
+        .originalAmount(btxOrder.getQuantity())
+        .remainingAmount(btxOrder.getQuantity().subtract(btxOrder.getFillQuantity()))
+        .timestamp(btxOrder.getCreatedAt())
+        .fee(btxOrder.getCommission())
+        .orderStatus(orderStatus)
         .build();
   }
 
