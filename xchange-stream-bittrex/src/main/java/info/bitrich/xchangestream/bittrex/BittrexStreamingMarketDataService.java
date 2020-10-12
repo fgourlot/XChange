@@ -187,19 +187,18 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private void queueOrderBookDeltas(BittrexOrderBookDeltas orderBookDeltas, CurrencyPair market) {
     SortedSet<BittrexOrderBookDeltas> deltasQueue = orderBookDeltasQueue.get(market);
-    boolean added = false;
     if (deltasQueue.isEmpty()) {
-      added = deltasQueue.add(orderBookDeltas);
+      deltasQueue.add(orderBookDeltas);
     } else {
       int lastSequence = deltasQueue.last().getSequence();
       if (lastSequence + 1 == orderBookDeltas.getSequence()) {
-        added = deltasQueue.add(orderBookDeltas);
+        deltasQueue.add(orderBookDeltas);
       } else if (lastSequence + 1 < orderBookDeltas.getSequence()) {
         deltasQueue.clear();
-        added = deltasQueue.add(orderBookDeltas);
+        deltasQueue.add(orderBookDeltas);
       }
     }
-    if (added && deltasQueue.size() > MAX_DELTAS_IN_MEMORY) {
+    while (deltasQueue.size() > MAX_DELTAS_IN_MEMORY) {
       deltasQueue.remove(deltasQueue.first());
     }
   }
