@@ -7,7 +7,7 @@ import org.knowm.xchange.ExchangeSpecification;
 
 public class BittrexStreamingService {
 
-  public static final int POOL_SIZE = 10;
+  public static final int POOL_SIZE = 1;
 
   private final BittrexStreamingConnectionPool connectionPool;
 
@@ -18,8 +18,8 @@ public class BittrexStreamingService {
   }
 
   public void subscribeToChannelWithHandler(
-      BittrexStreamingSubscription subscription, boolean needAuthentication) {
-    this.connectionPool.subscribeToChannelWithHandler(subscription, needAuthentication);
+      BittrexStreamingSubscription subscription) {
+    this.connectionPool.subscribeToChannelWithHandler(subscription);
   }
 
   public Completable connect() {

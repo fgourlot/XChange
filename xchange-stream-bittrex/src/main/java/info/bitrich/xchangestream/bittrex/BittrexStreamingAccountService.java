@@ -104,19 +104,18 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   }
 
   private void queueBalanceDelta(BittrexBalance bittrexBalance) {
-    boolean added = false;
     if (balancesDeltaQueue.isEmpty()) {
-      added = balancesDeltaQueue.add(bittrexBalance);
+      balancesDeltaQueue.add(bittrexBalance);
     } else {
       int lastSequence = balancesDeltaQueue.last().getSequence();
       if (lastSequence + 1 == bittrexBalance.getSequence()) {
-        added = balancesDeltaQueue.add(bittrexBalance);
+        balancesDeltaQueue.add(bittrexBalance);
       } else if (lastSequence + 1 < bittrexBalance.getSequence()) {
         balancesDeltaQueue.clear();
-        added = balancesDeltaQueue.add(bittrexBalance);
+        balancesDeltaQueue.add(bittrexBalance);
       }
     }
-    if (added && balancesDeltaQueue.size() > MAX_DELTAS_IN_MEMORY) {
+    while (balancesDeltaQueue.size() > MAX_DELTAS_IN_MEMORY) {
       balancesDeltaQueue.remove(balancesDeltaQueue.first());
     }
   }
@@ -127,8 +126,8 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
 
     BittrexStreamingSubscription subscription =
         new BittrexStreamingSubscription(
-            "balance", new String[] {balanceChannel}, this.balancesMessageHandler);
-    bittrexStreamingService.subscribeToChannelWithHandler(subscription, true);
+            "balance", new String[] {balanceChannel}, true, this.balancesMessageHandler);
+    bittrexStreamingService.subscribeToChannelWithHandler(subscription);
     isBalancesChannelSubscribed = true;
   }
 
@@ -141,17 +140,24 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
       try {
         BittrexAccountServiceRaw.SequencedBalances sequencedBalances =
             bittrexAccountService.getBittrexSequencedBalances();
-        balances.clear();
-        balances.putAll(
-            sequencedBalances.getBalances().values().stream()
-                .collect(
-                    Collectors.toMap(
-                        Balance::getCurrency,
-                        balance -> BehaviorSubject.createDefault(balance).toSerialized())));
+        sequencedBalances
+            .getBalances()
+            .values()
+            .forEach(
+                balance -> {
+                  if (balances.containsKey(balance.getCurrency())) {
+                    balances.get(balance.getCurrency()).onNext(balance);
+                  } else {
+                    balances.put(
+                        balance.getCurrency(),
+                        BehaviorSubject.createDefault(balance).toSerialized());
+                  }
+                });
         currentSequenceNumber =
             new AtomicInteger(Integer.parseInt(sequencedBalances.getSequence()));
       } catch (IOException e) {
         LOG.error("Error rest fetching balances", e);
+        initializeBalances();
       }
     }
   }

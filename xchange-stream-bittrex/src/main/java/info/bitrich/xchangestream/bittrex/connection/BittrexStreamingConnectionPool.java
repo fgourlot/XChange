@@ -31,9 +31,9 @@ public class BittrexStreamingConnectionPool {
   }
 
   public void subscribeToChannelWithHandler(
-      BittrexStreamingSubscription subscription, boolean needAuthentication) {
+      BittrexStreamingSubscription subscription) {
     bittrexStreamingConnections.forEach(
-        connection -> connection.subscribeToChannelWithHandler(subscription, needAuthentication));
+        connection -> connection.subscribeToChannelWithHandler(subscription));
   }
 
   public boolean isAlive() {

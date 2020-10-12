@@ -87,6 +87,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       initializeOrderBook(currencyPair);
     } catch (IOException e) {
       LOG.error("Error while intializing order book", e);
+      getOrderBook(currencyPair, args);
     }
     return orderBooks.get(currencyPair);
   }
@@ -111,8 +112,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
     BittrexStreamingSubscription subscription =
         new BittrexStreamingSubscription(
-            "orderbook", orderBooksChannel, this.orderBookMessageHandler);
-    streamingService.subscribeToChannelWithHandler(subscription, true);
+            "orderbook", orderBooksChannel, false, this.orderBookMessageHandler);
+    streamingService.subscribeToChannelWithHandler(subscription);
     isOrderbooksChannelSubscribed = true;
   }
 
