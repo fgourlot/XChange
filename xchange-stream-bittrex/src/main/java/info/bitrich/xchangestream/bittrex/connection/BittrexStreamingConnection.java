@@ -1,23 +1,26 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
-import com.github.signalr4j.client.ConnectionState;
-import com.github.signalr4j.client.SignalRFuture;
-import com.github.signalr4j.client.hubs.HubConnection;
-import com.github.signalr4j.client.hubs.HubProxy;
-import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
-import io.reactivex.Completable;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.signalr4j.client.ConnectionState;
+import com.github.signalr4j.client.SignalRFuture;
+import com.github.signalr4j.client.hubs.HubConnection;
+import com.github.signalr4j.client.hubs.HubProxy;
+
+import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
+import io.reactivex.Completable;
 
 public class BittrexStreamingConnection {
 
@@ -34,7 +37,6 @@ public class BittrexStreamingConnection {
   private final Set<BittrexStreamingSubscription> subscriptions;
   private Timer reconnecterTimer;
   private boolean authenticating;
-  private final Object authLock = new Object();
 
   public BittrexStreamingConnection(String apiUrl, String apiKey, String secretKey, int id) {
     LOG.info("[ConnId={}] Initializing streaming service ...", id);
@@ -69,11 +71,7 @@ public class BittrexStreamingConnection {
               ts,
               uuid,
               signedContent)
-          .onError(
-              error -> {
-                LOG.error("Authentication error", error);
-                authenticate();
-              })
+          .onError(error -> LOG.error("Authentication error", error))
           .done(response -> LOG.info("[ConnId={}] Authentication success: {}", id, response));
     } catch (Exception e) {
       LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, e);
@@ -119,7 +117,11 @@ public class BittrexStreamingConnection {
           public void run() {
             try {
               if (!ConnectionState.Connected.equals(hubConnection.getState())) {
-                reconnectAndSubscribe(subscriptions);
+                LOG.info(
+                    "[ConnId={}] Initiating reconnection, state is {}",
+                    id,
+                    hubConnection.getState());
+                reconnectAndSubscribe();
               }
             } catch (Exception e) {
               LOG.error("[ConnId={}] Reconnection error: {}", id, e.getMessage());
@@ -127,34 +129,39 @@ public class BittrexStreamingConnection {
           }
         },
         5_000,
-        10_000);
+        1_000);
   }
 
-  private void reconnectAndSubscribe(Collection<BittrexStreamingSubscription> subscriptions) {
+  private void reconnectAndSubscribe() {
     LOG.info("[ConnId={}] Reconnecting...", id);
     initConnection();
     connect().blockingAwait();
     LOG.info("[ConnId={}] Reconnected!", id);
+    String events =
+        subscriptions.stream()
+            .map(BittrexStreamingSubscription::getEventName)
+            .collect(Collectors.joining(", "));
+    LOG.info("[ConnId={}] Subscribing to events {}...", id, events);
     subscriptions.forEach(this::subscribeToChannelWithHandler);
+    LOG.info("[ConnId={}] Events {} subscribed!", id, events);
   }
 
   public void subscribeToChannelWithHandler(BittrexStreamingSubscription subscription) {
-    synchronized (authLock) {
-      if (!this.authenticating && subscription.isNeedAuthentication()) {
-        try {
-          SignalRFuture<BittrexStreamingSocketResponse> authenticateFuture = this.authenticate();
-          if (authenticateFuture != null) {
-            authenticateFuture.get();
-          }
-        } catch (InterruptedException ie) {
-          LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ie);
-          Thread.currentThread().interrupt();
-        } catch (ExecutionException ee) {
-          LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ee);
+    CountDownLatch latch = new CountDownLatch(1);
+    if (!this.authenticating && subscription.isNeedAuthentication()) {
+      try {
+        SignalRFuture<BittrexStreamingSocketResponse> authenticateFuture = this.authenticate();
+        if (authenticateFuture != null) {
+          authenticateFuture.get();
         }
+      } catch (InterruptedException ie) {
+        LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ie);
+        Thread.currentThread().interrupt();
+      } catch (ExecutionException ee) {
+        LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ee);
       }
     }
-    LOG.info("[ConnId= {}] Subscribing to {}", id, subscription);
+    LOG.info("[ConnId={}] Subscribing to {}", id, subscription);
     hubProxy.on(subscription.getEventName(), subscription.getHandler(), String.class);
     hubProxy
         .invoke(
@@ -163,20 +170,28 @@ public class BittrexStreamingConnection {
             (Object) subscription.getChannels())
         .onError(
             e -> {
-              LOG.error("[ConnId={}] Subscription error to {}: {}", id, subscription, e);
-              subscribeToChannelWithHandler(subscription);
+              LOG.error(
+                  "[ConnId={}] Subscription error to {}: {}", id, subscription, e.getMessage());
+              latch.countDown();
             })
         .done(
             response -> {
               LOG.info(
-                  "[ConnId={}] Subscription success to {}:{}",
+                  "[ConnId={}] Subscription success to {}: {}",
                   id,
                   subscription,
                   Arrays.stream(response)
                       .map(BittrexStreamingSocketResponse::toString)
                       .collect(Collectors.joining(";")));
+              latch.countDown();
               subscriptions.add(subscription);
             });
+    try {
+      latch.await();
+    } catch (InterruptedException e) {
+      LOG.error("[ConnId={}] Error subscribing: {}", id, e);
+      Thread.currentThread().interrupt();
+    }
   }
 
   private void onConnection() {
