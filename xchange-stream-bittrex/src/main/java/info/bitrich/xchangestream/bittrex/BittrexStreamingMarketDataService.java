@@ -251,7 +251,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     }
     int currentBookSequence = Integer.parseInt(orderBook.getSequence());
     int firstDeltaSequence = orderBookDeltasQueue.get(market).first().getSequence();
-    boolean sequenceDesync = firstDeltaSequence > currentBookSequence + 1;
+    boolean sequenceDesync = firstDeltaSequence - currentBookSequence > 1;
     if (sequenceDesync) {
       LOG.info(
           "Need order book {} init because first delta sequence to apply is too high (to apply: {} current sequence: {})",
