@@ -23,7 +23,6 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
   private final BittrexStreamingService bittrexStreamingService;
   private final BittrexTradeService bittrexTradeService;
 
-  private final Object ordersLock = new Object();
   private final Object subscribeLock = new Object();
   private boolean isOrdersChannelSubscribed;
 

@@ -1,5 +1,8 @@
 package info.bitrich.xchangestream.bittrex.dto;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas> {
   private String marketSymbol;
   private int depth;
@@ -45,5 +48,25 @@ public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas
   @Override
   public int compareTo(BittrexOrderBookDeltas that) {
     return Integer.compare(this.sequence, that.sequence);
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+    BittrexOrderBookDeltas that = (BittrexOrderBookDeltas) o;
+    return depth == that.depth &&
+        sequence == that.sequence &&
+        Objects.equals(marketSymbol, that.marketSymbol) &&
+        Arrays.equals(askDeltas, that.askDeltas) &&
+        Arrays.equals(bidDeltas, that.bidDeltas);
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(marketSymbol, depth, sequence);
+    result = 31 * result + Arrays.hashCode(askDeltas);
+    result = 31 * result + Arrays.hashCode(bidDeltas);
+    return result;
   }
 }

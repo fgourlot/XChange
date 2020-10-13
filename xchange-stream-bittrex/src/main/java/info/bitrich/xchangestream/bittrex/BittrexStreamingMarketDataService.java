@@ -210,7 +210,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * Apply the in memory updates to the order book.
    *
    * @param market the order book's market
-   * @return true if the update has changed the book
    * @throws IOException if the order book could not be initialized
    */
   private void applyUpdates(CurrencyPair market) throws IOException {
