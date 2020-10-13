@@ -220,21 +220,18 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
     SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
-    AtomicBoolean anyUpdateApplied = new AtomicBoolean(false);
-    updatesToApply.stream()
-        .filter(deltas -> deltas.getSequence() > lastSequence)
-        .forEach(
-            deltas -> {
-              OrderBook updatedOrderBook =
-                  BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
-              String sequence = String.valueOf(deltas.getSequence());
-              sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
-              anyUpdateApplied.set(true);
-            });
-    if (anyUpdateApplied.get()) {
+    updatesToApply.removeIf(delta -> delta.getSequence() <= lastSequence);
+    if (!updatesToApply.isEmpty()) {
+      updatesToApply.forEach(
+          deltas -> {
+            OrderBook updatedOrderBook =
+                BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
+            String sequence = String.valueOf(deltas.getSequence());
+            sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
+          });
       orderBooks.get(market).onNext(cloneOrderBook(market));
+      updatesToApply.clear();
     }
-    updatesToApply.clear();
   }
 
   /**
