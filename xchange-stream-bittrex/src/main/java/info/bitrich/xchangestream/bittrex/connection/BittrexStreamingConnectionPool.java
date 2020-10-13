@@ -9,6 +9,7 @@ public class BittrexStreamingConnectionPool {
 
   private final List<BittrexStreamingConnection> bittrexStreamingConnections;
 
+  // Careful, POOL_SIZE=10 caused problem on reconnection on all of them, for an unknown reasons
   public BittrexStreamingConnectionPool(String url, int poolSize, String apiKey, String secretKey) {
     bittrexStreamingConnections =
         IntStream.range(0, poolSize)

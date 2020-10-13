@@ -1,5 +1,11 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
+import com.github.signalr4j.client.ConnectionState;
+import com.github.signalr4j.client.SignalRFuture;
+import com.github.signalr4j.client.hubs.HubConnection;
+import com.github.signalr4j.client.hubs.HubProxy;
+import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
+import io.reactivex.Completable;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
@@ -10,17 +16,8 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.signalr4j.client.ConnectionState;
-import com.github.signalr4j.client.SignalRFuture;
-import com.github.signalr4j.client.hubs.HubConnection;
-import com.github.signalr4j.client.hubs.HubProxy;
-
-import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
-import io.reactivex.Completable;
 
 public class BittrexStreamingConnection {
 
@@ -81,6 +78,7 @@ public class BittrexStreamingConnection {
 
   private void initConnection() {
     this.authenticating = false;
+    this.subscriptions.forEach(sub -> this.hubProxy.removeSubscription(sub.getEventName()));
     if (hubConnection != null) {
       this.hubConnection.disconnect();
     }
@@ -124,7 +122,7 @@ public class BittrexStreamingConnection {
                 reconnectAndSubscribe();
               }
             } catch (Exception e) {
-              LOG.error("[ConnId={}] Reconnection error: {}", id, e.getMessage());
+              LOG.error("[ConnId={}] Reconnection error: {}", id, e);
             }
           }
         },

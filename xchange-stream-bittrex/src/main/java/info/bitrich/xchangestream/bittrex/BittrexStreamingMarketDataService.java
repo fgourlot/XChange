@@ -135,8 +135,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
               queueOrderBookDeltas(orderBookDeltas, market);
               applyUpdates(market);
             }
-          } catch (IOException e) {
-            LOG.error("Error while decompressing order book update", e);
+          } catch (IOException ioe) {
+            LOG.error("Error while decompressing order book update", ioe);
+          } catch (Exception e) {
+            LOG.error("Error while treating order book update", e);
           }
         });
   }
