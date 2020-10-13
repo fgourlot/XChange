@@ -19,6 +19,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
@@ -219,6 +220,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
     SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
+    AtomicBoolean anyUpdateApplied = new AtomicBoolean(false);
     updatesToApply.stream()
         .filter(deltas -> deltas.getSequence() > lastSequence)
         .forEach(
@@ -227,8 +229,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                   BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
               String sequence = String.valueOf(deltas.getSequence());
               sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
-              orderBooks.get(market).onNext(cloneOrderBook(market));
+              anyUpdateApplied.set(true);
             });
+    if (anyUpdateApplied.get()) {
+      orderBooks.get(market).onNext(cloneOrderBook(market));
+    }
     updatesToApply.clear();
   }
 
