@@ -55,11 +55,11 @@ public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     BittrexOrderBookDeltas that = (BittrexOrderBookDeltas) o;
-    return depth == that.depth &&
-        sequence == that.sequence &&
-        Objects.equals(marketSymbol, that.marketSymbol) &&
-        Arrays.equals(askDeltas, that.askDeltas) &&
-        Arrays.equals(bidDeltas, that.bidDeltas);
+    return depth == that.depth
+        && sequence == that.sequence
+        && Objects.equals(marketSymbol, that.marketSymbol)
+        && Arrays.equals(askDeltas, that.askDeltas)
+        && Arrays.equals(bidDeltas, that.bidDeltas);
   }
 
   @Override

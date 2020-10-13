@@ -246,13 +246,23 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private boolean needOrderBookInit(CurrencyPair market) {
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     if (orderBook == null) {
+      LOG.info("Need order book {} init because it has never been initialized", market);
       return true;
     }
     if (orderBookDeltasQueue.get(market).isEmpty()) {
       return false;
     }
     int currentBookSequence = Integer.parseInt(orderBook.getSequence());
-    return orderBookDeltasQueue.get(market).first().getSequence() > currentBookSequence + 1;
+    int firstDeltaSequence = orderBookDeltasQueue.get(market).first().getSequence();
+    boolean sequenceDesync = firstDeltaSequence > currentBookSequence + 1;
+    if (sequenceDesync) {
+      LOG.info(
+          "Need order book {} init because first delta sequence to apply is too high (to apply: {} current sequence: {})",
+          market,
+          firstDeltaSequence,
+          currentBookSequence);
+    }
+    return sequenceDesync;
   }
 
   /**

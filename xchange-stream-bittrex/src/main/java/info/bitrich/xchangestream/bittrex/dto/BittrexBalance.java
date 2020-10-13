@@ -27,7 +27,6 @@ public class BittrexBalance implements Comparable<BittrexBalance> {
     return delta;
   }
 
-
   @Override
   public int compareTo(BittrexBalance that) {
     return Integer.compare(this.sequence, that.sequence);
@@ -38,9 +37,9 @@ public class BittrexBalance implements Comparable<BittrexBalance> {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     BittrexBalance that = (BittrexBalance) o;
-    return sequence == that.sequence &&
-        Objects.equals(accountId, that.accountId) &&
-        Objects.equals(delta, that.delta);
+    return sequence == that.sequence
+        && Objects.equals(accountId, that.accountId)
+        && Objects.equals(delta, that.delta);
   }
 
   @Override

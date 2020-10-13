@@ -37,9 +37,9 @@ public class BittrexOrder implements Comparable<BittrexOrder> {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     BittrexOrder that = (BittrexOrder) o;
-    return sequence == that.sequence &&
-        Objects.equals(accountId, that.accountId) &&
-        Objects.equals(delta, that.delta);
+    return sequence == that.sequence
+        && Objects.equals(accountId, that.accountId)
+        && Objects.equals(delta, that.delta);
   }
 
   @Override
