@@ -140,7 +140,7 @@ public class BittrexStreamingConnection {
     LOG.info("[ConnId={}] Events {} subscribed!", id, events);
   }
 
-  public void subscribeToChannelWithHandler(BittrexStreamingSubscription subscription) {
+  public synchronized void subscribeToChannelWithHandler(BittrexStreamingSubscription subscription) {
     CountDownLatch latch = new CountDownLatch(1);
     if (!authenticating && subscription.isNeedAuthentication()) {
       try {
