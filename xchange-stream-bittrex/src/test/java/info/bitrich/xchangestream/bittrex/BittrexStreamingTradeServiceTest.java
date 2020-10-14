@@ -40,7 +40,7 @@ public class BittrexStreamingTradeServiceTest extends BittrexStreamingBaseTest {
                           });
               disposables.add(wsDisposable);
             });
-    Thread.sleep(300_000);
+    Thread.sleep(3600_000);
     disposables.forEach(Disposable::dispose);
   }
 }

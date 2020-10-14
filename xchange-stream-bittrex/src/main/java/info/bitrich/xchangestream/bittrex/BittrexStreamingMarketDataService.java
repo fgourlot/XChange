@@ -11,6 +11,7 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import org.knowm.xchange.bittrex.BittrexUtils;
@@ -52,11 +53,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final BittrexStreamingSubscriptionHandler orderBookMessageHandler;
   private final ObjectMapper objectMapper;
   private final Map<CurrencyPair, Object> allMarkets;
+  private final AtomicBoolean isOrderbooksChannelSubscribed;
+
   private final Object subscribeLock;
-
   private final Object orderBooksLock;
-
-  private boolean isOrderbooksChannelSubscribed;
 
   public BittrexStreamingMarketDataService(
       BittrexStreamingService streamingService, BittrexMarketDataService marketDataService) {
@@ -71,16 +71,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.orderBookDeltasQueue = new HashMap<>(this.allMarkets.size());
     this.sequencedOrderBooks = new HashMap<>(this.allMarkets.size());
     this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
-    this.isOrderbooksChannelSubscribed = false;
+    this.isOrderbooksChannelSubscribed = new AtomicBoolean(false);
     this.orderBookMessageHandler = createOrderBookMessageHandler();
   }
 
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
     orderBookDeltasQueue.putIfAbsent(currencyPair, new TreeSet<>());
-    if (!isOrderbooksChannelSubscribed) {
+    if (!isOrderbooksChannelSubscribed.get()) {
       synchronized (subscribeLock) {
-        if (!isOrderbooksChannelSubscribed) {
+        if (!isOrderbooksChannelSubscribed.get()) {
           subscribeToOrderBookChannels();
         }
       }
@@ -116,7 +116,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         new BittrexStreamingSubscription(
             "orderbook", orderBooksChannel, false, this.orderBookMessageHandler);
     streamingService.subscribeToChannelWithHandler(subscription);
-    isOrderbooksChannelSubscribed = true;
+    isOrderbooksChannelSubscribed.set(true);
   }
 
   /**
