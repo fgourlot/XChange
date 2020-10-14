@@ -35,6 +35,7 @@ public class BittrexStreamingConnection {
   private final Set<BittrexStreamingSubscription> subscriptions;
   private Timer reconnecterTimer;
   private boolean authenticating;
+  private boolean reconnectionAsked;
 
   public BittrexStreamingConnection(String apiUrl, String apiKey, String secretKey) {
     this.id = ID_COUNTER.getAndIncrement();
@@ -44,6 +45,7 @@ public class BittrexStreamingConnection {
     this.apiUrl = apiUrl;
     this.subscriptions = new HashSet<>();
     this.authenticating = false;
+    this.reconnectionAsked = false;
     initConnection();
     LOG.info("[ConnId={}] Streaming service initialized...", id);
   }
@@ -64,7 +66,10 @@ public class BittrexStreamingConnection {
       return hubProxy
           .invoke(
               BittrexStreamingSocketResponse.class, "Authenticate", apiKey, ts, uuid, signedContent)
-          .onError(error -> LOG.error("Authentication error", error))
+          .onError(error -> {
+            LOG.error("[ConnId={}] Authentication error {}", id, error);
+            reconnectionAsked = true;
+          })
           .done(response -> LOG.info("[ConnId={}] Authentication success: {}", id, response));
     } catch (Exception e) {
       LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, e);
@@ -110,7 +115,7 @@ public class BittrexStreamingConnection {
         new TimerTask() {
           public void run() {
             try {
-              if (!ConnectionState.Connected.equals(hubConnection.getState())) {
+              if (reconnectionAsked || !ConnectionState.Connected.equals(hubConnection.getState())) {
                 LOG.info(
                     "[ConnId={}] Initiating reconnection, state is {}",
                     id,
@@ -127,6 +132,7 @@ public class BittrexStreamingConnection {
   }
 
   private void reconnectAndSubscribe() {
+    reconnectionAsked = false;
     LOG.info("[ConnId={}] Reconnecting...", id);
     initConnection();
     connect().blockingAwait();
@@ -166,6 +172,7 @@ public class BittrexStreamingConnection {
             e -> {
               LOG.error(
                   "[ConnId={}] Subscription error to {}: {}", id, subscription, e.getMessage());
+              reconnectionAsked = true;
               latch.countDown();
             })
         .done(
