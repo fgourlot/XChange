@@ -79,7 +79,9 @@ public class BittrexStreamingConnection {
 
   private void initConnection() {
     authenticating = false;
-    subscriptions.forEach(sub -> hubProxy.removeSubscription(sub.getEventName()));
+    if (hubProxy != null) {
+      subscriptions.forEach(sub -> hubProxy.removeSubscription(sub.getEventName()));
+    }
     if (hubConnection != null) {
       hubConnection.disconnect();
     }
