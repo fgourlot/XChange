@@ -1,13 +1,5 @@
 package info.bitrich.xchangestream.bittrex;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.core.StreamingMarketDataService;
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.Subject;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
@@ -19,8 +11,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
@@ -32,6 +24,16 @@ import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
