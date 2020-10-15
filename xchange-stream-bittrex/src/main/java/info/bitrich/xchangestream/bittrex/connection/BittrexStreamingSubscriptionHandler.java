@@ -5,6 +5,8 @@ import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1<String> {
 
@@ -13,20 +15,28 @@ public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1
 
   private final SubscriptionHandler1<String> handler;
   private final MessageSet messageDuplicatesSet;
+  private final Lock lock;
 
   public BittrexStreamingSubscriptionHandler(SubscriptionHandler1<String> handler) {
     this.handler = handler;
     this.messageDuplicatesSet = new MessageSet();
+    this.lock = new ReentrantLock(true);
   }
 
   @Override
   public void run(String message) {
-    synchronized (this) {
-      boolean alreadyReceived = messageDuplicatesSet.isDuplicateMessage(message);
-      if (!alreadyReceived) {
+    lock.lock();
+    try {
+      if (!isDuplicate(message)) {
         handler.run(message);
       }
+    } finally {
+      lock.unlock();
     }
+  }
+
+  private boolean isDuplicate(String message) {
+    return messageDuplicatesSet.isDuplicateMessage(message);
   }
 
   static class MessageSet {
