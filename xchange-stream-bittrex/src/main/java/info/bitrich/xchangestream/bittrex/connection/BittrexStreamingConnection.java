@@ -6,12 +6,9 @@ import com.github.signalr4j.client.hubs.HubConnection;
 import com.github.signalr4j.client.hubs.HubProxy;
 import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
 import io.reactivex.Completable;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
@@ -24,7 +21,7 @@ public class BittrexStreamingConnection {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingConnection.class);
   private static final AtomicInteger ID_COUNTER = new AtomicInteger();
-  public static final String COULD_NOT_AUTHENTICATE_ERROR_MESSAGE = "Could not authenticate";
+  private static final String COULD_NOT_AUTHENTICATE_ERROR_MESSAGE = "Could not authenticate";
 
   private final String apiKey;
   private final String secretKey;
@@ -33,9 +30,7 @@ public class BittrexStreamingConnection {
   private HubProxy hubProxy;
   private final String apiUrl;
   private final Set<BittrexStreamingSubscription> subscriptions;
-  private Timer reconnecterTimer;
   private boolean authenticating;
-  private boolean reconnectionAsked;
 
   public BittrexStreamingConnection(String apiUrl, String apiKey, String secretKey) {
     this.id = ID_COUNTER.getAndIncrement();
@@ -45,7 +40,6 @@ public class BittrexStreamingConnection {
     this.apiUrl = apiUrl;
     this.subscriptions = new HashSet<>();
     this.authenticating = false;
-    this.reconnectionAsked = false;
     initConnection();
     LOG.info("[ConnId={}] Streaming service initialized...", id);
   }
@@ -66,12 +60,8 @@ public class BittrexStreamingConnection {
       return hubProxy
           .invoke(
               BittrexStreamingSocketResponse.class, "Authenticate", apiKey, ts, uuid, signedContent)
-          .onError(
-              error -> {
-                LOG.error("[ConnId={}] Authentication error {}", id, error);
-                reconnectionAsked = true;
-              })
-          .done(response -> LOG.info("[ConnId={}] Authentication success: {}", id, response));
+          .onError(error -> LOG.error("[ConnId={}] Authentication error: {}", id, error))
+          .done(response -> LOG.info("[ConnId={}] Authentication success", id));
     } catch (Exception e) {
       LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, e);
     }
@@ -87,8 +77,21 @@ public class BittrexStreamingConnection {
       hubConnection.disconnect();
     }
     hubConnection = new HubConnection(apiUrl);
-    hubProxy = hubConnection.createHubProxy("c3");
+    //hubConnection.setReconnectOnError(true);
+    //hubConnection.reconnected(this::onConnection);
+    hubConnection.stateChanged(
+        (oldState, newState) -> {
+          if (oldState == ConnectionState.Connected) {
+            LOG.info(
+                "[ConnId={}] Initiating reconnection because state changed from '{}' to '{}'",
+                id,
+                oldState,
+                newState);
+            reconnectAndSubscribe();
+          }
+        });
     hubConnection.connected(this::onConnection);
+    hubProxy = hubConnection.createHubProxy("c3");
   }
 
   public Completable connect() {
@@ -99,7 +102,6 @@ public class BittrexStreamingConnection {
   public Completable disconnect() {
     LOG.info("[ConnId={}] Disconnecting...", id);
     authenticating = false;
-    reconnecterTimer.cancel();
     hubConnection.disconnect();
     return Completable.complete();
   }
@@ -109,46 +111,23 @@ public class BittrexStreamingConnection {
         || ConnectionState.Connecting.equals(hubConnection.getState());
   }
 
-  private void startReconnecter() {
-    if (reconnecterTimer != null) {
-      reconnecterTimer.cancel();
-    }
-    reconnecterTimer = new Timer();
-    reconnecterTimer.schedule(
-        new TimerTask() {
-          public void run() {
-            try {
-              if (reconnectionAsked
-                  || !ConnectionState.Connected.equals(hubConnection.getState())) {
-                LOG.info(
-                    "[ConnId={}] Initiating reconnection, state is {}",
-                    id,
-                    hubConnection.getState());
-                reconnectAndSubscribe();
-              }
-            } catch (Exception e) {
-              LOG.error("[ConnId={}] Reconnection error: {}", id, e);
-              reconnectionAsked = true;
-            }
-          }
-        },
-        5_000,
-        1_000);
-  }
-
   private void reconnectAndSubscribe() {
-    reconnectionAsked = false;
-    LOG.info("[ConnId={}] Reconnecting...", id);
-    initConnection();
-    connect().blockingAwait();
-    LOG.info("[ConnId={}] Reconnected!", id);
-    String events =
-        subscriptions.stream()
-            .map(BittrexStreamingSubscription::getEventName)
-            .collect(Collectors.joining(", "));
-    LOG.info("[ConnId={}] Subscribing to events {}...", id, events);
-    subscriptions.forEach(this::subscribeToChannelWithHandler);
-    LOG.info("[ConnId={}] Events {} subscribed!", id, events);
+    try {
+      LOG.info("[ConnId={}] Reconnecting...", id);
+      initConnection();
+      connect().blockingAwait();
+      LOG.info("[ConnId={}] Reconnected!", id);
+      String events =
+          subscriptions.stream()
+              .map(BittrexStreamingSubscription::getEventName)
+              .collect(Collectors.joining(", "));
+      LOG.info("[ConnId={}] Subscribing to events {}...", id, events);
+      subscriptions.forEach(this::subscribeToChannelWithHandler);
+      LOG.info("[ConnId={}] Events {} subscribed!", id, events);
+    } catch (Exception e) {
+      LOG.error("[ConnId={}] Reconnection error: {}", id, e);
+      reconnectAndSubscribe();
+    }
   }
 
   public synchronized void subscribeToChannelWithHandler(
@@ -167,7 +146,7 @@ public class BittrexStreamingConnection {
         LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ee);
       }
     }
-    LOG.info("[ConnId={}] Subscribing to {}", id, subscription);
+    LOG.info("[ConnId={}] Subscribing to event {}", id, subscription.getEventName());
     hubProxy.on(subscription.getEventName(), subscription.getHandler(), String.class);
     hubProxy
         .invoke(
@@ -178,18 +157,12 @@ public class BittrexStreamingConnection {
             e -> {
               LOG.error(
                   "[ConnId={}] Subscription error to {}: {}", id, subscription, e.getMessage());
-              reconnectionAsked = true;
               latch.countDown();
             })
         .done(
             response -> {
               LOG.info(
-                  "[ConnId={}] Subscription success to {}: {}",
-                  id,
-                  subscription,
-                  Arrays.stream(response)
-                      .map(BittrexStreamingSocketResponse::toString)
-                      .collect(Collectors.joining(";")));
+                  "[ConnId={}] Subscription success to event {}", id, subscription.getEventName());
               latch.countDown();
               subscriptions.add(subscription);
             });
@@ -203,7 +176,6 @@ public class BittrexStreamingConnection {
 
   private void onConnection() {
     setupAutoReAuthentication();
-    startReconnecter();
   }
 
   /** Auto-reauthenticate */

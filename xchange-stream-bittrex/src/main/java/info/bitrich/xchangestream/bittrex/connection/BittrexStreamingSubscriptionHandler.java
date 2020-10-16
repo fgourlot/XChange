@@ -4,39 +4,65 @@ import com.github.signalr4j.client.hubs.SubscriptionHandler1;
 import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-public class BittrexStreamingSubscriptionHandler implements SubscriptionHandler1<String> {
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+public class BittrexStreamingSubscriptionHandler
+    implements SubscriptionHandler1<String>, AutoCloseable {
+
+  private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingSubscriptionHandler.class);
   private static final int MESSAGE_SET_CAPACITY = 1_000 * BittrexStreamingService.POOL_SIZE;
   private static final long HISTORICAL_PERIOD = TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
 
   private final SubscriptionHandler1<String> handler;
   private final MessageSet messageDuplicatesSet;
-  private final Lock lock;
+  private final BlockingQueue<String> messageQueue;
+  private final AtomicBoolean runConsumer;
 
   public BittrexStreamingSubscriptionHandler(SubscriptionHandler1<String> handler) {
     this.handler = handler;
     this.messageDuplicatesSet = new MessageSet();
-    this.lock = new ReentrantLock(true);
+    this.messageQueue = new LinkedBlockingQueue<>();
+    this.runConsumer = new AtomicBoolean(true);
+    startMessageConsumer();
+  }
+
+  private void startMessageConsumer() {
+    new Thread(
+            () -> {
+              while (runConsumer.get()) {
+                try {
+                  String message = messageQueue.take();
+                  while (isDuplicate(message)) {
+                    message = messageQueue.take();
+                  }
+                  handler.run(message);
+                } catch (InterruptedException e) {
+                  LOG.error("Message consumer error", e);
+                  Thread.currentThread().interrupt();
+                }
+              }
+            })
+        .start();
   }
 
   @Override
   public void run(String message) {
-    lock.lock();
-    try {
-      if (!isDuplicate(message)) {
-        handler.run(message);
-      }
-    } finally {
-      lock.unlock();
-    }
+    messageQueue.add(message);
   }
 
   private boolean isDuplicate(String message) {
     return messageDuplicatesSet.isDuplicateMessage(message);
+  }
+
+  @Override
+  public void close() throws Exception {
+    runConsumer.set(false);
   }
 
   static class MessageSet {

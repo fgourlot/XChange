@@ -154,6 +154,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     BittrexMarketDataServiceRaw.SequencedOrderBook orderBook =
         marketDataService.getBittrexSequencedOrderBook(
             BittrexUtils.toPairString(market), ORDER_BOOKS_DEPTH);
+    LOG.info("Rest sequence for book {} is {}", market, orderBook.getSequence());
     synchronized (orderBooksLock) {
       sequencedOrderBooks.put(market, orderBook);
       OrderBook orderBookClone = cloneOrderBook(market);
@@ -197,6 +198,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       if (lastSequence + 1 == orderBookDeltas.getSequence()) {
         deltasQueue.add(orderBookDeltas);
       } else if (lastSequence + 1 < orderBookDeltas.getSequence()) {
+        LOG.info(
+            "sequence desync: last: {}, current: {}", lastSequence, orderBookDeltas.getSequence());
         deltasQueue.clear();
         deltasQueue.add(orderBookDeltas);
       }
@@ -253,7 +256,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     boolean sequenceDesync = firstDeltaSequence - currentBookSequence > 1;
     if (sequenceDesync) {
       LOG.info(
-          "Need order book {} init because first delta sequence to apply is too high (to apply: {} current sequence: {})",
+          "Resyncing book {} resync (sequence to apply: {}, current: {})",
           market,
           firstDeltaSequence,
           currentBookSequence);
