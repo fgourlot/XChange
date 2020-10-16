@@ -61,7 +61,7 @@ public class BittrexStreamingSubscriptionHandler
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     runConsumer.set(false);
   }
 

@@ -12,9 +12,11 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -49,7 +51,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
   private final BittrexStreamingSubscriptionHandler orderBookMessageHandler;
   private final ObjectMapper objectMapper;
-  private final Map<CurrencyPair, Object> allMarkets;
+  private final Set<CurrencyPair> allMarkets;
   private final AtomicBoolean isOrderbooksChannelSubscribed;
 
   private final Object subscribeLock;
@@ -62,9 +64,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.streamingService = streamingService;
     this.marketDataService = marketDataService;
     this.objectMapper = new ObjectMapper();
-    this.allMarkets =
-        getAllMarkets().stream()
-            .collect(Collectors.toMap(market -> market, market -> new Object()));
+    this.allMarkets = new HashSet<>(getAllMarkets());
     this.orderBookDeltasQueue = new HashMap<>(this.allMarkets.size());
     this.sequencedOrderBooks = new HashMap<>(this.allMarkets.size());
     this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
@@ -104,7 +104,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   /** Subscribes to all of the order books channels available via getting ticker in one go. */
   private void subscribeToOrderBookChannels() {
     String[] orderBooksChannel =
-        allMarkets.keySet().stream()
+        allMarkets.stream()
             .map(BittrexUtils::toPairString)
             .map(marketName -> "orderbook_" + marketName + "_" + ORDER_BOOKS_DEPTH)
             .toArray(String[]::new);
@@ -269,14 +269,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    *
    * @return the markets
    */
-  private List<CurrencyPair> getAllMarkets() {
+  private Set<CurrencyPair> getAllMarkets() {
     try {
       return this.marketDataService.getTickers(null).stream()
-          .map(Ticker::getCurrencyPair)
-          .collect(Collectors.toList());
+          .map(Ticker::getInstrument)
+          .filter(CurrencyPair.class::isInstance)
+          .map(CurrencyPair.class::cast)
+          .collect(Collectors.toSet());
     } catch (IOException e) {
       LOG.error("Could not get the tickers.", e);
-      return new ArrayList<>();
+      return new HashSet<>();
     }
   }
 }

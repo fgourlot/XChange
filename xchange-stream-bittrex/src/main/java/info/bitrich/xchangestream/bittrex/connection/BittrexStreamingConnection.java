@@ -77,11 +77,9 @@ public class BittrexStreamingConnection {
       hubConnection.disconnect();
     }
     hubConnection = new HubConnection(apiUrl);
-    //hubConnection.setReconnectOnError(true);
-    //hubConnection.reconnected(this::onConnection);
     hubConnection.stateChanged(
         (oldState, newState) -> {
-          if (oldState == ConnectionState.Connected) {
+          if (ConnectionState.Connected.equals(oldState)) {
             LOG.info(
                 "[ConnId={}] Initiating reconnection because state changed from '{}' to '{}'",
                 id,
