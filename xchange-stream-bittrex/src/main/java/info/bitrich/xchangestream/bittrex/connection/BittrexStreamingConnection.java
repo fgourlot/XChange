@@ -40,7 +40,7 @@ public class BittrexStreamingConnection {
     this.apiUrl = apiUrl;
     this.subscriptions = new HashSet<>();
     this.authenticating = false;
-    initConnection();
+    initConnectionConfiguration();
     LOG.info("[ConnId={}] Streaming service initialized...", id);
   }
 
@@ -68,14 +68,12 @@ public class BittrexStreamingConnection {
     return null;
   }
 
-  private void initConnection() {
+  private synchronized void initConnectionConfiguration() {
     authenticating = false;
     if (hubProxy != null) {
       subscriptions.forEach(sub -> hubProxy.removeSubscription(sub.getEventName()));
     }
-    if (hubConnection != null) {
-      hubConnection.disconnect();
-    }
+    disconnect().blockingAwait();
     hubConnection = new HubConnection(apiUrl);
     hubConnection.stateChanged(
         (oldState, newState) -> {
@@ -100,7 +98,10 @@ public class BittrexStreamingConnection {
   public Completable disconnect() {
     LOG.info("[ConnId={}] Disconnecting...", id);
     authenticating = false;
-    hubConnection.disconnect();
+    if (hubConnection != null) {
+      hubConnection.stateChanged((oldState, newState) -> {});
+      hubConnection.disconnect();
+    }
     return Completable.complete();
   }
 
@@ -109,10 +110,10 @@ public class BittrexStreamingConnection {
         || ConnectionState.Connecting.equals(hubConnection.getState());
   }
 
-  private void reconnectAndSubscribe() {
+  private synchronized void reconnectAndSubscribe() {
     try {
       LOG.info("[ConnId={}] Reconnecting...", id);
-      initConnection();
+      initConnectionConfiguration();
       connect().blockingAwait();
       LOG.info("[ConnId={}] Reconnected!", id);
       String events =
