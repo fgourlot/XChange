@@ -8,14 +8,14 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class BittrexStreamingSubscriptionHandler
     implements SubscriptionHandler1<String>, AutoCloseable {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingSubscriptionHandler.class);
+  private static final Logger LOG =
+      LoggerFactory.getLogger(BittrexStreamingSubscriptionHandler.class);
   private static final int MESSAGE_SET_CAPACITY = 1_000 * BittrexStreamingService.POOL_SIZE;
   private static final long HISTORICAL_PERIOD = TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
 

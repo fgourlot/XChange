@@ -19,6 +19,7 @@ import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;
 import org.knowm.xchange.currency.CurrencyPair;
+import org.knowm.xchange.dto.account.Balance;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.slf4j.Logger;
@@ -48,6 +49,7 @@ public class BittrexManualExample {
     AtomicInteger booksUpdatesCount = new AtomicInteger(0);
     AtomicReference<CurrencyPair> lastUpdatedMarket = new AtomicReference<>(CurrencyPair.ETH_BTC);
 
+    AtomicReference<Balance> balance = new AtomicReference<>();
     new Timer()
         .scheduleAtFixedRate(
             new TimerTask() {
@@ -56,6 +58,9 @@ public class BittrexManualExample {
                 LOG.info("Max duration: " + timewithnoupdate);
                 LOG.info("Books updates count: " + booksUpdatesCount);
                 LOG.info("Last updated market: " + lastUpdatedMarket);
+                if (balance.get() != null) {
+                  LOG.info(balance.get().getAvailable().toPlainString());
+                }
               }
             },
             0,
@@ -64,14 +69,9 @@ public class BittrexManualExample {
     exchange.getMarketDataService().getTickers(null).stream()
         .map(Ticker::getCurrencyPair)
         // Stream.of(CurrencyPair.BTC_USD)
+        .parallel()
         .forEach(
             market -> {
-              try {
-                // we don't want http 429, getOrderBook limit is 600/mn
-                Thread.sleep(100);
-              } catch (InterruptedException e) {
-                e.printStackTrace();
-              }
               Disposable disposable =
                   streamingExchange
                       .getStreamingMarketDataService()
@@ -96,6 +96,24 @@ public class BittrexManualExample {
                           });
               disposables.add(disposable);
             });
+
+    /*Stream.of(Currency.BTC)
+    .forEach(
+        currency -> {
+          Disposable disposable =
+              streamingExchange
+                  .getStreamingAccountService()
+                  .getBalanceChanges(currency)
+                  .subscribe(
+                      newBalance -> {
+                        //if (newBalance.getCurrency().equals(Currency.BTC)) {
+                        //  LOG.info("new balance : " +newBalance.getAvailable()) ;
+                        //}
+                        balance.set(newBalance);
+                      });
+          // disposables.add(disposable);
+        });*/
+
     Thread.sleep(7200_000);
     disposables.forEach(Disposable::dispose);
     LOG.info("subscribers disposed!");
