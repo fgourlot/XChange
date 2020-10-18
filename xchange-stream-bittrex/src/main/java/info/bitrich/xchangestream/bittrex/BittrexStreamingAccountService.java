@@ -40,6 +40,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   private final SortedSet<BittrexBalance> balancesDeltaQueue;
   private final Object subscribeLock = new Object();
   private final Object balancesLock = new Object();
+  private final AtomicInteger lastReceivedDeltaSequence;
 
   public BittrexStreamingAccountService(
       BittrexStreamingService bittrexStreamingService,
@@ -50,6 +51,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
     this.balances = new ConcurrentHashMap<>();
     this.balancesDeltaQueue = new ConcurrentSkipListSet<>();
     this.objectMapper = new ObjectMapper();
+    this.lastReceivedDeltaSequence = new AtomicInteger(-1);
     this.balancesMessageHandler = createBalancesMessageHandler();
   }
 
@@ -80,13 +82,23 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
               BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
                   message, objectMapper.reader());
           if (bittrexBalance != null) {
-            queueBalanceDelta(bittrexBalance);
-            if (needBalancesInit()) {
+            if (sequenceResetting(bittrexBalance)) {
               initializeBalances();
+              balancesDeltaQueue.clear();
+            } else {
+              queueBalanceDelta(bittrexBalance);
+              if (needBalancesInit()) {
+                initializeBalances();
+              }
+              applyBalancesDeltas();
             }
-            applyBalancesDeltas();
           }
         });
+  }
+
+  private boolean sequenceResetting(BittrexBalance bittrexBalance) {
+    return bittrexBalance.getSequence()
+        < lastReceivedDeltaSequence.getAndSet(bittrexBalance.getSequence());
   }
 
   private void applyBalancesDeltas() {
@@ -131,7 +143,18 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   }
 
   private boolean needBalancesInit() {
-    return currentSequenceNumber.get() + 1 < balancesDeltaQueue.first().getSequence();
+    if (balancesDeltaQueue.isEmpty()) {
+      return false;
+    }
+    boolean sequenceDesync =
+        balancesDeltaQueue.first().getSequence() - currentSequenceNumber.get() > 1;
+    if (sequenceDesync) {
+      LOG.info(
+          "Need balances resync: sequence to apply: {}, current: {}",
+          balancesDeltaQueue.first().getSequence(),
+          currentSequenceNumber.get());
+    }
+    return sequenceDesync;
   }
 
   private void initializeBalances() {

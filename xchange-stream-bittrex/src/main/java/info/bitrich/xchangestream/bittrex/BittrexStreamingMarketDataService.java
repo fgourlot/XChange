@@ -20,6 +20,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
@@ -51,14 +52,17 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private final ObjectMapper objectMapper;
   private final Set<CurrencyPair> allMarkets;
   private final AtomicBoolean isOrderbooksChannelSubscribed;
+  private final Map<CurrencyPair, AtomicInteger> lastReceivedDeltaSequences;
 
   private final Object subscribeLock;
   private final Object orderBooksLock;
+  private final Object initLock;
 
   public BittrexStreamingMarketDataService(
       BittrexStreamingService streamingService, BittrexMarketDataService marketDataService) {
     this.subscribeLock = new Object();
     this.orderBooksLock = new Object();
+    this.initLock = new Object();
     this.streamingService = streamingService;
     this.marketDataService = marketDataService;
     this.objectMapper = new ObjectMapper();
@@ -67,12 +71,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     this.sequencedOrderBooks = new HashMap<>(this.allMarkets.size());
     this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
     this.isOrderbooksChannelSubscribed = new AtomicBoolean(false);
+    this.lastReceivedDeltaSequences = new HashMap<>(this.allMarkets.size());
     this.orderBookMessageHandler = createOrderBookMessageHandler();
   }
 
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
-    orderBookDeltasQueue.putIfAbsent(currencyPair, new TreeSet<>());
+    synchronized (initLock) {
+      orderBookDeltasQueue.putIfAbsent(currencyPair, new TreeSet<>());
+      lastReceivedDeltaSequences.putIfAbsent(currencyPair, new AtomicInteger(-1));
+    }
     if (!isOrderbooksChannelSubscribed.get()) {
       synchronized (subscribeLock) {
         if (!isOrderbooksChannelSubscribed.get()) {
@@ -130,8 +138,13 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                         BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
             CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
             if (orderBooks.containsKey(market)) {
-              queueOrderBookDeltas(orderBookDeltas, market);
-              applyUpdates(market);
+              if (sequenceResetting(orderBookDeltas, market)) {
+                initializeOrderBook(market);
+                orderBookDeltasQueue.get(market).clear();
+              } else {
+                queueOrderBookDeltas(orderBookDeltas, market);
+                applyUpdates(market);
+              }
             }
           } catch (IOException ioe) {
             LOG.error("Error while decompressing order book update", ioe);
@@ -139,6 +152,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             LOG.error("Error while treating order book update", e);
           }
         });
+  }
+
+  private boolean sequenceResetting(BittrexOrderBookDeltas orderBookDeltas, CurrencyPair market) {
+    return orderBookDeltas.getSequence()
+        < lastReceivedDeltaSequences.get(market).getAndSet(orderBookDeltas.getSequence());
   }
 
   /**
@@ -242,10 +260,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private boolean needOrderBookInit(CurrencyPair market) {
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
-    if (orderBook == null) {
-      LOG.info("Need order book {} init because it has never been initialized", market);
-      return true;
-    }
     if (orderBookDeltasQueue.get(market).isEmpty()) {
       return false;
     }
@@ -254,7 +268,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     boolean sequenceDesync = firstDeltaSequence - currentBookSequence > 1;
     if (sequenceDesync) {
       LOG.info(
-          "Resyncing book {} resync (sequence to apply: {}, current: {})",
+          "Need book {} resync: sequence to apply: {}, current: {}",
           market,
           firstDeltaSequence,
           currentBookSequence);
