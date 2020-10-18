@@ -96,9 +96,9 @@ public class BittrexStreamingConnection {
   }
 
   public Completable disconnect() {
-    LOG.info("[ConnId={}] Disconnecting...", id);
     authenticating = false;
     if (hubConnection != null) {
+      LOG.info("[ConnId={}] Disconnecting...", id);
       hubConnection.stateChanged((oldState, newState) -> {});
       hubConnection.disconnect();
     }

@@ -132,6 +132,7 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
         booksRest.stream().map(book -> findBookInList(book, booksWS)).collect(Collectors.toList());
 
     // Check that all the rest books were found in ws books
+    indexes.forEach(index -> LOG.info(index.toString()));
     Assert.assertTrue(indexes.stream().allMatch(index -> index > 0));
     // Check that the books are chronologically found
     Assert.assertEquals(indexes.stream().sorted().collect(Collectors.toList()), indexes);

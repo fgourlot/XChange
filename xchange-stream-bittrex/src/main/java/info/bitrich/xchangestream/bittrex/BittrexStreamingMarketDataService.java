@@ -79,7 +79,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
     synchronized (initLock) {
       orderBookDeltasQueue.putIfAbsent(currencyPair, new TreeSet<>());
-      lastReceivedDeltaSequences.putIfAbsent(currencyPair, new AtomicInteger(-1));
+      lastReceivedDeltaSequences.putIfAbsent(currencyPair, null);
     }
     if (!isOrderbooksChannelSubscribed.get()) {
       synchronized (subscribeLock) {
@@ -107,21 +107,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     throw new NotYetImplementedForExchangeException();
   }
 
-  /** Subscribes to all of the order books channels available via getting ticker in one go. */
-  private void subscribeToOrderBookChannels() {
-    String[] orderBooksChannel =
-        allMarkets.stream()
-            .map(BittrexUtils::toPairString)
-            .map(marketName -> "orderbook_" + marketName + "_" + ORDER_BOOKS_DEPTH)
-            .toArray(String[]::new);
-
-    BittrexStreamingSubscription subscription =
-        new BittrexStreamingSubscription(
-            "orderbook", orderBooksChannel, false, this.orderBookMessageHandler);
-    streamingService.subscribeToChannelWithHandler(subscription);
-    isOrderbooksChannelSubscribed.set(true);
-  }
-
   /**
    * Creates the handler which will work with the websocket incoming messages.
    *
@@ -138,13 +123,11 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                         BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
             CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
             if (orderBooks.containsKey(market)) {
-              if (sequenceResetting(orderBookDeltas, market)) {
-                initializeOrderBook(market);
+              if (!isSequenceValid(orderBookDeltas.getSequence(), market)) {
                 orderBookDeltasQueue.get(market).clear();
-              } else {
-                queueOrderBookDeltas(orderBookDeltas, market);
-                applyUpdates(market);
               }
+              queueOrderBookDeltas(orderBookDeltas, market);
+              updateOrderBook(market);
             }
           } catch (IOException ioe) {
             LOG.error("Error while decompressing order book update", ioe);
@@ -154,9 +137,12 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         });
   }
 
-  private boolean sequenceResetting(BittrexOrderBookDeltas orderBookDeltas, CurrencyPair market) {
-    return orderBookDeltas.getSequence()
-        < lastReceivedDeltaSequences.get(market).getAndSet(orderBookDeltas.getSequence());
+  private boolean isSequenceValid(int sequence, CurrencyPair market) {
+    boolean isValid =
+        lastReceivedDeltaSequences.get(market) == null
+            || lastReceivedDeltaSequences.get(market).get() + 1 == sequence;
+    lastReceivedDeltaSequences.put(market, new AtomicInteger(sequence));
+    return isValid;
   }
 
   /**
@@ -207,19 +193,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private void queueOrderBookDeltas(BittrexOrderBookDeltas orderBookDeltas, CurrencyPair market) {
     SortedSet<BittrexOrderBookDeltas> deltasQueue = orderBookDeltasQueue.get(market);
-    if (deltasQueue.isEmpty()) {
-      deltasQueue.add(orderBookDeltas);
-    } else {
-      int lastSequence = deltasQueue.last().getSequence();
-      if (lastSequence + 1 == orderBookDeltas.getSequence()) {
-        deltasQueue.add(orderBookDeltas);
-      } else if (lastSequence + 1 < orderBookDeltas.getSequence()) {
-        LOG.info(
-            "sequence desync: last: {}, current: {}", lastSequence, orderBookDeltas.getSequence());
-        deltasQueue.clear();
-        deltasQueue.add(orderBookDeltas);
-      }
-    }
+    deltasQueue.add(orderBookDeltas);
     while (deltasQueue.size() > MAX_DELTAS_IN_MEMORY) {
       deltasQueue.remove(deltasQueue.first());
     }
@@ -231,15 +205,18 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @param market the order book's market
    * @throws IOException if the order book could not be initialized
    */
-  private void applyUpdates(CurrencyPair market) throws IOException {
-    if (needOrderBookInit(market)) {
-      initializeOrderBook(market);
-    }
+  private void updateOrderBook(CurrencyPair market) throws IOException {
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
-    int lastSequence = Integer.parseInt(orderBook.getSequence());
     SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
+    int lastSequence = Integer.parseInt(orderBook.getSequence());
     updatesToApply.removeIf(delta -> delta.getSequence() <= lastSequence);
     if (!updatesToApply.isEmpty()) {
+      if (updatesToApply.stream()
+          .map(BittrexOrderBookDeltas::getSequence)
+          .noneMatch(sequence -> sequence == lastSequence + 1)) {
+        LOG.info("Order book {} desync! Sequences to apply: {}, last is {}", market, updatesToApply, lastSequence);
+        initializeOrderBook(market);
+      }
       updatesToApply.forEach(
           deltas -> {
             OrderBook updatedOrderBook =
@@ -250,30 +227,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       orderBooks.get(market).onNext(cloneOrderBook(market));
       updatesToApply.clear();
     }
-  }
-
-  /**
-   * Checks if an initial value of an order book is in memory and ready to accept websocket updates
-   *
-   * @param market the order book's market
-   * @return true if the in memory value of the order book is valid
-   */
-  private boolean needOrderBookInit(CurrencyPair market) {
-    SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
-    if (orderBookDeltasQueue.get(market).isEmpty()) {
-      return false;
-    }
-    int currentBookSequence = Integer.parseInt(orderBook.getSequence());
-    int firstDeltaSequence = orderBookDeltasQueue.get(market).first().getSequence();
-    boolean sequenceDesync = firstDeltaSequence - currentBookSequence > 1;
-    if (sequenceDesync) {
-      LOG.info(
-          "Need book {} resync: sequence to apply: {}, current: {}",
-          market,
-          firstDeltaSequence,
-          currentBookSequence);
-    }
-    return sequenceDesync;
   }
 
   /**
@@ -292,5 +245,20 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       LOG.error("Could not get the tickers.", e);
       return new HashSet<>();
     }
+  }
+
+  /** Subscribes to all of the order books channels available via getting ticker in one go. */
+  private void subscribeToOrderBookChannels() {
+    String[] orderBooksChannel =
+        allMarkets.stream()
+            .map(BittrexUtils::toPairString)
+            .map(marketName -> "orderbook_" + marketName + "_" + ORDER_BOOKS_DEPTH)
+            .toArray(String[]::new);
+
+    BittrexStreamingSubscription subscription =
+        new BittrexStreamingSubscription(
+            "orderbook", orderBooksChannel, false, this.orderBookMessageHandler);
+    streamingService.subscribeToChannelWithHandler(subscription);
+    isOrderbooksChannelSubscribed.set(true);
   }
 }

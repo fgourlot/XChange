@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
+import info.bitrich.xchangestream.bittrex.dto.BittrexBalanceDelta;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
@@ -40,7 +42,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   private final SortedSet<BittrexBalance> balancesDeltaQueue;
   private final Object subscribeLock = new Object();
   private final Object balancesLock = new Object();
-  private final AtomicInteger lastReceivedDeltaSequence;
+  private AtomicInteger lastReceivedDeltaSequence;
 
   public BittrexStreamingAccountService(
       BittrexStreamingService bittrexStreamingService,
@@ -51,7 +53,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
     this.balances = new ConcurrentHashMap<>();
     this.balancesDeltaQueue = new ConcurrentSkipListSet<>();
     this.objectMapper = new ObjectMapper();
-    this.lastReceivedDeltaSequence = new AtomicInteger(-1);
+    this.lastReceivedDeltaSequence = null;
     this.balancesMessageHandler = createBalancesMessageHandler();
   }
 
@@ -82,50 +84,45 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
               BittrexStreamingUtils.bittrexBalanceMessageToBittrexBalance(
                   message, objectMapper.reader());
           if (bittrexBalance != null) {
-            if (sequenceResetting(bittrexBalance)) {
-              initializeBalances();
+            if (!isSequenceValid(bittrexBalance.getSequence())) {
               balancesDeltaQueue.clear();
             } else {
               queueBalanceDelta(bittrexBalance);
-              if (needBalancesInit()) {
-                initializeBalances();
-              }
-              applyBalancesDeltas();
+              updateBalances();
             }
           }
         });
   }
 
-  private boolean sequenceResetting(BittrexBalance bittrexBalance) {
-    return bittrexBalance.getSequence()
-        < lastReceivedDeltaSequence.getAndSet(bittrexBalance.getSequence());
+  private boolean isSequenceValid(int sequence) {
+    boolean isValid =
+        lastReceivedDeltaSequence == null || lastReceivedDeltaSequence.get() + 1 == sequence;
+    lastReceivedDeltaSequence = new AtomicInteger(sequence);
+    return isValid;
   }
 
-  private void applyBalancesDeltas() {
-    balancesDeltaQueue.stream()
-        .filter(bittrexBalance -> bittrexBalance.getSequence() > currentSequenceNumber.get())
-        .forEach(
-            bittrexBalance -> {
-              balances
-                  .get(bittrexBalance.getDelta().getCurrencySymbol())
-                  .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
-              currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
-            });
-    balancesDeltaQueue.clear();
+  private void updateBalances() {
+    balancesDeltaQueue.removeIf(delta -> delta.getSequence() <= currentSequenceNumber.get());
+    if (!balancesDeltaQueue.isEmpty()) {
+      if (balancesDeltaQueue.stream()
+          .map(BittrexBalance::getSequence)
+          .noneMatch(sequence -> sequence == currentSequenceNumber.get() + 1)) {
+        LOG.info("Balances desync! Sequences to apply: {}, last is {}", balancesDeltaQueue, currentSequenceNumber);
+        initializeBalances();
+      }
+      balancesDeltaQueue.forEach(
+          bittrexBalance -> {
+            balances
+                .get(bittrexBalance.getDelta().getCurrencySymbol())
+                .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
+            currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
+          });
+      balancesDeltaQueue.clear();
+    }
   }
 
   private void queueBalanceDelta(BittrexBalance bittrexBalance) {
-    if (balancesDeltaQueue.isEmpty()) {
-      balancesDeltaQueue.add(bittrexBalance);
-    } else {
-      int lastSequence = balancesDeltaQueue.last().getSequence();
-      if (lastSequence + 1 == bittrexBalance.getSequence()) {
-        balancesDeltaQueue.add(bittrexBalance);
-      } else if (lastSequence + 1 < bittrexBalance.getSequence()) {
-        balancesDeltaQueue.clear();
-        balancesDeltaQueue.add(bittrexBalance);
-      }
-    }
+    balancesDeltaQueue.add(bittrexBalance);
     while (balancesDeltaQueue.size() > MAX_DELTAS_IN_MEMORY) {
       balancesDeltaQueue.remove(balancesDeltaQueue.first());
     }
@@ -142,24 +139,10 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
     isBalancesChannelSubscribed = true;
   }
 
-  private boolean needBalancesInit() {
-    if (balancesDeltaQueue.isEmpty()) {
-      return false;
-    }
-    boolean sequenceDesync =
-        balancesDeltaQueue.first().getSequence() - currentSequenceNumber.get() > 1;
-    if (sequenceDesync) {
-      LOG.info(
-          "Need balances resync: sequence to apply: {}, current: {}",
-          balancesDeltaQueue.first().getSequence(),
-          currentSequenceNumber.get());
-    }
-    return sequenceDesync;
-  }
-
   private void initializeBalances() {
     synchronized (balancesLock) {
       try {
+        LOG.info("Initializing balances with rest");
         BittrexAccountServiceRaw.SequencedBalances sequencedBalances =
             bittrexAccountService.getBittrexSequencedBalances();
         sequencedBalances
