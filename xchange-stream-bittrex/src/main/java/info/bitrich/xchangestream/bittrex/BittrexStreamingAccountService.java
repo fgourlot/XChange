@@ -1,27 +1,28 @@
 package info.bitrich.xchangestream.bittrex;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
-import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
-import info.bitrich.xchangestream.bittrex.dto.BittrexBalanceDelta;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.core.StreamingAccountService;
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.Subject;
 import java.io.IOException;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.dto.account.Balance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
+import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
+import info.bitrich.xchangestream.core.StreamingAccountService;
+import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 
 public class BittrexStreamingAccountService implements StreamingAccountService {
 
