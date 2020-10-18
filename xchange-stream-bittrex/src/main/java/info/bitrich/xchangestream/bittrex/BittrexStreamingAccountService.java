@@ -85,10 +85,9 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
           if (bittrexBalance != null) {
             if (!isSequenceValid(bittrexBalance.getSequence())) {
               balancesDeltaQueue.clear();
-            } else {
-              queueBalanceDelta(bittrexBalance);
-              updateBalances();
             }
+            queueBalanceDelta(bittrexBalance);
+            updateBalances();
           }
         });
   }
@@ -101,7 +100,6 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   }
 
   private void updateBalances() {
-    balancesDeltaQueue.removeIf(delta -> delta.getSequence() <= currentSequenceNumber.get());
     if (!balancesDeltaQueue.isEmpty()) {
       if (balancesDeltaQueue.stream()
           .map(BittrexBalance::getSequence)
@@ -117,16 +115,18 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
             currentSequenceNumber);
         initializeBalances();
       }
-      balancesDeltaQueue.stream()
-          .filter(delta -> delta.getSequence() > currentSequenceNumber.get())
-          .forEach(
-              bittrexBalance -> {
-                balances
-                    .get(bittrexBalance.getDelta().getCurrencySymbol())
-                    .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
-                currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
-              });
-      balancesDeltaQueue.clear();
+      else {
+        balancesDeltaQueue.stream()
+                          .filter(delta -> delta.getSequence() > currentSequenceNumber.get())
+                          .forEach(
+                              bittrexBalance -> {
+                                balances
+                                    .get(bittrexBalance.getDelta().getCurrencySymbol())
+                                    .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
+                                currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
+                              });
+        balancesDeltaQueue.clear();
+      }
     }
   }
 

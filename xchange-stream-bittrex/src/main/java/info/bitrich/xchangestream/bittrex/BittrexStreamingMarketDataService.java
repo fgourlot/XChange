@@ -209,7 +209,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
-    updatesToApply.removeIf(delta -> delta.getSequence() <= lastSequence);
     if (!updatesToApply.isEmpty()) {
       if (updatesToApply.stream()
           .map(BittrexOrderBookDeltas::getSequence)
@@ -226,20 +225,26 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             lastSequence);
         initializeOrderBook(market);
       }
-      updatesToApply.stream()
-          .filter(
-              delta ->
-                  delta.getSequence()
-                      > Integer.parseInt(sequencedOrderBooks.get(market).getSequence()))
-          .forEach(
-              deltas -> {
-                OrderBook updatedOrderBook =
-                    BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
-                String sequence = String.valueOf(deltas.getSequence());
-                sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
-              });
-      orderBooks.get(market).onNext(cloneOrderBook(market));
-      updatesToApply.clear();
+     else {
+       AtomicBoolean updated = new AtomicBoolean(false);
+       updatesToApply.stream()
+                      .filter(
+                          delta ->
+                              delta.getSequence()
+                                  > Integer.parseInt(sequencedOrderBooks.get(market).getSequence()))
+                      .forEach(
+                          deltas -> {
+                            OrderBook updatedOrderBook =
+                                BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
+                            String sequence = String.valueOf(deltas.getSequence());
+                            sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
+                            updated.set(true);
+                          });
+        if (updated.get()) {
+          orderBooks.get(market).onNext(cloneOrderBook(market));
+        }
+        updatesToApply.clear();
+      }
     }
   }
 
