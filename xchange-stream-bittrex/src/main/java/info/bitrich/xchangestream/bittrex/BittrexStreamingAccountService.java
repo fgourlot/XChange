@@ -115,18 +115,16 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
             currentSequenceNumber);
         initializeBalances();
       }
-      else {
-        balancesDeltaQueue.stream()
-                          .filter(delta -> delta.getSequence() > currentSequenceNumber.get())
-                          .forEach(
-                              bittrexBalance -> {
-                                balances
-                                    .get(bittrexBalance.getDelta().getCurrencySymbol())
-                                    .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
-                                currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
-                              });
-        balancesDeltaQueue.clear();
-      }
+      balancesDeltaQueue.stream()
+          .filter(delta -> delta.getSequence() > currentSequenceNumber.get())
+          .forEach(
+              bittrexBalance -> {
+                balances
+                    .get(bittrexBalance.getDelta().getCurrencySymbol())
+                    .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
+                currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
+              });
+      balancesDeltaQueue.clear();
     }
   }
 
