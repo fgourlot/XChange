@@ -1,21 +1,6 @@
 package info.bitrich.xchangestream.bittrex;
 
-import java.io.IOException;
-import java.util.SortedSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.knowm.xchange.bittrex.service.BittrexAccountService;
-import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
-import org.knowm.xchange.currency.Currency;
-import org.knowm.xchange.dto.account.Balance;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
@@ -23,6 +8,19 @@ import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
+import java.io.IOException;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+import org.knowm.xchange.bittrex.service.BittrexAccountService;
+import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
+import org.knowm.xchange.currency.Currency;
+import org.knowm.xchange.dto.account.Balance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BittrexStreamingAccountService implements StreamingAccountService {
 
@@ -108,16 +106,26 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
       if (balancesDeltaQueue.stream()
           .map(BittrexBalance::getSequence)
           .noneMatch(sequence -> sequence == currentSequenceNumber.get() + 1)) {
-        LOG.info("Balances desync! Sequences to apply: {}, last is {}", balancesDeltaQueue, currentSequenceNumber);
+        String deltaSequences =
+            balancesDeltaQueue.stream()
+                .map(BittrexBalance::getSequence)
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+        LOG.info(
+            "Balances desync! Sequences to apply: {}, last is {}",
+            deltaSequences,
+            currentSequenceNumber);
         initializeBalances();
       }
-      balancesDeltaQueue.forEach(
-          bittrexBalance -> {
-            balances
-                .get(bittrexBalance.getDelta().getCurrencySymbol())
-                .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
-            currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
-          });
+      balancesDeltaQueue.stream()
+          .filter(delta -> delta.getSequence() > currentSequenceNumber.get())
+          .forEach(
+              bittrexBalance -> {
+                balances
+                    .get(bittrexBalance.getDelta().getCurrencySymbol())
+                    .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
+                currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
+              });
       balancesDeltaQueue.clear();
     }
   }

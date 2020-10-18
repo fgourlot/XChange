@@ -214,16 +214,30 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
       if (updatesToApply.stream()
           .map(BittrexOrderBookDeltas::getSequence)
           .noneMatch(sequence -> sequence == lastSequence + 1)) {
-        LOG.info("Order book {} desync! Sequences to apply: {}, last is {}", market, updatesToApply, lastSequence);
+        String deltaSequences =
+            updatesToApply.stream()
+                .map(BittrexOrderBookDeltas::getSequence)
+                .map(Object::toString)
+                .collect(Collectors.joining(", "));
+        LOG.info(
+            "Order book {} desync! Sequences to apply: {}, last is {}",
+            market,
+            deltaSequences,
+            lastSequence);
         initializeOrderBook(market);
       }
-      updatesToApply.forEach(
-          deltas -> {
-            OrderBook updatedOrderBook =
-                BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
-            String sequence = String.valueOf(deltas.getSequence());
-            sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
-          });
+      updatesToApply.stream()
+          .filter(
+              delta ->
+                  delta.getSequence()
+                      > Integer.parseInt(sequencedOrderBooks.get(market).getSequence()))
+          .forEach(
+              deltas -> {
+                OrderBook updatedOrderBook =
+                    BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
+                String sequence = String.valueOf(deltas.getSequence());
+                sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
+              });
       orderBooks.get(market).onNext(cloneOrderBook(market));
       updatesToApply.clear();
     }
