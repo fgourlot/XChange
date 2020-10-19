@@ -124,6 +124,16 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
             if (orderBooks.containsKey(market)) {
               if (!isSequenceValid(orderBookDeltas.getSequence(), market)) {
+                String deltaSequences =
+                    orderBookDeltasQueue.get(market).stream()
+                        .map(BittrexOrderBookDeltas::getSequence)
+                        .map(Object::toString)
+                        .collect(Collectors.joining(", "));
+                LOG.info(
+                    "Order book desync! Sequences to apply: {}, last is {}",
+                    deltaSequences,
+                    sequencedOrderBooks.get(market));
+                initializeOrderBook(market);
                 orderBookDeltasQueue.get(market).clear();
               }
               queueOrderBookDeltas(orderBookDeltas, market);
@@ -209,41 +219,25 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
-    if (!updatesToApply.isEmpty()) {
-      if (updatesToApply.stream()
-          .map(BittrexOrderBookDeltas::getSequence)
-          .noneMatch(sequence -> sequence == lastSequence + 1)) {
-        String deltaSequences =
-            updatesToApply.stream()
-                .map(BittrexOrderBookDeltas::getSequence)
-                .map(Object::toString)
-                .collect(Collectors.joining(", "));
-        LOG.info(
-            "Order book {} desync! Sequences to apply: {}, last is {}",
-            market,
-            deltaSequences,
-            lastSequence);
-        initializeOrderBook(market);
-      }
+
+    if (updatesToApply.first().getSequence() - lastSequence > 1) {
+      initializeOrderBook(market);
+    } else {
       AtomicBoolean updated = new AtomicBoolean(false);
-      updatesToApply.stream()
-          .filter(
-              delta ->
-                  delta.getSequence()
-                      > Integer.parseInt(sequencedOrderBooks.get(market).getSequence()))
-          .forEach(
-              deltas -> {
-                OrderBook updatedOrderBook =
-                    BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
-                String sequence = String.valueOf(deltas.getSequence());
-                sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
-                updated.set(true);
-              });
+      updatesToApply.removeIf(delta -> delta.getSequence() <= lastSequence);
+      updatesToApply.forEach(
+          deltas -> {
+            OrderBook updatedOrderBook =
+                BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
+            String sequence = String.valueOf(deltas.getSequence());
+            sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
+            updated.set(true);
+          });
       if (updated.get()) {
         orderBooks.get(market).onNext(cloneOrderBook(market));
       }
-      updatesToApply.clear();
     }
+    updatesToApply.clear();
   }
 
   /**

@@ -61,7 +61,7 @@ public class BittrexStreamingConnection {
           .invoke(
               BittrexStreamingSocketResponse.class, "Authenticate", apiKey, ts, uuid, signedContent)
           .onError(error -> LOG.error("[ConnId={}] Authentication error: {}", id, error))
-          .done(response -> LOG.info("[ConnId={}] Authentication success", id));
+          .done(response -> LOG.debug("[ConnId={}] Authentication success", id));
     } catch (Exception e) {
       LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, e);
     }
@@ -182,7 +182,7 @@ public class BittrexStreamingConnection {
     hubProxy.on(
         "authenticationExpiring",
         () -> {
-          LOG.info("[ConnId={}] Authentication expiring, reauthenticating...", id);
+          LOG.debug("[ConnId={}] Authentication expiring, reauthenticating...", id);
           authenticate();
         });
   }

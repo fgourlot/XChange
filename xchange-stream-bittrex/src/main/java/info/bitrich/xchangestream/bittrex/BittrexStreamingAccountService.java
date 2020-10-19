@@ -84,6 +84,16 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
                   message, objectMapper.reader());
           if (bittrexBalance != null) {
             if (!isSequenceValid(bittrexBalance.getSequence())) {
+              String deltaSequences =
+                  balancesDeltaQueue.stream()
+                      .map(BittrexBalance::getSequence)
+                      .map(Object::toString)
+                      .collect(Collectors.joining(", "));
+              LOG.info(
+                  "Balances desync! Sequences to apply: {}, last is {}",
+                  deltaSequences,
+                  currentSequenceNumber);
+              initializeBalances();
               balancesDeltaQueue.clear();
             }
             queueBalanceDelta(bittrexBalance);
@@ -99,40 +109,27 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
     return isValid;
   }
 
-  private void updateBalances() {
-    if (!balancesDeltaQueue.isEmpty()) {
-      if (balancesDeltaQueue.stream()
-          .map(BittrexBalance::getSequence)
-          .noneMatch(sequence -> sequence == currentSequenceNumber.get() + 1)) {
-        String deltaSequences =
-            balancesDeltaQueue.stream()
-                .map(BittrexBalance::getSequence)
-                .map(Object::toString)
-                .collect(Collectors.joining(", "));
-        LOG.info(
-            "Balances desync! Sequences to apply: {}, last is {}",
-            deltaSequences,
-            currentSequenceNumber);
-        initializeBalances();
-      }
-      balancesDeltaQueue.stream()
-          .filter(delta -> delta.getSequence() > currentSequenceNumber.get())
-          .forEach(
-              bittrexBalance -> {
-                balances
-                    .get(bittrexBalance.getDelta().getCurrencySymbol())
-                    .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
-                currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
-              });
-      balancesDeltaQueue.clear();
-    }
-  }
-
   private void queueBalanceDelta(BittrexBalance bittrexBalance) {
     balancesDeltaQueue.add(bittrexBalance);
     while (balancesDeltaQueue.size() > MAX_DELTAS_IN_MEMORY) {
       balancesDeltaQueue.remove(balancesDeltaQueue.first());
     }
+  }
+
+  private void updateBalances() {
+    if (balancesDeltaQueue.first().getSequence() - currentSequenceNumber.get() > 1) {
+      initializeBalances();
+    } else {
+      balancesDeltaQueue.removeIf(delta -> delta.getSequence() <= currentSequenceNumber.get());
+      balancesDeltaQueue.forEach(
+          bittrexBalance -> {
+            balances
+                .get(bittrexBalance.getDelta().getCurrencySymbol())
+                .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance));
+            currentSequenceNumber = new AtomicInteger(bittrexBalance.getSequence());
+          });
+    }
+    balancesDeltaQueue.clear();
   }
 
   /** Subscribes to all of the order books channels available via getting ticker in one go. */
