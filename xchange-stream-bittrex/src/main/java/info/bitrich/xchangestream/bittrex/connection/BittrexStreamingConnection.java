@@ -48,7 +48,7 @@ public class BittrexStreamingConnection {
     if (secretKey == null || apiKey == null) {
       return null;
     }
-    LOG.info("[ConnId={}] Authenticating...", id);
+    LOG.debug("[ConnId={}] Authenticating...", id);
     authenticating = true;
     Date date = new Date();
     Long ts = date.getTime();
@@ -61,7 +61,7 @@ public class BittrexStreamingConnection {
           .invoke(
               BittrexStreamingSocketResponse.class, "Authenticate", apiKey, ts, uuid, signedContent)
           .onError(error -> LOG.error("[ConnId={}] Authentication error: {}", id, error))
-          .done(response -> LOG.debug("[ConnId={}] Authentication success", id));
+          .done(response -> LOG.info("[ConnId={}] (re)authenticated!", id));
     } catch (Exception e) {
       LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, e);
     }
@@ -122,7 +122,6 @@ public class BittrexStreamingConnection {
               .collect(Collectors.joining(", "));
       LOG.info("[ConnId={}] Subscribing to events {}...", id, events);
       subscriptions.forEach(this::subscribeToChannelWithHandler);
-      LOG.info("[ConnId={}] Events {} subscribed!", id, events);
     } catch (Exception e) {
       LOG.error("[ConnId={}] Reconnection error: {}", id, e);
       reconnectAndSubscribe();
@@ -145,7 +144,7 @@ public class BittrexStreamingConnection {
         LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ee);
       }
     }
-    LOG.info("[ConnId={}] Subscribing to event {}", id, subscription.getEventName());
+    LOG.debug("[ConnId={}] Subscribing to event {}", id, subscription.getEventName());
     hubProxy.on(subscription.getEventName(), subscription.getHandler(), String.class);
     hubProxy
         .invoke(
