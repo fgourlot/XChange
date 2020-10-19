@@ -130,7 +130,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
                         .map(Object::toString)
                         .collect(Collectors.joining(", "));
                 LOG.info(
-                    "Order book desync! Sequences to apply: {}, last is {}",
+                    "Order book {} desync! Sequences to apply: {}, last is {}",
+                    market,
                     deltaSequences,
                     sequencedOrderBooks.get(market));
                 initializeOrderBook(market);
