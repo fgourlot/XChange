@@ -5,6 +5,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,13 +24,13 @@ public class BittrexStreamingSubscriptionHandler
   private static final long MESSAGE_SET_CAPACITY =
       1_000 * HISTORICAL_PERIOD * BittrexStreamingService.POOL_SIZE;
 
-  private final SubscriptionHandler1<String> handler;
+  private final Consumer<String> messageConsumer;
   private final MessageSet messageDuplicatesSet;
   private final BlockingQueue<String> messageQueue;
   private volatile boolean runConsumer;
 
-  public BittrexStreamingSubscriptionHandler(SubscriptionHandler1<String> handler) {
-    this.handler = handler;
+  public BittrexStreamingSubscriptionHandler(Consumer<String> messageConsumer) {
+    this.messageConsumer = messageConsumer;
     this.messageDuplicatesSet = new MessageSet();
     this.messageQueue = new LinkedBlockingQueue<>();
     startMessageConsumer();
@@ -45,7 +46,7 @@ public class BittrexStreamingSubscriptionHandler
                   while (isDuplicate(message)) {
                     message = messageQueue.take();
                   }
-                  handler.run(message);
+                  messageConsumer.accept(message);
                 } catch (InterruptedException e) {
                   LOG.error("Message consumer error", e);
                   Thread.currentThread().interrupt();
