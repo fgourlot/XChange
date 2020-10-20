@@ -1,15 +1,17 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+
+import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 
 public class BittrexStreamingSubscriptionHandler
     implements SubscriptionHandler1<String>, AutoCloseable {
@@ -22,20 +24,20 @@ public class BittrexStreamingSubscriptionHandler
   private final SubscriptionHandler1<String> handler;
   private final MessageSet messageDuplicatesSet;
   private final BlockingQueue<String> messageQueue;
-  private final AtomicBoolean runConsumer;
+  private volatile boolean runConsumer;
 
   public BittrexStreamingSubscriptionHandler(SubscriptionHandler1<String> handler) {
     this.handler = handler;
     this.messageDuplicatesSet = new MessageSet();
     this.messageQueue = new LinkedBlockingQueue<>();
-    this.runConsumer = new AtomicBoolean(true);
     startMessageConsumer();
   }
 
   private void startMessageConsumer() {
+    this.runConsumer = true;
     new Thread(
             () -> {
-              while (runConsumer.get()) {
+              while (runConsumer) {
                 try {
                   String message = messageQueue.take();
                   while (isDuplicate(message)) {
@@ -62,7 +64,7 @@ public class BittrexStreamingSubscriptionHandler
 
   @Override
   public void close() {
-    runConsumer.set(false);
+    runConsumer = false;
   }
 
   static class MessageSet {
