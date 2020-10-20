@@ -18,8 +18,10 @@ public class BittrexStreamingSubscriptionHandler
 
   private static final Logger LOG =
       LoggerFactory.getLogger(BittrexStreamingSubscriptionHandler.class);
-  private static final int MESSAGE_SET_CAPACITY = 1_000 * BittrexStreamingService.POOL_SIZE;
+
   private static final long HISTORICAL_PERIOD = TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
+  private static final long MESSAGE_SET_CAPACITY =
+      1_000 * HISTORICAL_PERIOD * BittrexStreamingService.POOL_SIZE;
 
   private final SubscriptionHandler1<String> handler;
   private final MessageSet messageDuplicatesSet;
