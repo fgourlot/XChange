@@ -124,16 +124,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
             CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
             if (orderBooks.containsKey(market)) {
               if (!isSequenceValid(orderBookDeltas.getSequence(), market)) {
-                String deltaSequences =
-                    orderBookDeltasQueue.get(market).stream()
-                        .map(BittrexOrderBookDeltas::getSequence)
-                        .map(Object::toString)
-                        .collect(Collectors.joining(", "));
-                LOG.info(
-                    "Order book {} desync! Sequences to apply: {}, last is {}",
-                    market,
-                    deltaSequences,
-                    sequencedOrderBooks.get(market));
+                LOG.info("Order book {} desync!", market);
                 initializeOrderBook(market);
                 orderBookDeltasQueue.get(market).clear();
               }
@@ -222,6 +213,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     int lastSequence = Integer.parseInt(orderBook.getSequence());
 
     if (updatesToApply.first().getSequence() - lastSequence > 1) {
+      LOG.info("Order book {} desync!", market);
       initializeOrderBook(market);
     } else {
       AtomicBoolean updated = new AtomicBoolean(false);

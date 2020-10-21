@@ -84,15 +84,6 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
                   message, objectMapper.reader());
           if (bittrexBalance != null) {
             if (!isSequenceValid(bittrexBalance.getSequence())) {
-              String deltaSequences =
-                  balancesDeltaQueue.stream()
-                      .map(BittrexBalance::getSequence)
-                      .map(Object::toString)
-                      .collect(Collectors.joining(", "));
-              LOG.info(
-                  "Balances desync! Sequences to apply: {}, last is {}",
-                  deltaSequences,
-                  currentSequenceNumber);
               initializeBalances();
               balancesDeltaQueue.clear();
             }
