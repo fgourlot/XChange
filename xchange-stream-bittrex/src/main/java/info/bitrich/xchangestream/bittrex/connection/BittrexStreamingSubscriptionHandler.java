@@ -2,6 +2,7 @@ package info.bitrich.xchangestream.bittrex.connection;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
@@ -39,21 +40,24 @@ public class BittrexStreamingSubscriptionHandler
   private void startMessageConsumer() {
     this.runConsumer = true;
     new Thread(
-            () -> {
-              while (runConsumer) {
-                try {
-                  String message = messageQueue.take();
-                  while (isDuplicate(message)) {
-                    message = messageQueue.take();
-                  }
-                  messageConsumer.accept(message);
-                } catch (InterruptedException e) {
-                  LOG.error("Message consumer error", e);
-                  Thread.currentThread().interrupt();
-                }
-              }
-            })
+        () -> {
+          while (runConsumer) getNextMessage().ifPresent(messageConsumer);
+        })
         .start();
+  }
+
+  private Optional<String> getNextMessage() {
+    try {
+      String message = messageQueue.take();
+      while (isDuplicate(message)) {
+        message = messageQueue.take();
+      }
+      return Optional.of(message);
+    } catch (InterruptedException e) {
+      LOG.error("Message consumer error", e);
+      Thread.currentThread().interrupt();
+    }
+    return Optional.empty();
   }
 
   @Override
