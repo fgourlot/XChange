@@ -40,9 +40,9 @@ public class BittrexStreamingSubscriptionHandler
   private void startMessageConsumer() {
     this.runConsumer = true;
     new Thread(
-        () -> {
-          while (runConsumer) getNextMessage().ifPresent(messageConsumer);
-        })
+            () -> {
+              while (runConsumer) getNextMessage().ifPresent(messageConsumer);
+            })
         .start();
   }
 
