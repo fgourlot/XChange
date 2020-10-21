@@ -86,6 +86,21 @@ public class BittrexStreamingConnection {
             reconnectAndSubscribe();
           }
         });
+    hubConnection.connectionSlow(
+        () -> {
+          LOG.error("[ConnId={}] Connection slow detected!", id);
+          reconnectAndSubscribe();
+        });
+    hubConnection.error(
+        e -> {
+          LOG.error("[ConnId={}] Connection error detected!", id, e);
+          reconnectAndSubscribe();
+        });
+    hubConnection.closed(
+        () -> {
+          LOG.error("[ConnId={}] Connection closed detected!", id);
+          reconnectAndSubscribe();
+        });
     hubConnection.connected(this::onConnection);
     hubProxy = hubConnection.createHubProxy("c3");
   }
@@ -100,6 +115,9 @@ public class BittrexStreamingConnection {
     if (hubConnection != null) {
       LOG.info("[ConnId={}] Disconnecting...", id);
       hubConnection.stateChanged((oldState, newState) -> {});
+      hubConnection.connectionSlow(() -> {});
+      hubConnection.error(e -> {});
+      hubConnection.closed(() -> {});
       hubConnection.disconnect();
     }
     return Completable.complete();
