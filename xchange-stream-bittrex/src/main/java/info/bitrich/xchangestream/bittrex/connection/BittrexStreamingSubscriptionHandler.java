@@ -1,5 +1,7 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
+import com.github.signalr4j.client.hubs.SubscriptionHandler1;
+import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -7,13 +9,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-
-import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 
 public class BittrexStreamingSubscriptionHandler
     implements SubscriptionHandler1<String>, AutoCloseable {

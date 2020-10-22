@@ -12,6 +12,9 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -118,7 +121,21 @@ public class BittrexStreamingConnection {
       hubConnection.connectionSlow(() -> {});
       hubConnection.error(e -> {});
       hubConnection.closed(() -> {});
-      hubConnection.disconnect();
+      // We don't really care if it works, and we don't want to be stuck in case it doesn't...
+      ExecutorService discExecutor = Executors.newFixedThreadPool(1);
+      discExecutor.execute(() -> hubConnection.disconnect());
+      discExecutor.shutdown();
+      try {
+        boolean disconnected = discExecutor.awaitTermination(5, TimeUnit.SECONDS);
+        if (disconnected) {
+          LOG.info("[ConnId={}] Disconnected!", id);
+        } else {
+          LOG.info("[ConnId={}] Disconnection failed (timeout)!", id);
+        }
+      } catch (InterruptedException e) {
+        LOG.error("Error disconnecting!", e);
+        Thread.currentThread().interrupt();
+      }
     }
     return Completable.complete();
   }
