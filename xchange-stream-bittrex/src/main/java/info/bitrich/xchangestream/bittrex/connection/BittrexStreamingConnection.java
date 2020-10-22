@@ -131,6 +131,7 @@ public class BittrexStreamingConnection {
           LOG.info("[ConnId={}] Disconnected!", id);
         } else {
           LOG.info("[ConnId={}] Disconnection failed (timeout)!", id);
+          discExecutor.shutdownNow();
         }
       } catch (InterruptedException e) {
         LOG.error("Error disconnecting!", e);
