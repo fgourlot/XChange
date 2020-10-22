@@ -158,7 +158,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
     BittrexMarketDataServiceRaw.SequencedOrderBook orderBook =
         marketDataService.getBittrexSequencedOrderBook(
             BittrexUtils.toPairString(market), ORDER_BOOKS_DEPTH);
-    LOG.info("Rest sequence for book {} is {}", market, orderBook.getSequence());
+    LOG.debug("Rest sequence for book {} is {}", market, orderBook.getSequence());
     synchronized (orderBooksLock) {
       sequencedOrderBooks.put(market, orderBook);
       OrderBook orderBookClone = cloneOrderBook(market);
