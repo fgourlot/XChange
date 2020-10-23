@@ -141,7 +141,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * Fetches the first snapshot of an order book.
    *
    * @param market the market
-   * @throws IOException if the order book could not be initialized
    */
   private void initializeOrderBook(CurrencyPair market) {
     LOG.info("Initializing order book {} with a rest call", market);
@@ -200,7 +199,6 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * Apply the in memory updates to the order book.
    *
    * @param market the order book's market
-   * @throws IOException if the order book could not be initialized
    */
   private void updateOrderBook(CurrencyPair market) {
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
