@@ -1,13 +1,5 @@
 package info.bitrich.xchangestream.bittrex;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.core.StreamingMarketDataService;
-import io.reactivex.Observable;
-import io.reactivex.subjects.BehaviorSubject;
-import io.reactivex.subjects.Subject;
 import java.io.IOException;
 import java.util.Date;
 import java.util.HashMap;
@@ -22,9 +14,9 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
-import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw.SequencedOrderBook;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
@@ -33,6 +25,16 @@ import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.core.StreamingMarketDataService;
+import io.reactivex.Observable;
+import io.reactivex.subjects.BehaviorSubject;
+import io.reactivex.subjects.Subject;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
@@ -88,12 +90,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
         }
       }
     }
-    try {
-      initializeOrderBook(currencyPair);
-    } catch (IOException e) {
-      LOG.error("Error while intializing order book", e);
-      getOrderBook(currencyPair, args);
-    }
+    initializeOrderBook(currencyPair);
     return orderBooks.get(currencyPair);
   }
 
@@ -114,29 +111,22 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    */
   private BittrexStreamingSubscriptionHandler createOrderBookMessageHandler() {
     return new BittrexStreamingSubscriptionHandler(
-        message -> {
-          try {
-            BittrexOrderBookDeltas orderBookDeltas =
-                objectMapper
-                    .reader()
-                    .readValue(
-                        BittrexEncryptionUtils.decompress(message), BittrexOrderBookDeltas.class);
-            CurrencyPair market = BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
-            if (orderBooks.containsKey(market)) {
-              if (!isSequenceValid(orderBookDeltas.getSequence(), market)) {
-                LOG.info("Order book {} desync!", market);
-                initializeOrderBook(market);
-                orderBookDeltasQueue.get(market).clear();
-              }
-              queueOrderBookDeltas(orderBookDeltas, market);
-              updateOrderBook(market);
-            }
-          } catch (IOException ioe) {
-            LOG.error("Error while decompressing order book update", ioe);
-          } catch (Exception e) {
-            LOG.error("Error while treating order book update", e);
-          }
-        });
+        message ->
+            BittrexStreamingUtils.extractBittrexOrderBookDeltas(message, objectMapper.reader())
+                .ifPresent(
+                    orderBookDeltas -> {
+                      CurrencyPair market =
+                          BittrexUtils.toCurrencyPair(orderBookDeltas.getMarketSymbol());
+                      if (orderBooks.containsKey(market)) {
+                        if (!isSequenceValid(orderBookDeltas.getSequence(), market)) {
+                          LOG.info("Order book {} desync!", market);
+                          initializeOrderBook(market);
+                          orderBookDeltasQueue.get(market).clear();
+                        }
+                        queueOrderBookDeltas(orderBookDeltas, market);
+                        updateOrderBook(market);
+                      }
+                    }));
   }
 
   private boolean isSequenceValid(int sequence, CurrencyPair market) {
@@ -153,20 +143,25 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @param market the market
    * @throws IOException if the order book could not be initialized
    */
-  private void initializeOrderBook(CurrencyPair market) throws IOException {
+  private void initializeOrderBook(CurrencyPair market) {
     LOG.info("Initializing order book {} with a rest call", market);
-    BittrexMarketDataServiceRaw.SequencedOrderBook orderBook =
-        marketDataService.getBittrexSequencedOrderBook(
-            BittrexUtils.toPairString(market), ORDER_BOOKS_DEPTH);
-    LOG.debug("Rest sequence for book {} is {}", market, orderBook.getSequence());
-    synchronized (orderBooksLock) {
-      sequencedOrderBooks.put(market, orderBook);
-      OrderBook orderBookClone = cloneOrderBook(market);
-      if (orderBooks.containsKey(market)) {
-        orderBooks.get(market).onNext(orderBookClone);
-      } else {
-        orderBooks.put(market, BehaviorSubject.createDefault(orderBookClone).toSerialized());
+    try {
+      SequencedOrderBook orderBook =
+          marketDataService.getBittrexSequencedOrderBook(
+              BittrexUtils.toPairString(market), ORDER_BOOKS_DEPTH);
+      LOG.debug("Rest sequence for book {} is {}", market, orderBook.getSequence());
+      synchronized (orderBooksLock) {
+        sequencedOrderBooks.put(market, orderBook);
+        OrderBook orderBookClone = cloneOrderBook(market);
+        if (orderBooks.containsKey(market)) {
+          orderBooks.get(market).onNext(orderBookClone);
+        } else {
+          orderBooks.put(market, BehaviorSubject.createDefault(orderBookClone).toSerialized());
+        }
       }
+    } catch (IOException e) {
+      LOG.error("Error initializing order book {}", market, e);
+      initializeOrderBook(market);
     }
   }
 
@@ -207,7 +202,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
    * @param market the order book's market
    * @throws IOException if the order book could not be initialized
    */
-  private void updateOrderBook(CurrencyPair market) throws IOException {
+  private void updateOrderBook(CurrencyPair market) {
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
