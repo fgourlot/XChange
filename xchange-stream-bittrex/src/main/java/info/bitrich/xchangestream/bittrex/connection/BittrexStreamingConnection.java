@@ -10,12 +10,10 @@ import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,6 +31,7 @@ public class BittrexStreamingConnection {
   private HubProxy hubProxy;
   private final String apiUrl;
   private final Set<BittrexStreamingSubscription> subscriptions;
+  private final Lock reconnectLock;
   private boolean authenticating;
 
   public BittrexStreamingConnection(String apiUrl, String apiKey, String secretKey) {
@@ -43,6 +42,7 @@ public class BittrexStreamingConnection {
     this.apiUrl = apiUrl;
     this.subscriptions = new HashSet<>();
     this.authenticating = false;
+    this.reconnectLock = new ReentrantLock();
     initConnectionConfiguration();
     LOG.info("[ConnId={}] Streaming service initialized...", id);
   }
@@ -104,6 +104,8 @@ public class BittrexStreamingConnection {
           LOG.error("[ConnId={}] Connection closed detected!", id);
           reconnectAndSubscribe();
         });
+    hubConnection.setReconnectOnError(false);
+    hubConnection.reconnecting(() -> {});
     hubConnection.connected(this::onConnection);
     hubProxy = hubConnection.createHubProxy("c3");
   }
@@ -146,21 +148,25 @@ public class BittrexStreamingConnection {
         || ConnectionState.Connecting.equals(hubConnection.getState());
   }
 
-  private synchronized void reconnectAndSubscribe() {
-    try {
-      LOG.info("[ConnId={}] Reconnecting...", id);
-      initConnectionConfiguration();
-      connect().blockingAwait();
-      LOG.info("[ConnId={}] Reconnected!", id);
-      String events =
-          subscriptions.stream()
-              .map(BittrexStreamingSubscription::getEventName)
-              .collect(Collectors.joining(", "));
-      LOG.info("[ConnId={}] Subscribing to events {}...", id, events);
-      subscriptions.forEach(this::subscribeToChannelWithHandler);
-    } catch (Exception e) {
-      LOG.error("[ConnId={}] Reconnection error: {}", id, e);
-      reconnectAndSubscribe();
+  private void reconnectAndSubscribe() {
+    if (reconnectLock.tryLock()) {
+      try {
+        LOG.info("[ConnId={}] Reconnecting...", id);
+        initConnectionConfiguration();
+        connect().blockingAwait();
+        LOG.info("[ConnId={}] Reconnected!", id);
+        String events =
+            subscriptions.stream()
+                .map(BittrexStreamingSubscription::getEventName)
+                .collect(Collectors.joining(", "));
+        LOG.info("[ConnId={}] Subscribing to events {}...", id, events);
+        subscriptions.forEach(this::subscribeToChannelWithHandler);
+      } catch (Exception e) {
+        LOG.error("[ConnId={}] Reconnection error!", id, e);
+        reconnectAndSubscribe();
+      } finally {
+        reconnectLock.unlock();
+      }
     }
   }
 

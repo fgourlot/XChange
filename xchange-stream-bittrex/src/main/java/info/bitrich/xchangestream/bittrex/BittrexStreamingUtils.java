@@ -2,13 +2,19 @@ package info.bitrich.xchangestream.bittrex;
 
 import static org.knowm.xchange.bittrex.BittrexConstants.CLOSED;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderDelta;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.stream.Stream;
-
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
@@ -17,15 +23,6 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectReader;
-
-import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderDelta;
 
 /** Utility class for the bittrex streaming. */
 public final class BittrexStreamingUtils {

@@ -1,10 +1,15 @@
 package info.bitrich.xchangestream.bittrex;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-
+import junit.framework.TestCase;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
 import org.knowm.xchange.currency.Currency;
@@ -15,14 +20,6 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
-import junit.framework.TestCase;
 
 public class BittrexStreamingUtilsTest extends TestCase {
 
@@ -148,8 +145,8 @@ public class BittrexStreamingUtilsTest extends TestCase {
       String balanceMessage =
           IOUtils.toString(getClass().getResource("/balanceMessage_encoded.txt"), "UTF8");
       BittrexBalance bittrexBalance =
-          BittrexStreamingUtils.extractBittrexBalance(
-              balanceMessage, new ObjectMapper().reader()).get();
+          BittrexStreamingUtils.extractBittrexBalance(balanceMessage, new ObjectMapper().reader())
+              .get();
       Balance balance = BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance);
       assertEquals(balance.getCurrency(), Currency.BTC);
       assertEquals(balance.getTotal(), new BigDecimal("0.00804302"));
