@@ -149,9 +149,9 @@ public class BittrexStreamingConnection {
   }
 
   private void reconnectAndSubscribe() {
+    LOG.info("[ConnId={}] Reconnecting...", id);
     if (reconnectLock.tryLock()) {
       try {
-        LOG.info("[ConnId={}] Reconnecting...", id);
         initConnectionConfiguration();
         connect().blockingAwait();
         LOG.info("[ConnId={}] Reconnected!", id);
@@ -167,6 +167,8 @@ public class BittrexStreamingConnection {
       } finally {
         reconnectLock.unlock();
       }
+    } else {
+      LOG.info("[ConnId={}] Already reconnecting, skipping...", id);
     }
   }
 
