@@ -96,7 +96,7 @@ public class BittrexStreamingConnection {
         });
     hubConnection.error(
         e -> {
-          LOG.error("[ConnId={}] Connection error detected!", id, e);
+          LOG.error("[ConnId={}] Connection error detected! {}", id, e);
           reconnectAndSubscribe();
         });
     hubConnection.closed(
