@@ -8,18 +8,19 @@ import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import java.io.IOException;
-import java.util.SortedSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.dto.account.Balance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BittrexStreamingAccountService implements StreamingAccountService {
 
@@ -78,7 +79,8 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   private BittrexStreamingSubscriptionHandler createBalancesMessageHandler() {
     return new BittrexStreamingSubscriptionHandler(
         message ->
-            BittrexStreamingUtils.extractBittrexBalance(message, objectMapper.reader())
+            BittrexStreamingUtils.extractBittrexEntity(
+                    message, objectMapper.reader(), BittrexBalance.class)
                 .ifPresent(
                     bittrexBalance -> {
                       if (!isSequenceValid(bittrexBalance.getSequence())) {

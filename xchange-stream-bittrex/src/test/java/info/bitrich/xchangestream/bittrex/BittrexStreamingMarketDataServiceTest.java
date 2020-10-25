@@ -1,12 +1,6 @@
 package info.bitrich.xchangestream.bittrex;
 
 import io.reactivex.disposables.Disposable;
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Test;
@@ -14,6 +8,13 @@ import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseTest {
   private static final Logger LOG =
@@ -112,7 +113,7 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
             TimeUnit.SECONDS.toMillis(5),
             TimeUnit.SECONDS.toMillis(3));
 
-    // Let it run for 30_000ms
+    // Let it run
     try {
       Thread.sleep(60_000);
     } catch (InterruptedException e) {

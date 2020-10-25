@@ -8,20 +8,6 @@ import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import java.io.IOException;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.SortedSet;
-import java.util.TreeSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw.SequencedOrderBook;
@@ -32,6 +18,14 @@ import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
@@ -109,7 +103,8 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   private BittrexStreamingSubscriptionHandler createOrderBookMessageHandler() {
     return new BittrexStreamingSubscriptionHandler(
         message ->
-            BittrexStreamingUtils.extractBittrexOrderBookDeltas(message, objectMapper.reader())
+            BittrexStreamingUtils.extractBittrexEntity(
+                    message, objectMapper.reader(), BittrexOrderBookDeltas.class)
                 .ifPresent(
                     orderBookDeltas -> {
                       CurrencyPair market =

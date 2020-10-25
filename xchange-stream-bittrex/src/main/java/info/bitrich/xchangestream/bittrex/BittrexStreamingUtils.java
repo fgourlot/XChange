@@ -1,20 +1,7 @@
 package info.bitrich.xchangestream.bittrex;
 
-import static org.knowm.xchange.bittrex.BittrexConstants.CLOSED;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
-import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderDelta;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Optional;
-import java.util.stream.Stream;
+import info.bitrich.xchangestream.bittrex.dto.*;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
@@ -23,6 +10,15 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+import static org.knowm.xchange.bittrex.BittrexConstants.CLOSED;
 
 /** Utility class for the bittrex streaming. */
 public final class BittrexStreamingUtils {
@@ -142,23 +138,6 @@ public final class BittrexStreamingUtils {
   }
 
   /**
-   * Creates a BittrexOrder object from a Bittrex `order` message.
-   *
-   * @param bittrexOrderMessage the Bittrex order message
-   * @return the converted BittrexOrder pojo
-   */
-  public static BittrexOrder bittrexOrderMessageToBittrexOrder(
-      String bittrexOrderMessage, ObjectMapper objectMapper) {
-    try {
-      byte[] decompressedMessage = BittrexEncryptionUtils.decompress(bittrexOrderMessage);
-      return objectMapper.reader().readValue(decompressedMessage, BittrexOrder.class);
-    } catch (IOException e) {
-      LOG.error("Error extracting Bittrex order message.", e);
-    }
-    return null;
-  }
-
-  /**
    * Creates a Balance object from a BittrexBalance object.
    *
    * @param bittrexBalance the BittrexBalance
@@ -174,35 +153,21 @@ public final class BittrexStreamingUtils {
   }
 
   /**
-   * Creates a BittrexOrderBookDeltas object from a Bittrex `orderBook` message.
+   * Creates a BittrexEntity object from a Bittrex message.
    *
-   * @param bittrexOrderBookMessage the Bittrex balance message
-   * @return the converted BittrexBalance pojo
+   * @param bittrexMessage the input Bittrex message
+   * @param reader the message reader
+   * @param bittrexClass the output bittrex class
+   * @return the converted bittrex entity
    */
-  public static Optional<BittrexOrderBookDeltas> extractBittrexOrderBookDeltas(
-      String bittrexOrderBookMessage, ObjectReader objectReader) {
+  public static <T> Optional<T> extractBittrexEntity(
+      String bittrexMessage, ObjectReader reader, Class<T> bittrexClass) {
     try {
-      byte[] decompressedMessage = BittrexEncryptionUtils.decompress(bittrexOrderBookMessage);
-      return Optional.of(objectReader.readValue(decompressedMessage, BittrexOrderBookDeltas.class));
+      byte[] decompressedMessage = BittrexEncryptionUtils.decompress(bittrexMessage);
+      return Optional.of(reader.readValue(decompressedMessage, bittrexClass))
+          .map(bittrexClass::cast);
     } catch (IOException e) {
-      LOG.error("Error extracting Bittrex order book message.", e);
-    }
-    return Optional.empty();
-  }
-
-  /**
-   * Creates a BittrexBalance object from a Bittrex `balance` message.
-   *
-   * @param bittrexBalanceMessage the Bittrex balance message
-   * @return the converted BittrexBalance pojo
-   */
-  public static Optional<BittrexBalance> extractBittrexBalance(
-      String bittrexBalanceMessage, ObjectReader objectMapper) {
-    try {
-      byte[] decompressedMessage = BittrexEncryptionUtils.decompress(bittrexBalanceMessage);
-      return Optional.of(objectMapper.readValue(decompressedMessage, BittrexBalance.class));
-    } catch (IOException e) {
-      LOG.error("Error extracting Bittrex balance message.", e);
+      LOG.error("Error extracting {} message! {}", bittrexClass.getSimpleName(), e);
     }
     return Optional.empty();
   }

@@ -9,14 +9,15 @@ import info.bitrich.xchangestream.core.StreamingTradeService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexTradeService;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.trade.UserTrade;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class BittrexStreamingTradeService implements StreamingTradeService {
 
@@ -59,15 +60,14 @@ public class BittrexStreamingTradeService implements StreamingTradeService {
 
   private BittrexStreamingSubscriptionHandler createOrderChangesMessageHandler() {
     return new BittrexStreamingSubscriptionHandler(
-        message -> {
-          BittrexOrder bittrexOrder =
-              BittrexStreamingUtils.bittrexOrderMessageToBittrexOrder(message, objectMapper);
-          if (bittrexOrder != null) {
-            CurrencyPair market =
-                BittrexUtils.toCurrencyPair(bittrexOrder.getDelta().getMarketSymbol());
-            orders.get(market).onNext(BittrexStreamingUtils.bittrexOrderToOrder(bittrexOrder));
-          }
-        });
+        message ->
+            BittrexStreamingUtils.extractBittrexEntity(
+                    message, objectMapper.reader(), BittrexOrder.class)
+                .ifPresent(
+                    order ->
+                        orders
+                            .get(BittrexUtils.toCurrencyPair(order.getDelta().getMarketSymbol()))
+                            .onNext(BittrexStreamingUtils.bittrexOrderToOrder(order))));
   }
 
   /** Subscribes to all of the order books channels available via getting ticker in one go. */

@@ -5,10 +5,6 @@ import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrder;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookEntry;
-import java.io.IOException;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
 import junit.framework.TestCase;
 import org.apache.commons.io.IOUtils;
 import org.junit.Assert;
@@ -20,6 +16,11 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.trade.LimitOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 public class BittrexStreamingUtilsTest extends TestCase {
 
@@ -127,7 +128,10 @@ public class BittrexStreamingUtilsTest extends TestCase {
       String orderMessage =
           IOUtils.toString(getClass().getResource("/orderMessage_encoded.txt"), "UTF8");
       BittrexOrder bittrexOrder =
-          BittrexStreamingUtils.bittrexOrderMessageToBittrexOrder(orderMessage, new ObjectMapper());
+          BittrexStreamingUtils.extractBittrexEntity(
+                  orderMessage, new ObjectMapper().reader(), BittrexOrder.class)
+              .map(BittrexOrder.class::cast)
+              .get();
       LimitOrder order = BittrexStreamingUtils.bittrexOrderToOrder(bittrexOrder);
       assertEquals(order.getId(), "738a6aed-9d09-4035-92af-1dcae3872e52");
       assertEquals(order.getCurrencyPair(), CurrencyPair.ETH_BTC);
@@ -145,8 +149,11 @@ public class BittrexStreamingUtilsTest extends TestCase {
       String balanceMessage =
           IOUtils.toString(getClass().getResource("/balanceMessage_encoded.txt"), "UTF8");
       BittrexBalance bittrexBalance =
-          BittrexStreamingUtils.extractBittrexBalance(balanceMessage, new ObjectMapper().reader())
+          BittrexStreamingUtils.extractBittrexEntity(
+                  balanceMessage, new ObjectMapper().reader(), BittrexBalance.class)
+              .map(BittrexBalance.class::cast)
               .get();
+
       Balance balance = BittrexStreamingUtils.bittrexBalanceToBalance(bittrexBalance);
       assertEquals(balance.getCurrency(), Currency.BTC);
       assertEquals(balance.getTotal(), new BigDecimal("0.00804302"));
