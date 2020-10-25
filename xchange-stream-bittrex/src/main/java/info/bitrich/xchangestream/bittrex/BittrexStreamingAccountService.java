@@ -94,8 +94,7 @@ public class BittrexStreamingAccountService implements StreamingAccountService {
   }
 
   private boolean isSequenceValid(int sequence) {
-    boolean isValid =
-        lastReceivedDeltaSequence == null || lastReceivedDeltaSequence.get() + 1 == sequence;
+    boolean isValid = BittrexStreamingUtils.isNextSequenceValid(lastReceivedDeltaSequence, sequence);
     lastReceivedDeltaSequence = new AtomicInteger(sequence);
     return isValid;
   }

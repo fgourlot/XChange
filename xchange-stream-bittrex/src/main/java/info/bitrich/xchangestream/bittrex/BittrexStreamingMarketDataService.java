@@ -122,9 +122,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
   }
 
   private boolean isSequenceValid(int sequence, CurrencyPair market) {
-    boolean isValid =
-        lastReceivedDeltaSequences.get(market) == null
-            || lastReceivedDeltaSequences.get(market).get() + 1 == sequence;
+    boolean isValid = BittrexStreamingUtils.isNextSequenceValid(lastReceivedDeltaSequences.get(market), sequence);
     lastReceivedDeltaSequences.put(market, new AtomicInteger(sequence));
     return isValid;
   }
