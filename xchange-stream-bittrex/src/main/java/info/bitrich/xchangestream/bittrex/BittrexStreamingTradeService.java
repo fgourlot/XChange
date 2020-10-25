@@ -19,6 +19,7 @@ import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingTradeService implements StreamingTradeService {
 
   private final BittrexStreamingService bittrexStreamingService;

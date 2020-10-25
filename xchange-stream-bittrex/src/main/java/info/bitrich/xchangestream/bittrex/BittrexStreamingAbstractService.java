@@ -1,6 +1,7 @@
 package info.bitrich.xchangestream.bittrex;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexSequencedEntity;
 import org.slf4j.Logger;
@@ -11,7 +12,26 @@ import java.util.SortedSet;
 public abstract class BittrexStreamingAbstractService<T extends BittrexSequencedEntity> {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingAbstractService.class);
+  protected static final int MAX_DELTAS_IN_MEMORY = 100_000;
+
   private final ObjectMapper objectMapper = new ObjectMapper();
+  private final Object subscribeLock = new Object();
+  private boolean isChannelSubscribed = false;
+  protected BittrexStreamingService bittrexStreamingService;
+  protected BittrexStreamingSubscriptionHandler messageHandler;
+
+  protected void subscribeToDataStream(String eventName, String[] channels, boolean authenticated) {
+    if (!isChannelSubscribed) {
+      synchronized (subscribeLock) {
+        if (!isChannelSubscribed) {
+          BittrexStreamingSubscription subscription =
+              new BittrexStreamingSubscription(eventName, channels, authenticated, messageHandler);
+          bittrexStreamingService.subscribeToChannelWithHandler(subscription);
+          isChannelSubscribed = true;
+        }
+      }
+    }
+  }
 
   protected BittrexStreamingSubscriptionHandler createMessageHandler(Class<T> bittrexClass) {
     return new BittrexStreamingSubscriptionHandler(

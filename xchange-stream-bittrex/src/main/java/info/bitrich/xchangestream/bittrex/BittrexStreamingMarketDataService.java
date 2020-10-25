@@ -1,7 +1,5 @@
 package info.bitrich.xchangestream.bittrex;
 
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
@@ -26,44 +24,42 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService
-    extends BittrexStreamingAbstractService<BittrexOrderBookDeltas> implements StreamingMarketDataService {
+    extends BittrexStreamingAbstractService<BittrexOrderBookDeltas>
+    implements StreamingMarketDataService {
 
   private static final Logger LOG =
       LoggerFactory.getLogger(BittrexStreamingMarketDataService.class);
   private static final int ORDER_BOOKS_DEPTH = 500;
-  private static final int MAX_DELTAS_IN_MEMORY = 1_000;
 
-  private final BittrexStreamingService streamingService;
   private final BittrexMarketDataService marketDataService;
-
   private final Map<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
   private final Map<CurrencyPair, SortedSet<BittrexOrderBookDeltas>> orderBookDeltasQueue;
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
-  private final BittrexStreamingSubscriptionHandler orderBookMessageHandler;
-  private final Set<CurrencyPair> allMarkets;
-  private final AtomicBoolean isOrderbooksChannelSubscribed;
   private final Map<CurrencyPair, AtomicInteger> lastReceivedDeltaSequences;
-
-  private final Object subscribeLock;
+  private final String[] orderBooksChannels;
   private final Object orderBooksLock;
   private final Object initLock;
 
   public BittrexStreamingMarketDataService(
       BittrexStreamingService streamingService, BittrexMarketDataService marketDataService) {
-    this.subscribeLock = new Object();
     this.orderBooksLock = new Object();
     this.initLock = new Object();
-    this.streamingService = streamingService;
+    this.bittrexStreamingService = streamingService;
     this.marketDataService = marketDataService;
-    this.allMarkets = new HashSet<>(getAllMarkets());
-    this.orderBookDeltasQueue = new HashMap<>(this.allMarkets.size());
-    this.sequencedOrderBooks = new HashMap<>(this.allMarkets.size());
-    this.orderBooks = new ConcurrentHashMap<>(this.allMarkets.size());
-    this.isOrderbooksChannelSubscribed = new AtomicBoolean(false);
-    this.lastReceivedDeltaSequences = new HashMap<>(this.allMarkets.size());
-    this.orderBookMessageHandler = createMessageHandler(BittrexOrderBookDeltas.class);
+    Set<CurrencyPair> allMarkets = new HashSet<>(getAllMarkets());
+    this.orderBookDeltasQueue = new HashMap<>(allMarkets.size());
+    this.sequencedOrderBooks = new HashMap<>(allMarkets.size());
+    this.orderBooks = new ConcurrentHashMap<>(allMarkets.size());
+    this.lastReceivedDeltaSequences = new HashMap<>(allMarkets.size());
+    this.orderBooksChannels =
+        allMarkets.stream()
+            .map(BittrexUtils::toPairString)
+            .map(marketName -> "orderbook_" + marketName + "_" + ORDER_BOOKS_DEPTH)
+            .toArray(String[]::new);
+    this.messageHandler = createMessageHandler(BittrexOrderBookDeltas.class);
   }
 
   @Override
@@ -72,13 +68,7 @@ public class BittrexStreamingMarketDataService
       orderBookDeltasQueue.putIfAbsent(currencyPair, new TreeSet<>());
       lastReceivedDeltaSequences.putIfAbsent(currencyPair, null);
     }
-    if (!isOrderbooksChannelSubscribed.get()) {
-      synchronized (subscribeLock) {
-        if (!isOrderbooksChannelSubscribed.get()) {
-          subscribeToOrderBookChannels();
-        }
-      }
-    }
+    subscribeToDataStream("orderbook", orderBooksChannels, false);
     initializeData(new BittrexOrderBookDeltas(BittrexUtils.toPairString(currencyPair)));
     return orderBooks.get(currencyPair);
   }
@@ -126,21 +116,6 @@ public class BittrexStreamingMarketDataService
       LOG.error("Could not get the tickers.", e);
       return new HashSet<>();
     }
-  }
-
-  /** Subscribes to all of the order books channels available via getting ticker in one go. */
-  private void subscribeToOrderBookChannels() {
-    String[] orderBooksChannel =
-        allMarkets.stream()
-            .map(BittrexUtils::toPairString)
-            .map(marketName -> "orderbook_" + marketName + "_" + ORDER_BOOKS_DEPTH)
-            .toArray(String[]::new);
-
-    BittrexStreamingSubscription subscription =
-        new BittrexStreamingSubscription(
-            "orderbook", orderBooksChannel, false, this.orderBookMessageHandler);
-    streamingService.subscribeToChannelWithHandler(subscription);
-    isOrderbooksChannelSubscribed.set(true);
   }
 
   @Override

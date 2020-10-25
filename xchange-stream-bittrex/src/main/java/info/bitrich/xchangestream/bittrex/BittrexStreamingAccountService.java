@@ -1,7 +1,5 @@
 package info.bitrich.xchangestream.bittrex;
 
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
-import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
@@ -21,25 +19,18 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
+
+/** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingAccountService extends BittrexStreamingAbstractService<BittrexBalance>
     implements StreamingAccountService {
 
   private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingAccountService.class);
 
-  private static final int MAX_DELTAS_IN_MEMORY = 100_000;
-
-  private final BittrexStreamingService bittrexStreamingService;
   private final BittrexAccountService bittrexAccountService;
-
-  /** Current sequence number (to be increased after each message) */
   private AtomicInteger currentSequenceNumber;
-
-  private final BittrexStreamingSubscriptionHandler balancesMessageHandler;
-  private boolean isBalancesChannelSubscribed;
   private final ConcurrentMap<Currency, Subject<Balance>> balances;
   private final SortedSet<BittrexBalance> balancesDeltaQueue;
-  private final Object subscribeLock = new Object();
-  private final Object balancesLock = new Object();
+  private final Object balancesLock;
   private AtomicInteger lastReceivedDeltaSequence;
 
   public BittrexStreamingAccountService(
@@ -49,35 +40,19 @@ public class BittrexStreamingAccountService extends BittrexStreamingAbstractServ
     this.bittrexAccountService = bittrexAccountService;
     this.currentSequenceNumber = new AtomicInteger(-1);
     this.balances = new ConcurrentHashMap<>();
+    this.balancesLock = new Object();
     this.balancesDeltaQueue = new ConcurrentSkipListSet<>();
     this.lastReceivedDeltaSequence = null;
-    this.balancesMessageHandler = createMessageHandler(BittrexBalance.class);
+    this.messageHandler = createMessageHandler(BittrexBalance.class);
   }
 
   @Override
   public Observable<Balance> getBalanceChanges(Currency currency, Object... args) {
-    if (!isBalancesChannelSubscribed) {
-      synchronized (subscribeLock) {
-        if (!isBalancesChannelSubscribed) {
-          subscribeToBalancesChannels();
-        }
-      }
-    }
+    subscribeToDataStream("balance", new String[] {"balance"}, true);
     if (!balances.containsKey(currency)) {
       initializeData(null);
     }
     return balances.get(currency);
-  }
-
-  /** Subscribes to all of the order books channels available via getting ticker in one go. */
-  private void subscribeToBalancesChannels() {
-    String balanceChannel = "balance";
-
-    BittrexStreamingSubscription subscription =
-        new BittrexStreamingSubscription(
-            "balance", new String[] {balanceChannel}, true, this.balancesMessageHandler);
-    bittrexStreamingService.subscribeToChannelWithHandler(subscription);
-    isBalancesChannelSubscribed = true;
   }
 
   @Override
