@@ -17,21 +17,18 @@ public abstract class BittrexStreamingAbstractService<T extends BittrexSequenced
     return new BittrexStreamingSubscriptionHandler(
         message ->
             BittrexStreamingUtils.extractBittrexEntity(message, objectMapper.reader(), bittrexClass)
+                .filter(this::isAccepted)
                 .ifPresent(
                     bittrexEntity -> {
-                      boolean isSequenceValid =
-                          isNextSequenceValid(
-                              getLastReceivedSequence(bittrexEntity), bittrexEntity.getSequence());
-                      updateLastReceivedSequence(bittrexEntity);
-                      if (isAccepted(bittrexEntity)) {
-                        if (!isSequenceValid) {
-                          LOG.info("{} sequence desync!", bittrexClass.getSimpleName());
-                          initializeData(bittrexEntity);
-                          getDeltaQueue(bittrexEntity).clear();
-                        }
-                        queueDelta(bittrexEntity);
-                        updateData(bittrexEntity);
+                      if (!isNextSequenceValid(
+                          getLastReceivedSequence(bittrexEntity), bittrexEntity.getSequence())) {
+                        LOG.info("{} sequence desync!", bittrexClass.getSimpleName());
+                        initializeData(bittrexEntity);
+                        getDeltaQueue(bittrexEntity).clear();
                       }
+                      updateLastReceivedSequence(bittrexEntity);
+                      queueDelta(bittrexEntity);
+                      updateData(bittrexEntity);
                     }));
   }
 
