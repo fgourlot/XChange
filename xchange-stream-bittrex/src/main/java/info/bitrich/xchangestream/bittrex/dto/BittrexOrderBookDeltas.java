@@ -3,24 +3,23 @@ package info.bitrich.xchangestream.bittrex.dto;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas> {
+public class BittrexOrderBookDeltas extends BittrexSequencedEntity implements Comparable<BittrexOrderBookDeltas> {
   private String marketSymbol;
   private int depth;
-  private int sequence;
   private BittrexOrderBookEntry[] askDeltas;
   private BittrexOrderBookEntry[] bidDeltas;
 
-  public BittrexOrderBookDeltas() {}
+  public BittrexOrderBookDeltas() {
+  }
 
-  public BittrexOrderBookDeltas(
-      String marketSymbol,
-      int depth,
-      int sequence,
-      BittrexOrderBookEntry[] askDeltas,
-      BittrexOrderBookEntry[] bidDeltas) {
+  public BittrexOrderBookDeltas(String marketSymbol) {
+    this.marketSymbol = marketSymbol;
+  }
+
+  public BittrexOrderBookDeltas(String marketSymbol, int depth, int sequence, BittrexOrderBookEntry[] askDeltas, BittrexOrderBookEntry[] bidDeltas) {
+    this.sequence = sequence;
     this.marketSymbol = marketSymbol;
     this.depth = depth;
-    this.sequence = sequence;
     this.askDeltas = askDeltas;
     this.bidDeltas = bidDeltas;
   }
@@ -33,10 +32,6 @@ public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas
     return depth;
   }
 
-  public int getSequence() {
-    return sequence;
-  }
-
   public BittrexOrderBookEntry[] getAskDeltas() {
     return askDeltas;
   }
@@ -47,7 +42,7 @@ public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas
 
   @Override
   public int compareTo(BittrexOrderBookDeltas that) {
-    return Integer.compare(this.sequence, that.sequence);
+    return Integer.compare(this.getSequence(), that.getSequence());
   }
 
   @Override
@@ -56,7 +51,7 @@ public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas
     if (o == null || getClass() != o.getClass()) return false;
     BittrexOrderBookDeltas that = (BittrexOrderBookDeltas) o;
     return depth == that.depth
-        && sequence == that.sequence
+        && getSequence() == that.getSequence()
         && Objects.equals(marketSymbol, that.marketSymbol)
         && Arrays.equals(askDeltas, that.askDeltas)
         && Arrays.equals(bidDeltas, that.bidDeltas);
@@ -64,7 +59,7 @@ public class BittrexOrderBookDeltas implements Comparable<BittrexOrderBookDeltas
 
   @Override
   public int hashCode() {
-    int result = Objects.hash(marketSymbol, depth, sequence);
+    int result = Objects.hash(marketSymbol, depth, getSequence());
     result = 31 * result + Arrays.hashCode(askDeltas);
     result = 31 * result + Arrays.hashCode(bidDeltas);
     return result;

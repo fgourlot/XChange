@@ -2,25 +2,14 @@ package info.bitrich.xchangestream.bittrex.dto;
 
 import java.util.Objects;
 
-public class BittrexOrder implements Comparable<BittrexOrder> {
+public class BittrexOrder  extends BittrexSequencedEntity implements Comparable<BittrexOrder> {
   private String accountId;
-  private int sequence;
   private BittrexOrderDelta delta;
 
   public BittrexOrder() {}
 
-  public BittrexOrder(String accountId, int sequence, BittrexOrderDelta delta) {
-    this.accountId = accountId;
-    this.sequence = sequence;
-    this.delta = delta;
-  }
-
   public String getAccountId() {
     return accountId;
-  }
-
-  public int getSequence() {
-    return sequence;
   }
 
   public BittrexOrderDelta getDelta() {
@@ -29,7 +18,7 @@ public class BittrexOrder implements Comparable<BittrexOrder> {
 
   @Override
   public int compareTo(BittrexOrder that) {
-    return Integer.compare(this.sequence, that.sequence);
+    return Integer.compare(this.getSequence(), that.getSequence());
   }
 
   @Override
@@ -37,13 +26,13 @@ public class BittrexOrder implements Comparable<BittrexOrder> {
     if (this == o) return true;
     if (o == null || getClass() != o.getClass()) return false;
     BittrexOrder that = (BittrexOrder) o;
-    return sequence == that.sequence
+    return getSequence() == that.getSequence()
         && Objects.equals(accountId, that.accountId)
         && Objects.equals(delta, that.delta);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(accountId, sequence, delta);
+    return Objects.hash(accountId, getSequence(), delta);
   }
 }

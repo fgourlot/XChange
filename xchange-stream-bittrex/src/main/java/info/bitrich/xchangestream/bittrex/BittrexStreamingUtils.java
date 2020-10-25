@@ -16,7 +16,6 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
 
 import static org.knowm.xchange.bittrex.BittrexConstants.CLOSED;
@@ -151,10 +150,6 @@ public final class BittrexStreamingUtils {
         .available(bittrexBalance.getDelta().getAvailable())
         .timestamp(bittrexBalance.getDelta().getUpdatedAt())
         .build();
-  }
-
-  public static boolean isNextSequenceValid(Number previousSequence, Number nextSequence) {
-    return previousSequence == null || previousSequence.longValue() + 1 == nextSequence.longValue();
   }
 
   /**

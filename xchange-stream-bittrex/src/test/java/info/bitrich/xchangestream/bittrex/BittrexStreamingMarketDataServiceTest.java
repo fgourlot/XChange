@@ -123,6 +123,11 @@ public class BittrexStreamingMarketDataServiceTest extends BittrexStreamingBaseT
       timer.ifPresent(Timer::cancel);
       wsDisposable.dispose();
     }
+    try {
+      Thread.sleep(5_000);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
 
     // Test we have fetched orderbooks
     Assert.assertTrue(booksWS.size() > 0);
