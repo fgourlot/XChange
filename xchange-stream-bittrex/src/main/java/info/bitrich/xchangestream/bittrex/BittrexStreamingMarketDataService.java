@@ -1,10 +1,19 @@
 package info.bitrich.xchangestream.bittrex;
 
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.cloneOrderBook;
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.updateOrderBook;
+
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw.SequencedOrderBook;
@@ -15,16 +24,6 @@ import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.cloneOrderBook;
-import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.updateOrderBook;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService
@@ -37,9 +36,9 @@ public class BittrexStreamingMarketDataService
 
   private final BittrexMarketDataService marketDataService;
   private final Map<CurrencyPair, SequencedOrderBook> sequencedOrderBooks;
-  private final Map<CurrencyPair, SortedSet<BittrexOrderBookDeltas>> orderBookDeltasQueue;
+  private final Map<CurrencyPair, SortedSet<BittrexOrderBookDeltas>> orderBookUpdatesQueue;
   private final ConcurrentMap<CurrencyPair, Subject<OrderBook>> orderBooks;
-  private final Map<CurrencyPair, AtomicInteger> lastReceivedDeltaSequences;
+  private final Map<CurrencyPair, AtomicInteger> lastReceivedUpdateSequences;
   private final String[] orderBooksChannels;
   private final Object orderBooksLock;
   private final Object initLock;
@@ -51,10 +50,10 @@ public class BittrexStreamingMarketDataService
     this.bittrexStreamingService = streamingService;
     this.marketDataService = marketDataService;
     Set<CurrencyPair> allMarkets = new HashSet<>(getAllMarkets());
-    this.orderBookDeltasQueue = new HashMap<>(allMarkets.size());
+    this.orderBookUpdatesQueue = new HashMap<>(allMarkets.size());
     this.sequencedOrderBooks = new HashMap<>(allMarkets.size());
     this.orderBooks = new ConcurrentHashMap<>(allMarkets.size());
-    this.lastReceivedDeltaSequences = new HashMap<>(allMarkets.size());
+    this.lastReceivedUpdateSequences = new HashMap<>(allMarkets.size());
     this.orderBooksChannels =
         allMarkets.stream()
             .map(BittrexUtils::toPairString)
@@ -66,8 +65,8 @@ public class BittrexStreamingMarketDataService
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
     synchronized (initLock) {
-      orderBookDeltasQueue.putIfAbsent(currencyPair, new TreeSet<>());
-      lastReceivedDeltaSequences.putIfAbsent(currencyPair, null);
+      orderBookUpdatesQueue.putIfAbsent(currencyPair, new TreeSet<>());
+      lastReceivedUpdateSequences.putIfAbsent(currencyPair, null);
     }
     subscribeToDataStream("orderbook", orderBooksChannels, false);
     initializeData(new BittrexOrderBookDeltas(BittrexUtils.toPairString(currencyPair)));
@@ -111,14 +110,14 @@ public class BittrexStreamingMarketDataService
   @Override
   protected Number getLastReceivedSequence(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
     CurrencyPair market = getMarket(bittrexOrderBookDeltas);
-    return lastReceivedDeltaSequences.get(market);
+    return lastReceivedUpdateSequences.get(market);
   }
 
   @Override
-  protected SortedSet<BittrexOrderBookDeltas> getDeltaQueue(
+  protected SortedSet<BittrexOrderBookDeltas> getUpdatesQueue(
       BittrexOrderBookDeltas bittrexOrderBookDeltas) {
     CurrencyPair market = getMarket(bittrexOrderBookDeltas);
-    return orderBookDeltasQueue.get(market);
+    return orderBookUpdatesQueue.get(market);
   }
 
   @Override
@@ -146,9 +145,9 @@ public class BittrexStreamingMarketDataService
   }
 
   @Override
-  protected void queueDelta(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
+  protected void queueUpdate(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
     CurrencyPair market = getMarket(bittrexOrderBookDeltas);
-    queueDelta(orderBookDeltasQueue.get(market), bittrexOrderBookDeltas);
+    queueUpdate(orderBookUpdatesQueue.get(market), bittrexOrderBookDeltas);
   }
 
   private CurrencyPair getMarket(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
@@ -156,21 +155,21 @@ public class BittrexStreamingMarketDataService
   }
 
   @Override
-  protected void updateData(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
+  protected void applyUpdates(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
     CurrencyPair market = getMarket(bittrexOrderBookDeltas);
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
-    SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
+    SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookUpdatesQueue.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
 
     if (updatesToApply.first().getSequence() - lastSequence > 1) {
       LOG.info("Order book {} desync!", market);
       initializeData(bittrexOrderBookDeltas);
     } else {
-      updatesToApply.removeIf(delta -> delta.getSequence() <= lastSequence);
+      updatesToApply.removeIf(update -> update.getSequence() <= lastSequence);
       updatesToApply.forEach(
-          deltas -> {
-            OrderBook updatedOrderBook = updateOrderBook(orderBook.getOrderBook(), deltas);
-            String sequence = String.valueOf(deltas.getSequence());
+          updates -> {
+            OrderBook updatedOrderBook = updateOrderBook(orderBook.getOrderBook(), updates);
+            String sequence = String.valueOf(updates.getSequence());
             sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
           });
       if (!updatesToApply.isEmpty()) {
@@ -185,6 +184,6 @@ public class BittrexStreamingMarketDataService
   @Override
   protected void updateLastReceivedSequence(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
     CurrencyPair market = getMarket(bittrexOrderBookDeltas);
-    lastReceivedDeltaSequences.put(market, new AtomicInteger(bittrexOrderBookDeltas.getSequence()));
+    lastReceivedUpdateSequences.put(market, new AtomicInteger(bittrexOrderBookDeltas.getSequence()));
   }
 }

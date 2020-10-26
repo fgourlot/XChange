@@ -3,20 +3,25 @@ package info.bitrich.xchangestream.bittrex.dto;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class BittrexOrderBookDeltas extends BittrexSequencedEntity implements Comparable<BittrexOrderBookDeltas> {
+public class BittrexOrderBookDeltas extends BittrexSequencedEntity
+    implements Comparable<BittrexOrderBookDeltas> {
   private String marketSymbol;
   private int depth;
   private BittrexOrderBookEntry[] askDeltas;
   private BittrexOrderBookEntry[] bidDeltas;
 
-  public BittrexOrderBookDeltas() {
-  }
+  public BittrexOrderBookDeltas() {}
 
   public BittrexOrderBookDeltas(String marketSymbol) {
     this.marketSymbol = marketSymbol;
   }
 
-  public BittrexOrderBookDeltas(String marketSymbol, int depth, int sequence, BittrexOrderBookEntry[] askDeltas, BittrexOrderBookEntry[] bidDeltas) {
+  public BittrexOrderBookDeltas(
+      String marketSymbol,
+      int depth,
+      int sequence,
+      BittrexOrderBookEntry[] askDeltas,
+      BittrexOrderBookEntry[] bidDeltas) {
     this.sequence = sequence;
     this.marketSymbol = marketSymbol;
     this.depth = depth;

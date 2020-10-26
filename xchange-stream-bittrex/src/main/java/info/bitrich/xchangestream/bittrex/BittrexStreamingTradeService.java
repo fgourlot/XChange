@@ -9,15 +9,14 @@ import info.bitrich.xchangestream.core.StreamingTradeService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.PublishSubject;
 import io.reactivex.subjects.Subject;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexTradeService;
 import org.knowm.xchange.currency.CurrencyPair;
 import org.knowm.xchange.dto.Order;
 import org.knowm.xchange.dto.trade.UserTrade;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
-
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingTradeService implements StreamingTradeService {

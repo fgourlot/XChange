@@ -1,6 +1,12 @@
 package info.bitrich.xchangestream.bittrex;
 
 import io.reactivex.disposables.Disposable;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import org.junit.Assert;
 import org.junit.Test;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
@@ -8,13 +14,6 @@ import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.dto.account.Balance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class BittrexStreamingAccountServiceTest extends BittrexStreamingBaseTest {
   private static final Logger LOG =

@@ -2,12 +2,11 @@ package info.bitrich.xchangestream.bittrex.dto;
 
 import java.util.Objects;
 
-public class BittrexBalance  extends BittrexSequencedEntity implements Comparable<BittrexBalance> {
+public class BittrexBalance extends BittrexSequencedEntity implements Comparable<BittrexBalance> {
   private String accountId;
   private BittrexBalanceDelta delta;
 
   public BittrexBalance() {}
-
 
   public String getAccountId() {
     return accountId;

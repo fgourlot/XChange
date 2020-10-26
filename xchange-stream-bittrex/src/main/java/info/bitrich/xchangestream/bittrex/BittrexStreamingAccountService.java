@@ -1,25 +1,24 @@
 package info.bitrich.xchangestream.bittrex;
 
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.bittrexBalanceToBalance;
+
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import org.knowm.xchange.bittrex.service.BittrexAccountService;
-import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
-import org.knowm.xchange.currency.Currency;
-import org.knowm.xchange.dto.account.Balance;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.bittrexBalanceToBalance;
+import org.knowm.xchange.bittrex.service.BittrexAccountService;
+import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
+import org.knowm.xchange.currency.Currency;
+import org.knowm.xchange.dto.account.Balance;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingAccountService extends BittrexStreamingAbstractService<BittrexBalance>
@@ -30,7 +29,7 @@ public class BittrexStreamingAccountService extends BittrexStreamingAbstractServ
   private final BittrexAccountService bittrexAccountService;
   private AtomicInteger currentSequenceNumber;
   private final ConcurrentMap<Currency, Subject<Balance>> balances;
-  private final SortedSet<BittrexBalance> balancesDeltaQueue;
+  private final SortedSet<BittrexBalance> balancesUpdatesQueue;
   private final Object balancesLock;
   private AtomicInteger lastReceivedDeltaSequence;
 
@@ -42,7 +41,7 @@ public class BittrexStreamingAccountService extends BittrexStreamingAbstractServ
     this.currentSequenceNumber = new AtomicInteger(-1);
     this.balances = new ConcurrentHashMap<>();
     this.balancesLock = new Object();
-    this.balancesDeltaQueue = new ConcurrentSkipListSet<>();
+    this.balancesUpdatesQueue = new ConcurrentSkipListSet<>();
     this.lastReceivedDeltaSequence = null;
     this.messageHandler = createMessageHandler(BittrexBalance.class);
   }
@@ -67,8 +66,8 @@ public class BittrexStreamingAccountService extends BittrexStreamingAbstractServ
   }
 
   @Override
-  protected SortedSet<BittrexBalance> getDeltaQueue(BittrexBalance bittrexBalance) {
-    return balancesDeltaQueue;
+  protected SortedSet<BittrexBalance> getUpdatesQueue(BittrexBalance bittrexBalance) {
+    return balancesUpdatesQueue;
   }
 
   @Override
@@ -101,17 +100,17 @@ public class BittrexStreamingAccountService extends BittrexStreamingAbstractServ
   }
 
   @Override
-  protected void queueDelta(BittrexBalance bittrexBalance) {
-    queueDelta(balancesDeltaQueue, bittrexBalance);
+  protected void queueUpdate(BittrexBalance bittrexBalance) {
+    queueUpdate(balancesUpdatesQueue, bittrexBalance);
   }
 
   @Override
-  protected void updateData(BittrexBalance bittrexBalance) {
-    if (balancesDeltaQueue.first().getSequence() - currentSequenceNumber.get() > 1) {
+  protected void applyUpdates(BittrexBalance bittrexBalance) {
+    if (balancesUpdatesQueue.first().getSequence() - currentSequenceNumber.get() > 1) {
       initializeData(bittrexBalance);
     } else {
-      balancesDeltaQueue.removeIf(delta -> delta.getSequence() <= currentSequenceNumber.get());
-      balancesDeltaQueue.forEach(
+      balancesUpdatesQueue.removeIf(update -> update.getSequence() <= currentSequenceNumber.get());
+      balancesUpdatesQueue.forEach(
           balance -> {
             balances
                 .get(balance.getDelta().getCurrencySymbol())
@@ -119,7 +118,7 @@ public class BittrexStreamingAccountService extends BittrexStreamingAbstractServ
             currentSequenceNumber = new AtomicInteger(balance.getSequence());
           });
     }
-    balancesDeltaQueue.clear();
+    balancesUpdatesQueue.clear();
   }
 
   @Override

@@ -2,7 +2,7 @@ package info.bitrich.xchangestream.bittrex.dto;
 
 import java.util.Objects;
 
-public class BittrexOrder  extends BittrexSequencedEntity implements Comparable<BittrexOrder> {
+public class BittrexOrder extends BittrexSequencedEntity implements Comparable<BittrexOrder> {
   private String accountId;
   private BittrexOrderDelta delta;
 
