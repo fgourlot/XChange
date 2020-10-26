@@ -1,19 +1,10 @@
 package info.bitrich.xchangestream.bittrex;
 
-import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.cloneOrderBook;
-import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.updateOrderBook;
-
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw.SequencedOrderBook;
@@ -24,6 +15,16 @@ import org.knowm.xchange.dto.marketdata.Trade;
 import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
+
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.cloneOrderBook;
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.updateOrderBook;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService
@@ -184,6 +185,7 @@ public class BittrexStreamingMarketDataService
   @Override
   protected void updateLastReceivedSequence(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
     CurrencyPair market = getMarket(bittrexOrderBookDeltas);
-    lastReceivedUpdateSequences.put(market, new AtomicInteger(bittrexOrderBookDeltas.getSequence()));
+    lastReceivedUpdateSequences.put(
+        market, new AtomicInteger(bittrexOrderBookDeltas.getSequence()));
   }
 }
