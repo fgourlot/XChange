@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -150,6 +151,23 @@ public final class BittrexStreamingUtils {
         .available(bittrexBalance.getDelta().getAvailable())
         .timestamp(bittrexBalance.getDelta().getUpdatedAt())
         .build();
+  }
+
+  /**
+   * Clones an orderbook.
+   *
+   * @param orderBook the order book to clone
+   * @return the cloned order book
+   */
+  public static OrderBook cloneOrderBook(OrderBook orderBook) {
+    return new OrderBook(
+            Optional.ofNullable(orderBook.getTimeStamp())
+                    .map(Date::getTime)
+                    .map(Date::new)
+                    .orElse(null),
+            BittrexStreamingUtils.cloneOrders(orderBook.getAsks()),
+            BittrexStreamingUtils.cloneOrders(
+                    orderBook.getBids()));
   }
 
   /**

@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.*;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService
@@ -84,23 +85,6 @@ public class BittrexStreamingMarketDataService
   }
 
   /**
-   * Clones an orderbook.
-   *
-   * @param market the market of the order book
-   * @return the cloned order book
-   */
-  private OrderBook cloneOrderBook(CurrencyPair market) {
-    return new OrderBook(
-        Optional.ofNullable(sequencedOrderBooks.get(market).getOrderBook().getTimeStamp())
-            .map(Date::getTime)
-            .map(Date::new)
-            .orElse(null),
-        BittrexStreamingUtils.cloneOrders(sequencedOrderBooks.get(market).getOrderBook().getAsks()),
-        BittrexStreamingUtils.cloneOrders(
-            sequencedOrderBooks.get(market).getOrderBook().getBids()));
-  }
-
-  /**
    * Returns all the bittrex markets.
    *
    * @return the markets
@@ -148,7 +132,7 @@ public class BittrexStreamingMarketDataService
       LOG.debug("Rest sequence for book {} is {}", market, orderBook.getSequence());
       synchronized (orderBooksLock) {
         sequencedOrderBooks.put(market, orderBook);
-        OrderBook orderBookClone = cloneOrderBook(market);
+        OrderBook orderBookClone = cloneOrderBook(sequencedOrderBooks.get(market).getOrderBook());
         if (orderBooks.containsKey(market)) {
           orderBooks.get(market).onNext(orderBookClone);
         } else {
@@ -164,7 +148,7 @@ public class BittrexStreamingMarketDataService
   @Override
   protected void queueDelta(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
     CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBookDeltas.getMarketSymbol());
-    queueDelta( orderBookDeltasQueue.get(market), bittrexOrderBookDeltas);
+    queueDelta(orderBookDeltasQueue.get(market), bittrexOrderBookDeltas);
   }
 
   @Override
@@ -178,18 +162,17 @@ public class BittrexStreamingMarketDataService
       LOG.info("Order book {} desync!", market);
       initializeData(bittrexOrderBookDeltas);
     } else {
-      AtomicBoolean updated = new AtomicBoolean(false);
       updatesToApply.removeIf(delta -> delta.getSequence() <= lastSequence);
       updatesToApply.forEach(
           deltas -> {
-            OrderBook updatedOrderBook =
-                BittrexStreamingUtils.updateOrderBook(orderBook.getOrderBook(), deltas);
+            OrderBook updatedOrderBook = updateOrderBook(orderBook.getOrderBook(), deltas);
             String sequence = String.valueOf(deltas.getSequence());
             sequencedOrderBooks.put(market, new SequencedOrderBook(sequence, updatedOrderBook));
-            updated.set(true);
           });
-      if (updated.get()) {
-        orderBooks.get(market).onNext(cloneOrderBook(market));
+      if (!updatesToApply.isEmpty()) {
+        orderBooks
+            .get(market)
+            .onNext(cloneOrderBook(sequencedOrderBooks.get(market).getOrderBook()));
       }
     }
     updatesToApply.clear();

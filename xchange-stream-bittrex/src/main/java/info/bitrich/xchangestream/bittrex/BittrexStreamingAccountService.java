@@ -19,6 +19,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.bittrexBalanceToBalance;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingAccountService extends BittrexStreamingAbstractService<BittrexBalance>
@@ -114,7 +115,7 @@ public class BittrexStreamingAccountService extends BittrexStreamingAbstractServ
           balance -> {
             balances
                 .get(balance.getDelta().getCurrencySymbol())
-                .onNext(BittrexStreamingUtils.bittrexBalanceToBalance(balance));
+                .onNext(bittrexBalanceToBalance(balance));
             currentSequenceNumber = new AtomicInteger(balance.getSequence());
           });
     }
