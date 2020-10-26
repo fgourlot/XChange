@@ -20,11 +20,11 @@ import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.*;
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.cloneOrderBook;
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.updateOrderBook;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService
