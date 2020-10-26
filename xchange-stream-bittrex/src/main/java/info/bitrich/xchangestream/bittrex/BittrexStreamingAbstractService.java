@@ -70,11 +70,10 @@ public abstract class BittrexStreamingAbstractService<T extends BittrexSequenced
     return previousSequence == null || previousSequence.longValue() + 1 == nextSequence.longValue();
   }
 
-  protected void queueDelta(SortedSet<T> queue, T delta){
-    queue.add(delta);
-    while (queue.size() > MAX_DELTAS_IN_MEMORY) {
+  protected void queueDelta(SortedSet<T> queue, T delta) {
+    while (queue.size() >= MAX_DELTAS_IN_MEMORY) {
       queue.remove(queue.first());
     }
-
+    queue.add(delta);
   }
 }
