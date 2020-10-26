@@ -166,7 +166,7 @@ public class BittrexStreamingMarketDataService
       LOG.info("Order book {} desync!", market);
       initializeData(bittrexOrderBookDeltas);
     } else {
-      updatesToApply.removeIf(update -> update.getSequence() <= lastSequence);
+      updatesToApply.removeIf(updates -> updates.getSequence() <= lastSequence);
       updatesToApply.forEach(
           updates -> {
             OrderBook updatedOrderBook = updateOrderBook(orderBook.getOrderBook(), updates);
