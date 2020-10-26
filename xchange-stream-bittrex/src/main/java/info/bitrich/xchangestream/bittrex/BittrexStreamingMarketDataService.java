@@ -104,26 +104,26 @@ public class BittrexStreamingMarketDataService
 
   @Override
   protected boolean isAccepted(BittrexOrderBookDeltas bittrexEntity) {
-    CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexEntity.getMarketSymbol());
+    CurrencyPair market = getMarket(bittrexEntity);
     return orderBooks.containsKey(market);
   }
 
   @Override
   protected Number getLastReceivedSequence(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
-    CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBookDeltas.getMarketSymbol());
+    CurrencyPair market = getMarket(bittrexOrderBookDeltas);
     return lastReceivedDeltaSequences.get(market);
   }
 
   @Override
   protected SortedSet<BittrexOrderBookDeltas> getDeltaQueue(
       BittrexOrderBookDeltas bittrexOrderBookDeltas) {
-    CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBookDeltas.getMarketSymbol());
+    CurrencyPair market = getMarket(bittrexOrderBookDeltas);
     return orderBookDeltasQueue.get(market);
   }
 
   @Override
   protected void initializeData(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
-    CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBookDeltas.getMarketSymbol());
+    CurrencyPair market = getMarket(bittrexOrderBookDeltas);
     LOG.info("Initializing order book {} with a rest call", market);
     try {
       SequencedOrderBook orderBook =
@@ -147,13 +147,17 @@ public class BittrexStreamingMarketDataService
 
   @Override
   protected void queueDelta(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
-    CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBookDeltas.getMarketSymbol());
+    CurrencyPair market = getMarket(bittrexOrderBookDeltas);
     queueDelta(orderBookDeltasQueue.get(market), bittrexOrderBookDeltas);
+  }
+
+  private CurrencyPair getMarket(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
+    return BittrexUtils.toCurrencyPair(bittrexOrderBookDeltas.getMarketSymbol());
   }
 
   @Override
   protected void updateData(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
-    CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBookDeltas.getMarketSymbol());
+    CurrencyPair market = getMarket(bittrexOrderBookDeltas);
     SequencedOrderBook orderBook = sequencedOrderBooks.get(market);
     SortedSet<BittrexOrderBookDeltas> updatesToApply = orderBookDeltasQueue.get(market);
     int lastSequence = Integer.parseInt(orderBook.getSequence());
@@ -180,7 +184,7 @@ public class BittrexStreamingMarketDataService
 
   @Override
   protected void updateLastReceivedSequence(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
-    CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBookDeltas.getMarketSymbol());
+    CurrencyPair market = getMarket(bittrexOrderBookDeltas);
     lastReceivedDeltaSequences.put(market, new AtomicInteger(bittrexOrderBookDeltas.getSequence()));
   }
 }
