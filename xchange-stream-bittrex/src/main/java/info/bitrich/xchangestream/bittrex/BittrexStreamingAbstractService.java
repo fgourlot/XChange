@@ -69,4 +69,12 @@ public abstract class BittrexStreamingAbstractService<T extends BittrexSequenced
   protected static boolean isNextSequenceValid(Number previousSequence, Number nextSequence) {
     return previousSequence == null || previousSequence.longValue() + 1 == nextSequence.longValue();
   }
+
+  protected void queueDelta(SortedSet<T> queue, T delta){
+    queue.add(delta);
+    while (queue.size() > MAX_DELTAS_IN_MEMORY) {
+      queue.remove(queue.first());
+    }
+
+  }
 }

@@ -164,11 +164,7 @@ public class BittrexStreamingMarketDataService
   @Override
   protected void queueDelta(BittrexOrderBookDeltas bittrexOrderBookDeltas) {
     CurrencyPair market = BittrexUtils.toCurrencyPair(bittrexOrderBookDeltas.getMarketSymbol());
-    SortedSet<BittrexOrderBookDeltas> deltaQueues = orderBookDeltasQueue.get(market);
-    deltaQueues.add(bittrexOrderBookDeltas);
-    while (deltaQueues.size() > MAX_DELTAS_IN_MEMORY) {
-      deltaQueues.remove(deltaQueues.first());
-    }
+    queueDelta( orderBookDeltasQueue.get(market), bittrexOrderBookDeltas);
   }
 
   @Override

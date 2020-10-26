@@ -101,10 +101,7 @@ public class BittrexStreamingAccountService extends BittrexStreamingAbstractServ
 
   @Override
   protected void queueDelta(BittrexBalance bittrexBalance) {
-    balancesDeltaQueue.add(bittrexBalance);
-    while (balancesDeltaQueue.size() > MAX_DELTAS_IN_MEMORY) {
-      balancesDeltaQueue.remove(balancesDeltaQueue.first());
-    }
+    queueDelta(balancesDeltaQueue, bittrexBalance);
   }
 
   @Override
