@@ -6,6 +6,9 @@ import com.github.signalr4j.client.hubs.HubConnection;
 import com.github.signalr4j.client.hubs.HubProxy;
 import info.bitrich.xchangestream.bittrex.BittrexEncryptionUtils;
 import io.reactivex.Completable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -15,8 +18,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class BittrexStreamingConnection {
 
@@ -96,7 +97,7 @@ public class BittrexStreamingConnection {
         });
     hubConnection.error(
         e -> {
-          LOG.error("[ConnId={}] Connection error detected! {}", id, e);
+          LOG.error("[ConnId={}] Connection error detected!", id, e);
           reconnectAndSubscribe();
         });
     hubConnection.closed(
@@ -163,6 +164,7 @@ public class BittrexStreamingConnection {
         subscriptions.forEach(this::subscribeToChannelWithHandler);
       } catch (Exception e) {
         LOG.error("[ConnId={}] Reconnection error!", id, e);
+        reconnectLock.unlock();
         reconnectAndSubscribe();
       } finally {
         reconnectLock.unlock();
