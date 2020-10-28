@@ -162,7 +162,6 @@ public class BittrexStreamingConnection {
                 .map(BittrexStreamingSubscription::getEventName)
                 .collect(Collectors.joining(", "));
         LOG.info("[ConnId={}] Subscribing to events {}...", id, events);
-        subscriptions.forEach(this::subscribeToChannelWithHandler);
         if (!subscriptions.stream().allMatch(this::subscribeToChannelWithHandler)) {
           reconnectLock.unlock();
           reconnectAndSubscribe();
