@@ -14,6 +14,7 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -162,6 +163,10 @@ public class BittrexStreamingConnection {
                 .collect(Collectors.joining(", "));
         LOG.info("[ConnId={}] Subscribing to events {}...", id, events);
         subscriptions.forEach(this::subscribeToChannelWithHandler);
+        if (!subscriptions.stream().allMatch(this::subscribeToChannelWithHandler)) {
+          reconnectLock.unlock();
+          reconnectAndSubscribe();
+        }
       } catch (Exception e) {
         LOG.error("[ConnId={}] Reconnection error!", id, e);
         reconnectLock.unlock();
@@ -174,8 +179,9 @@ public class BittrexStreamingConnection {
     }
   }
 
-  public synchronized void subscribeToChannelWithHandler(
+  public synchronized boolean subscribeToChannelWithHandler(
       BittrexStreamingSubscription subscription) {
+    AtomicBoolean success = new AtomicBoolean(false);
     CountDownLatch latch = new CountDownLatch(1);
     if (!authenticating && subscription.isNeedAuthentication()) {
       try {
@@ -201,12 +207,14 @@ public class BittrexStreamingConnection {
             e -> {
               LOG.error(
                   "[ConnId={}] Subscription error to {}: {}", id, subscription, e.getMessage());
+              success.set(false);
               latch.countDown();
             })
         .done(
             response -> {
               LOG.info(
                   "[ConnId={}] Subscription success to event {}", id, subscription.getEventName());
+              success.set(true);
               latch.countDown();
               subscriptions.add(subscription);
             });
@@ -216,6 +224,7 @@ public class BittrexStreamingConnection {
       LOG.error("[ConnId={}] Error subscribing: {}", id, e);
       Thread.currentThread().interrupt();
     }
+    return success.get();
   }
 
   private void onConnection() {
