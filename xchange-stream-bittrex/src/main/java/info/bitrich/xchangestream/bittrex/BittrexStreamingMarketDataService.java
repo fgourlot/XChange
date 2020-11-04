@@ -12,15 +12,15 @@ import org.knowm.xchange.exceptions.NotYetImplementedForExchangeException;
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingMarketDataService implements StreamingMarketDataService {
 
-  private final BittrexOrderBookStreamingService bittrexOrderBookStreamingService;
+  private final BittrexStreamingOrderBookService bittrexStreamingOrderBookService;
 
   public BittrexStreamingMarketDataService(BittrexStreamingService bittrexStreamingService, BittrexMarketDataService marketDataService) {
-    this.bittrexOrderBookStreamingService = new BittrexOrderBookStreamingService(bittrexStreamingService, marketDataService);
+    this.bittrexStreamingOrderBookService = new BittrexStreamingOrderBookService(bittrexStreamingService, marketDataService);
   }
 
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
-    return bittrexOrderBookStreamingService.getOrderBook(currencyPair, args);
+    return bittrexStreamingOrderBookService.getOrderBook(currencyPair, args);
   }
 
   @Override

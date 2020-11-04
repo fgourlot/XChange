@@ -23,10 +23,10 @@ import java.util.stream.Collectors;
 import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.cloneOrderBook;
 import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.updateOrderBook;
 
-public class BittrexOrderBookStreamingService
+public class BittrexStreamingOrderBookService
     extends BittrexStreamingAbstractService<BittrexOrderBookDeltas> {
 
-  private static final Logger LOG = LoggerFactory.getLogger(BittrexOrderBookStreamingService.class);
+  private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingOrderBookService.class);
 
   private static final int ORDER_BOOKS_DEPTH = 500;
 
@@ -39,7 +39,7 @@ public class BittrexOrderBookStreamingService
   private final Object orderBooksLock;
   private final Object initLock;
 
-  public BittrexOrderBookStreamingService(
+  public BittrexStreamingOrderBookService(
       BittrexStreamingService bittrexStreamingService, BittrexMarketDataService marketDataService) {
     this.orderBooksLock = new Object();
     this.initLock = new Object();
