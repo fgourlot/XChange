@@ -1,5 +1,8 @@
 package info.bitrich.xchangestream.bittrex;
 
+import info.bitrich.xchangestream.bittrex.services.account.BittrexStreamingAccountService;
+import info.bitrich.xchangestream.bittrex.services.marketdata.BittrexStreamingMarketDataService;
+import info.bitrich.xchangestream.bittrex.services.trade.BittrexStreamingTradeService;
 import info.bitrich.xchangestream.core.*;
 import org.knowm.xchange.ExchangeSpecification;
 import org.knowm.xchange.bittrex.BittrexExchange;

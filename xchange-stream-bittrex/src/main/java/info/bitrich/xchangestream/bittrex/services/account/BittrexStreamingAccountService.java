@@ -1,24 +1,27 @@
-package info.bitrich.xchangestream.bittrex;
+package info.bitrich.xchangestream.bittrex.services.account;
 
-import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.bittrexBalanceToBalance;
-
+import info.bitrich.xchangestream.bittrex.BittrexStreamingAbstractService;
+import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
-import java.io.IOException;
-import java.util.SortedSet;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentSkipListSet;
-import java.util.concurrent.atomic.AtomicInteger;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;
 import org.knowm.xchange.bittrex.service.BittrexAccountServiceRaw;
 import org.knowm.xchange.currency.Currency;
 import org.knowm.xchange.dto.account.Balance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.SortedSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.bittrexBalanceToBalance;
 
 /** See https://bittrex.github.io/api/v3#topic-Websocket-Overview */
 public class BittrexStreamingAccountService extends BittrexStreamingAbstractService<BittrexBalance>

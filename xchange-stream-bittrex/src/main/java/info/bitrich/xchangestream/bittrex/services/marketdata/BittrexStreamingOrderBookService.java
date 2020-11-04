@@ -1,5 +1,7 @@
-package info.bitrich.xchangestream.bittrex;
+package info.bitrich.xchangestream.bittrex.services.marketdata;
 
+import info.bitrich.xchangestream.bittrex.BittrexStreamingAbstractService;
+import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
@@ -40,7 +42,7 @@ public class BittrexStreamingOrderBookService
   private final Object initLock;
 
   public BittrexStreamingOrderBookService(
-      BittrexStreamingService bittrexStreamingService, BittrexMarketDataService marketDataService) {
+          BittrexStreamingService bittrexStreamingService, BittrexMarketDataService marketDataService) {
     this.orderBooksLock = new Object();
     this.initLock = new Object();
     this.marketDataService = marketDataService;
@@ -58,7 +60,7 @@ public class BittrexStreamingOrderBookService
     this.messageHandler = createMessageHandler(BittrexOrderBookDeltas.class);
   }
 
-  public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
+  public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair) {
     synchronized (initLock) {
       orderBookUpdatesQueue.putIfAbsent(currencyPair, new TreeSet<>());
       lastReceivedUpdateSequences.putIfAbsent(currencyPair, null);

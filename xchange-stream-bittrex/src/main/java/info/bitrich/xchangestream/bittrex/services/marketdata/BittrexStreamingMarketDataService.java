@@ -1,5 +1,6 @@
-package info.bitrich.xchangestream.bittrex;
+package info.bitrich.xchangestream.bittrex.services.marketdata;
 
+import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
@@ -20,7 +21,7 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   @Override
   public Observable<OrderBook> getOrderBook(CurrencyPair currencyPair, Object... args) {
-    return bittrexStreamingOrderBookService.getOrderBook(currencyPair, args);
+    return bittrexStreamingOrderBookService.getOrderBook(currencyPair);
   }
 
   @Override
