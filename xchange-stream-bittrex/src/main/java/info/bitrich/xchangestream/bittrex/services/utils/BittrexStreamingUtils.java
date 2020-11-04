@@ -1,4 +1,4 @@
-package info.bitrich.xchangestream.bittrex;
+package info.bitrich.xchangestream.bittrex.services.utils;
 
 import com.fasterxml.jackson.databind.ObjectReader;
 import info.bitrich.xchangestream.bittrex.dto.*;
@@ -180,7 +180,7 @@ public final class BittrexStreamingUtils {
   public static <T> Optional<T> extractBittrexEntity(
       String bittrexMessage, ObjectReader reader, Class<T> bittrexClass) {
     try {
-      byte[] decompressedMessage = BittrexEncryptionUtils.decompress(bittrexMessage);
+      byte[] decompressedMessage = BittrexStreamingEncryptionUtils.decompress(bittrexMessage);
       return Optional.of(reader.readValue(decompressedMessage, bittrexClass));
     } catch (IOException e) {
       LOG.error("Error extracting {} message! {}", bittrexClass.getSimpleName(), e);

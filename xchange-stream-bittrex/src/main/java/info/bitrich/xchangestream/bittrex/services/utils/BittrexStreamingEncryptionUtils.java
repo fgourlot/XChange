@@ -1,5 +1,8 @@
-package info.bitrich.xchangestream.bittrex;
+package info.bitrich.xchangestream.bittrex.services.utils;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import javax.xml.bind.DatatypeConverter;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -9,14 +12,11 @@ import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterOutputStream;
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import javax.xml.bind.DatatypeConverter;
 
 /** Utility class with tools for websocket message conversion. */
-public final class BittrexEncryptionUtils {
+public final class BittrexStreamingEncryptionUtils {
 
-  private BittrexEncryptionUtils() {
+  private BittrexStreamingEncryptionUtils() {
     // Utility class
   }
 

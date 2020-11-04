@@ -1,7 +1,7 @@
 package info.bitrich.xchangestream.bittrex.services.marketdata;
 
-import info.bitrich.xchangestream.bittrex.BittrexStreamingAbstractService;
-import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
+import info.bitrich.xchangestream.bittrex.services.BittrexStreamingAbstractService;
+import info.bitrich.xchangestream.bittrex.services.BittrexStreamingService;
 import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
@@ -22,8 +22,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.cloneOrderBook;
-import static info.bitrich.xchangestream.bittrex.BittrexStreamingUtils.updateOrderBook;
+import static info.bitrich.xchangestream.bittrex.services.utils.BittrexStreamingUtils.cloneOrderBook;
+import static info.bitrich.xchangestream.bittrex.services.utils.BittrexStreamingUtils.updateOrderBook;
 
 public class BittrexStreamingOrderBookService
     extends BittrexStreamingAbstractService<BittrexOrderBookDeltas> {

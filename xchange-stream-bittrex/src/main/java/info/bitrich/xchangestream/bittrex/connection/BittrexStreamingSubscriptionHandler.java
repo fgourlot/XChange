@@ -1,7 +1,7 @@
 package info.bitrich.xchangestream.bittrex.connection;
 
 import com.github.signalr4j.client.hubs.SubscriptionHandler1;
-import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
+import info.bitrich.xchangestream.bittrex.services.BittrexStreamingService;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Optional;

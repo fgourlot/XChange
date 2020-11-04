@@ -1,4 +1,4 @@
-package info.bitrich.xchangestream.bittrex;
+package info.bitrich.xchangestream.bittrex.services;
 
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingConnectionPool;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;

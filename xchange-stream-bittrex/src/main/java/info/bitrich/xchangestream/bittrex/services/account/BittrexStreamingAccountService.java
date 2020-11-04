@@ -1,6 +1,6 @@
 package info.bitrich.xchangestream.bittrex.services.account;
 
-import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
+import info.bitrich.xchangestream.bittrex.services.BittrexStreamingService;
 import info.bitrich.xchangestream.core.StreamingAccountService;
 import io.reactivex.Observable;
 import org.knowm.xchange.bittrex.service.BittrexAccountService;

@@ -1,12 +1,14 @@
-package info.bitrich.xchangestream.bittrex;
+package info.bitrich.xchangestream.bittrex.services;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscription;
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexSequencedEntity;
-import java.util.SortedSet;
+import info.bitrich.xchangestream.bittrex.services.utils.BittrexStreamingUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.SortedSet;
 
 public abstract class BittrexStreamingAbstractService<T extends BittrexSequencedEntity> {
 

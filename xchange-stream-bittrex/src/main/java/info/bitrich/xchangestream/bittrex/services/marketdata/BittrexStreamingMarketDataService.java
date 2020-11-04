@@ -1,6 +1,6 @@
 package info.bitrich.xchangestream.bittrex.services.marketdata;
 
-import info.bitrich.xchangestream.bittrex.BittrexStreamingService;
+import info.bitrich.xchangestream.bittrex.services.BittrexStreamingService;
 import info.bitrich.xchangestream.core.StreamingMarketDataService;
 import io.reactivex.Observable;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
