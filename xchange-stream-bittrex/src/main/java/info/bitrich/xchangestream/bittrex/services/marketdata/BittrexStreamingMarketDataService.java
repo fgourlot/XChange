@@ -15,8 +15,10 @@ public class BittrexStreamingMarketDataService implements StreamingMarketDataSer
 
   private final BittrexStreamingOrderBookService bittrexStreamingOrderBookService;
 
-  public BittrexStreamingMarketDataService(BittrexStreamingService bittrexStreamingService, BittrexMarketDataService marketDataService) {
-    this.bittrexStreamingOrderBookService = new BittrexStreamingOrderBookService(bittrexStreamingService, marketDataService);
+  public BittrexStreamingMarketDataService(
+      BittrexStreamingService bittrexStreamingService, BittrexMarketDataService marketDataService) {
+    this.bittrexStreamingOrderBookService =
+        new BittrexStreamingOrderBookService(bittrexStreamingService, marketDataService);
   }
 
   @Override

@@ -5,10 +5,9 @@ import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptio
 import info.bitrich.xchangestream.bittrex.connection.BittrexStreamingSubscriptionHandler;
 import info.bitrich.xchangestream.bittrex.dto.BittrexSequencedEntity;
 import info.bitrich.xchangestream.bittrex.services.utils.BittrexStreamingUtils;
+import java.util.SortedSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.SortedSet;
 
 public abstract class BittrexStreamingAbstractService<T extends BittrexSequencedEntity> {
 

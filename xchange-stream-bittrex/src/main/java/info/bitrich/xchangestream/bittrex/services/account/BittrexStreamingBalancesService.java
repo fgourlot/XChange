@@ -1,8 +1,8 @@
 package info.bitrich.xchangestream.bittrex.services.account;
 
+import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import info.bitrich.xchangestream.bittrex.services.BittrexStreamingAbstractService;
 import info.bitrich.xchangestream.bittrex.services.BittrexStreamingService;
-import info.bitrich.xchangestream.bittrex.dto.BittrexBalance;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;

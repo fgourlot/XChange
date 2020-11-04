@@ -1,11 +1,20 @@
 package info.bitrich.xchangestream.bittrex.services.marketdata;
 
+import static info.bitrich.xchangestream.bittrex.services.utils.BittrexStreamingUtils.cloneOrderBook;
+import static info.bitrich.xchangestream.bittrex.services.utils.BittrexStreamingUtils.updateOrderBook;
+
+import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import info.bitrich.xchangestream.bittrex.services.BittrexStreamingAbstractService;
 import info.bitrich.xchangestream.bittrex.services.BittrexStreamingService;
-import info.bitrich.xchangestream.bittrex.dto.BittrexOrderBookDeltas;
 import io.reactivex.Observable;
 import io.reactivex.subjects.BehaviorSubject;
 import io.reactivex.subjects.Subject;
+import java.io.IOException;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 import org.knowm.xchange.bittrex.BittrexUtils;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataService;
 import org.knowm.xchange.bittrex.service.BittrexMarketDataServiceRaw.SequencedOrderBook;
@@ -14,16 +23,6 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
-import static info.bitrich.xchangestream.bittrex.services.utils.BittrexStreamingUtils.cloneOrderBook;
-import static info.bitrich.xchangestream.bittrex.services.utils.BittrexStreamingUtils.updateOrderBook;
 
 public class BittrexStreamingOrderBookService
     extends BittrexStreamingAbstractService<BittrexOrderBookDeltas> {
@@ -42,7 +41,7 @@ public class BittrexStreamingOrderBookService
   private final Object initLock;
 
   public BittrexStreamingOrderBookService(
-          BittrexStreamingService bittrexStreamingService, BittrexMarketDataService marketDataService) {
+      BittrexStreamingService bittrexStreamingService, BittrexMarketDataService marketDataService) {
     this.orderBooksLock = new Object();
     this.initLock = new Object();
     this.marketDataService = marketDataService;
