@@ -25,6 +25,7 @@ public class BittrexStreamingConnection {
   private static final Logger LOG = LoggerFactory.getLogger(BittrexStreamingConnection.class);
   private static final AtomicInteger ID_COUNTER = new AtomicInteger();
   private static final String COULD_NOT_AUTHENTICATE_ERROR_MESSAGE = "Could not authenticate";
+  private static final String AUTHENTICATION_EXPIRING_EVENT = "authenticationExpiring";
 
   private final String apiKey;
   private final String secretKey;
@@ -76,10 +77,12 @@ public class BittrexStreamingConnection {
   private synchronized void initConnectionConfiguration() {
     authenticating = false;
     if (hubProxy != null) {
+      hubProxy.removeSubscription(AUTHENTICATION_EXPIRING_EVENT);
       subscriptions.forEach(sub -> hubProxy.removeSubscription(sub.getEventName()));
     }
     disconnect().blockingAwait();
     hubConnection = new HubConnection(apiUrl);
+    hubProxy = hubConnection.createHubProxy("c3");
     hubConnection.stateChanged(
         (oldState, newState) -> {
           if (ConnectionState.Connected.equals(oldState)) {
@@ -109,7 +112,6 @@ public class BittrexStreamingConnection {
     hubConnection.setReconnectOnError(false);
     hubConnection.reconnecting(() -> {});
     hubConnection.connected(this::onConnection);
-    hubProxy = hubConnection.createHubProxy("c3");
   }
 
   public Completable connect() {
@@ -233,7 +235,7 @@ public class BittrexStreamingConnection {
   /** Auto-reauthenticate */
   private void setupAutoReAuthentication() {
     hubProxy.on(
-        "authenticationExpiring",
+        AUTHENTICATION_EXPIRING_EVENT,
         () -> {
           LOG.debug("[ConnId={}] Authentication expiring, reauthenticating...", id);
           authenticate();
