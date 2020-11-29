@@ -161,7 +161,7 @@ public class BittrexStreamingConnection {
             reconnectTasks.size());
       }
     }
-    Future<?> task =
+    Future<Boolean> task =
         reconnectAndSubscribeExecutor.submit(
             () -> {
               boolean success = false;
@@ -179,16 +179,17 @@ public class BittrexStreamingConnection {
               } catch (Exception e) {
                 LOG.error("[ConnId={}] Reconnection error!", id, e);
               }
-              if (!success) {
-                reconnectAndSubscribe();
-              } else {
-                LOG.info("[ConnId={}] Reconnection success!", id);
-              }
+              return success;
             });
     reconnectTasks.add(task);
     try {
-      task.get();
+      boolean success = task.get();
       reconnectTasks.remove(task);
+      if (!success) {
+        reconnectAndSubscribe();
+      } else {
+        LOG.info("[ConnId={}] Reconnection success!", id);
+      }
     } catch (Exception e) {
       e.printStackTrace();
     }

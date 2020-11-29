@@ -3,17 +3,6 @@ package info.bitrich.xchangestream.bittrex;
 import info.bitrich.xchangestream.core.StreamingExchange;
 import info.bitrich.xchangestream.core.StreamingExchangeFactory;
 import io.reactivex.disposables.Disposable;
-import java.io.IOException;
-import java.time.Duration;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 import org.knowm.xchange.Exchange;
 import org.knowm.xchange.ExchangeFactory;
 import org.knowm.xchange.ExchangeSpecification;
@@ -24,6 +13,15 @@ import org.knowm.xchange.dto.marketdata.OrderBook;
 import org.knowm.xchange.dto.marketdata.Ticker;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class BittrexManualExample {
   private static final Logger LOG =
@@ -69,7 +67,6 @@ public class BittrexManualExample {
     exchange.getMarketDataService().getTickers(null).stream()
         .map(Ticker::getCurrencyPair)
         // Stream.of(CurrencyPair.BTC_USD)
-        .parallel()
         .forEach(
             market -> {
               Disposable disposable =
@@ -97,24 +94,28 @@ public class BittrexManualExample {
               disposables.add(disposable);
             });
 
-    /*Stream.of(Currency.BTC)
-    .forEach(
-        currency -> {
-          Disposable disposable =
-              streamingExchange
-                  .getStreamingAccountService()
-                  .getBalanceChanges(currency)
-                  .subscribe(
-                      newBalance -> {
-                        //if (newBalance.getCurrency().equals(Currency.BTC)) {
-                        //  LOG.info("new balance : " +newBalance.getAvailable()) ;
-                        //}
-                        balance.set(newBalance);
-                      });
-          // disposables.add(disposable);
-        });*/
+    // Stream.of(Currency.BTC)
+    exchange.getMarketDataService().getTickers(null).stream()
+        .map(Ticker::getCurrencyPair)
+        .map(pair -> pair.base)
+        .filter(Objects::nonNull)
+        .forEach(
+            currency -> {
+              Disposable disposable =
+                  streamingExchange
+                      .getStreamingAccountService()
+                      .getBalanceChanges(currency)
+                      .subscribe(
+                          newBalance -> {
+                            // if (newBalance.getCurrency().equals(Currency.BTC)) {
+                            //  LOG.info("new balance : " +newBalance.getAvailable()) ;
+                            // }
+                            balance.set(newBalance);
+                          });
+              // disposables.add(disposable);
+            });
 
-    Thread.sleep(7200_000);
+    Thread.sleep(1080000000);
     disposables.forEach(Disposable::dispose);
     LOG.info("subscribers disposed!");
   }
