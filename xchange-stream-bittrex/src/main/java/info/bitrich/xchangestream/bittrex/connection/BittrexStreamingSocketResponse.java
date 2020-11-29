@@ -10,6 +10,14 @@ public class BittrexStreamingSocketResponse {
     ErrorCode = error;
   }
 
+  public Boolean getSuccess() {
+    return Success;
+  }
+
+  public String getErrorCode() {
+    return ErrorCode;
+  }
+
   @Override
   public String toString() {
     return "SocketResponse{" + "Success=" + Success + ", ErrorCode='" + ErrorCode + '\'' + '}';
