@@ -67,12 +67,13 @@ public class BittrexStreamingConnection {
           .onError(error -> LOG.error("[ConnId={}] Authentication error: {}", id, error))
           .done(response -> LOG.info("[ConnId={}] (re)authenticated!", id));
     } catch (Exception e) {
-      LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, e);
+      LOG.error("[ConnId={}] " + COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, id, e);
     }
     return null;
   }
 
   private synchronized void initConnectionConfiguration() {
+    LOG.debug("[ConnId={}] Configuring connection...", id);
     authenticating = false;
     if (hubProxy != null) {
       hubProxy.removeSubscription(AUTHENTICATION_EXPIRING_EVENT);
@@ -110,10 +111,11 @@ public class BittrexStreamingConnection {
     hubConnection.reconnecting(() -> {});
     hubProxy = hubConnection.createHubProxy("c3");
     hubConnection.connected(this::onConnection);
+    LOG.debug("[ConnId={}] Connection configured!", id);
   }
 
   public Completable connect() {
-    LOG.info("[ConnId={}] Starting connection...", id);
+    LOG.info("[ConnId={}] Connecting...", id);
     return Completable.fromFuture(hubConnection.start());
   }
 
@@ -126,8 +128,11 @@ public class BittrexStreamingConnection {
       hubConnection.error(e -> {});
       hubConnection.closed(() -> {});
       // We don't really care if it works, and we don't want to be stuck in case it doesn't...
+      hubConnection.onError(null, false);
+      hubConnection.reconnecting(() -> {});
+      hubConnection.setReconnectOnError(false);
       ExecutorService discExecutor = Executors.newFixedThreadPool(1);
-      discExecutor.execute(() -> hubConnection.disconnect());
+      discExecutor.execute(() -> hubConnection.stop());
       discExecutor.shutdown();
       try {
         boolean disconnected = discExecutor.awaitTermination(5, TimeUnit.SECONDS);
@@ -164,22 +169,16 @@ public class BittrexStreamingConnection {
     Future<Boolean> task =
         reconnectAndSubscribeExecutor.submit(
             () -> {
-              boolean success = false;
-              LOG.info("[ConnId={}] Reconnecting...", id);
-              try {
-                initConnectionConfiguration();
-                connect().blockingAwait();
-                LOG.info("[ConnId={}] Reconnected!", id);
-                String events =
-                    subscriptions.stream()
-                        .map(BittrexStreamingSubscription::getEventName)
-                        .collect(Collectors.joining(", "));
-                LOG.info("[ConnId={}] Subscribing to events {}...", id, events);
-                success = subscriptions.stream().allMatch(this::subscribeToChannelWithHandler);
-              } catch (Exception e) {
-                LOG.error("[ConnId={}] Reconnection error!", id, e);
-              }
-              return success;
+              LOG.info("[ConnId={}] Initiating reconnection...", id);
+              initConnectionConfiguration();
+              connect().blockingAwait();
+              LOG.debug("[ConnId={}] Connected!", id);
+              String events =
+                  subscriptions.stream()
+                      .map(BittrexStreamingSubscription::getEventName)
+                      .collect(Collectors.joining(", "));
+              LOG.debug("[ConnId={}] Subscribing to events {}...", id, events);
+              return subscriptions.stream().allMatch(this::subscribeToChannelWithHandler);
             });
     reconnectTasks.add(task);
     try {
@@ -190,8 +189,10 @@ public class BittrexStreamingConnection {
       } else {
         LOG.info("[ConnId={}] Reconnection success!", id);
       }
+    } catch (CancellationException e) {
+      LOG.error("[ConnId={}] Reconnection cancelled!", id);
     } catch (Exception e) {
-      e.printStackTrace();
+      LOG.error("[ConnId={}] Reconnection error!", id, e);
     }
   }
 
@@ -206,10 +207,10 @@ public class BittrexStreamingConnection {
           authenticateFuture.get();
         }
       } catch (InterruptedException ie) {
-        LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ie);
+        LOG.error("[ConnId={}] Authentication interrupted!", id);
         Thread.currentThread().interrupt();
       } catch (ExecutionException ee) {
-        LOG.error(COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, ee);
+        LOG.error("[ConnId={}] " + COULD_NOT_AUTHENTICATE_ERROR_MESSAGE, id, ee);
       }
     }
     LOG.debug("[ConnId={}] Subscribing to event {}", id, subscription.getEventName());
@@ -238,7 +239,7 @@ public class BittrexStreamingConnection {
     try {
       latch.await();
     } catch (InterruptedException e) {
-      LOG.error("[ConnId={}] Error subscribing: {}", id, e);
+      LOG.error("[ConnId={}] Subscribing interrupted: {}", id, e);
       Thread.currentThread().interrupt();
     }
     return success.get();
