@@ -80,7 +80,8 @@ public class BittrexStreamingConnection {
       subscriptions.forEach(sub -> hubProxy.removeSubscription(sub.getEventName()));
     }
     disconnect().blockingAwait();
-    hubConnection = new HubConnection(apiUrl);
+    // hubConnection = new HubConnection(apiUrl);
+    hubConnection = new HubConnection(apiUrl, null, true, new Signalr4jLogger());
     hubConnection.stateChanged(
         (oldState, newState) -> {
           if (ConnectionState.Connected.equals(oldState)) {

@@ -5,7 +5,7 @@
     <parent>
         <artifactId>xchange-parent</artifactId>
         <groupId>org.knowm.xchange</groupId>
-        <version>5.0.3-SNAPSHOT</version>
+        <version>5.0.6-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -20,7 +20,7 @@
         </dependency>
         <dependency>
             <groupId>org.knowm.xchange</groupId>
-            <artifactId>xchange-bittrexV3</artifactId>
+            <artifactId>xchange-bittrex</artifactId>
             <version>${project.parent.version}</version>
         </dependency>
         <dependency>
