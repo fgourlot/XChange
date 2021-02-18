@@ -8,7 +8,7 @@ import org.knowm.xchange.ExchangeSpecification;
 public class BittrexStreamingService {
 
   // Careful, POOL_SIZE=10 caused problem on reconnection on all of them, for an unknown reasons
-  public static final int POOL_SIZE = 5;
+  public static final int POOL_SIZE = 10;
 
   private final BittrexStreamingConnectionPool connectionPool;
 
